@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Résultats - Simulateur météo</title>
+</head>
+<body>
+    <h1>Météo à {{ location }}</h1>
+
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Température min (°C)</th>
+                <th>Température max (°C)</th>
+                <th>Précipitations (mm)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for day in data %}
+            <tr>
+                <td>{{ day.date }}</td>
+                <td>{{ day.temperature_2m_min }}</td>
+                <td>{{ day.temperature_2m_max }}</td>
+                <td>{{ day.precipitation_sum }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <p><a href="/">Nouvelle recherche</a></p>
+</body>
+</html>
