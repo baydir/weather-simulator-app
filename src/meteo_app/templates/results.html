@@ -4,30 +4,11 @@
     <meta charset="UTF-8">
     <title>Résultats - Simulateur météo</title>
 </head>
-<body>
-    <h1>Météo à {{ location }}</h1>
-
-    <table border="1">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Température min (°C)</th>
-                <th>Température max (°C)</th>
-                <th>Précipitations (mm)</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for day in data %}
-            <tr>
-                <td>{{ day.date }}</td>
-                <td>{{ day.temperature_2m_min }}</td>
-                <td>{{ day.temperature_2m_max }}</td>
-                <td>{{ day.precipitation_sum }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
+<body data-today="{{ today }}">
+    <h1 id="page-title">Résultats</h1>
+    <div id="results-container">Chargement…</div>
     <p><a href="/">Nouvelle recherche</a></p>
+
+    <script type="module" src="{{ url_for('static', filename='js/results.js') }}"></script>
 </body>
 </html>

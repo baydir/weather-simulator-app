@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <title>Simulateur météo</title>
 </head>
-<body>
+<body data-today="{{ today }}">
     <h1>Simulateur météo</h1>
     <p>Bienvenue sur le simulateur météo climatique.</p>
 
-    <form action="/results" method="POST">
+    <form action="/results" method="GET">
         <label for="location">Lieu :</label>
         <input type="text" id="location" name="location" placeholder="Ex : Pontarlier" required>
         <br><br>
