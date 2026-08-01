@@ -1,4 +1,20 @@
+# Virtual environments
 venv/
+.venv/
+env/
+
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Tooling
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# OS
 .DS_Store

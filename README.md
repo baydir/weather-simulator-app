@@ -1,55 +1,86 @@
-# Weather Simulator App
+# Weather Simulator
 
-EN : Will the weather be like in your city in July 2046 or December 2049? Simulate the weather in your city in the near future by visualizing, day by day, weather (temperatures, precipitation) that would be plausible in the context of climate change. This application aims to help users get a concrete sense of what a weather sequence (for example, a summer in the 2040s decade) could look like in a specific location. For instance, it makes it possible to assess, in an agricultural context, the viability of growing a given crop in a given place, by estimating yields over several consecutive years.
+Quel temps fera-t-il à Pontarlier le 14 juillet 2046 ? La question n'a pas de
+réponse — mais elle a une réponse *plausible*, et c'est celle que cette
+application restitue, jour par jour, sous la forme familière d'un bulletin
+météorologique.
 
-/!\ This is not a weather forecast, but a simulation: the application proposes weather sequences that are PLAUSIBLE in the context of climate change, but it does not predict the exact weather on a specific date. /!\
+L'utilisateur saisit un lieu et une plage de dates comprise entre 1950 et 2050.
+L'application affiche pour chaque journée les températures minimale et maximale,
+l'aspect du ciel, les précipitations et le vent.
 
+> ⚠️ **Ce n'est pas une prévision.**
+> Un modèle climatique ne prédit pas les conditions d'une date donnée. Il produit
+> une trajectoire cohérente, c'est-à-dire une séquence de journées
+> statistiquement plausible dans un climat modifié. La date situe la journée dans
+> une saison et dans une décennie ; elle n'engage aucune exactitude sur cette
+> journée.
 
-FR : Quel sera le temps dans votre ville en juillet 2046 ou en décembre 2049 ? Simulez la météo dans votre ville dans un futur proche, en visualisant jour par jour la série des températures et les précipitations, plausible dans le contexte du réchauffement climatique. Cette application a pour but de permettre aux utilisateurs de se rendre compte concrètement à quoi pourrait ressembler une séquence météo (par exemple un été dans la décennie 2040) dans un lieu précis. Par exemple, il est possible d'évaluer en agriculture la viabilité d'une culture en un endroit donné, en estimant les rendements sur plusieurs années successives.
+## Pourquoi
 
-/!\ Ce n'est pas une prévision météo, mais une simulation : l'application propose des séquences météo PROBABLES dans le contexte du réchauffement climatique, mais ne permet pas de prévoir le temps exact qu'il fera à une date précise. /!\
+Le changement climatique se communique d'ordinaire par des moyennes globales et
+des anomalies de température (« +2,7 °C à l'horizon 2100 »). Ces grandeurs sont
+exactes mais agrégées : elles ne disent rien des conditions concrètes rencontrées
+en un lieu et à une date. L'énoncé « 21 °C / 39 °C, ciel dégagé, 0 mm » a un
+caractère tangible que l'anomalie globale n'a pas. Le format d'application météo
+est donc ici un choix fonctionnel, non un habillage.
 
-## Features/Fonctionnalités
+## Données
 
-EN : Like a typical weather app, simply enter the location where you want to simulate the weather, then choose a date range to visualize the main weather characteristics (minimum temperature, maximum temperature, precipitation, etc.). The time selection works both for the past (real observations) and for the future (simulation based on weather and climate models).
+| Régime | Source |
+|---|---|
+| Passé, 1950 → veille | Réanalyses ERA5 et ERA5-Land, via l'*Historical Weather API* d'Open-Meteo |
+| Futur, jour → 2050 | Modèle CMIP6 HighResMIP, via la *Climate API* d'Open-Meteo |
 
-/!\ under construction /!\
+La seule trajectoire d'émissions disponible approche RCP8.5, soit une hypothèse
+haute. Toute grandeur affichée est calculée de façon identique de part et d'autre
+de la date du jour, afin qu'aucune rupture n'apparaisse à la couture.
 
-FR : Comme une application météo classique, il suffit de rentrer le lieu où vous souhaitez simuler le temps qu'il fera, puis de choisir une plage de dates pour visualiser les principales caractéristiques météorologiques (température minimale, température maximale, précipitations, etc.). Le choix temporel se fait aussi bien pour le passé (observations réelles) que dans le futur (simulation à partir de modèles météorologiques et climatiques).
+Les choix scientifiques, leurs justifications chiffrées et leurs limites sont
+consignés dans [`CLAUDE.md`](CLAUDE.md). Les mesures qui les fondent sont
+reproductibles par les scripts de
+[`scripts/verification/`](scripts/verification/README.md).
 
-/!\ en contruction /!\
+## État
 
-## Structure du projet
+Projet en cours de construction. La conception est arrêtée, le code démarre.
+L'avancement par étapes est suivi dans [`CLAUDE.md`](CLAUDE.md).
+
+## Structure
 
 ```
 weather-simulator-app/
-├── src/
-│   └── meteo_app/
-│       ├── __init__.py
-│       └── get_meteo.py      
-├── notebooks/
-│   └── test_manuel.py        
-├── requirements.txt          
-├── pyproject.toml            
-└── README.md
+├── src/weather_simulator/
+│   ├── domain/          classe de ciel, seuils, correction de biais
+│   ├── transform/       bloc de transformation, neutre par défaut
+│   ├── api/             endpoint, validation des entrées
+│   └── calibration/     table de coefficients et interpolation
+├── web/                 frontend statique (à venir)
+├── scripts/verification/ scripts établissant les faits chiffrés de CLAUDE.md
+├── CLAUDE.md            décisions de conception
+└── pyproject.toml
 ```
 
 ## Installation
 
-1. Cloner le dépôt :
 ```bash
-   git clone git@github.com:SCarnot/weather-simulator-app.git
-   cd weather-simulator-app
+git clone git@github.com:SCarnot/weather-simulator-app.git
+cd weather-simulator-app
+
+python3 -m venv venv
+source venv/bin/activate
+
+pip install -e ".[dev]"
 ```
 
-2. Créer et activer l'environnement virtuel :
-```bash
-   python3 -m venv venv
-   source venv/bin/activate
-```
+Les scripts de vérification n'ont aucune dépendance : bibliothèque standard
+seule, ils s'exécutent sans installation préalable.
 
-3. Installer les dépendances et le projet en mode éditable :
-```bash
-   pip install -r requirements.txt
-   pip install -e .
-```
+---
+
+*In English — Weather Simulator renders climate projections as an everyday
+weather bulletin: pick a place and any date range between 1950 and 2050, get a
+day-by-day account of temperature, sky, precipitation and wind. It is a
+simulation, not a forecast: a climate model produces a plausible trajectory, not
+the conditions of a given date. Design decisions are documented in French in
+`CLAUDE.md`; an English translation is planned.*

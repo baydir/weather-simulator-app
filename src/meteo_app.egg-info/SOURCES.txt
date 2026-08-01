@@ -1,9 +1,0 @@
-README.md
-pyproject.toml
-src/meteo_app/__init__.py
-src/meteo_app/get_meteo.py
-src/meteo_app.egg-info/PKG-INFO
-src/meteo_app.egg-info/SOURCES.txt
-src/meteo_app.egg-info/dependency_links.txt
-src/meteo_app.egg-info/requires.txt
-src/meteo_app.egg-info/top_level.txt

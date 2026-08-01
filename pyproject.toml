@@ -3,16 +3,47 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "weather-simulator-app"
+name = "weather-simulator"
 version = "0.1.0"
-requires-python = ">=3.9"
+description = "Daily weather simulation, 1950-2050, from reanalyses and CMIP6 climate projections"
+requires-python = ">=3.11"
 
 dependencies = [
-    "requests",
+    "fastapi",
+    "pydantic",
+    "uvicorn[standard]",
+]
+
+[project.optional-dependencies]
+# Offline generation of the cloud-cover correction grid. Deliberately kept out
+# of the runtime dependencies: the server only reads a table and interpolates
+# over four nodes.
+calibration = [
+    "httpx",
+    "numpy",
     "pandas",
-    "flask",
-    "geopy",
+]
+dev = [
+    "httpx",          # required by fastapi.testclient
+    "pytest",
+    "ruff",
 ]
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+weather_simulator = ["calibration/data/*.json"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+# Evidence artifacts, not application code: they establish the figures quoted in
+# CLAUDE.md and must stay byte-identical to what produced them.
+exclude = ["scripts/verification"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
