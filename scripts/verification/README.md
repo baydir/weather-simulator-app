@@ -38,6 +38,9 @@ patientent. Ne pas les lancer en parallèle.
 | `16_calibration_years_required.py` | 10 ans de calibration produisent une erreur du même ordre que la correction |
 | `17_seam_reference_choice.py` | Le modèle est deux fois plus proche d'ERA5-Land que d'ERA5 |
 | `18_payloads_geocoding_and_bulk.py` | Volumes, géocodage Open-Meteo, absence de CMIP6 sur le miroir AWS |
+| `19_ifs_seam_2017.py` | `ecmwf_ifs` couvre 2017 → jour même, toutes variables ; amplitude de l'écart à ERA5 et ERA5-Land, et sa saisonnalité |
+| `20_climate_snow_gaps.py` | La neige manque par plages, ni saisonnières ni uniformes — 61 jours d'été à Marseille, la moitié de l'année à Christchurch, rien à Ushuaia ; l'ampleur dépend aussi du modèle, `NICAM16_8S` seul étant complet |
+| `21_snow_threshold.py` | Calage du critère neige sur 35 hivers à Strasbourg et Briançon ; le `weather_code` sature en altitude et ne peut servir de référence |
 
 `reference/open_meteo_WeatherCode.swift` est une copie du fichier source
 d'Open-Meteo dont la règle de dérivation a été transcrite dans le script 09.
