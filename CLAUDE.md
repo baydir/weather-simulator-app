@@ -8,14 +8,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Avancement
 
-La conception est arrêtée, le code applicatif reste à écrire. L'étape 0 étant faite, le dépôt contient à ce jour le présent document, `scripts/verification/`, et le squelette installable `src/weather_simulator/` — quatre paquets vides de toute logique.
+Les étapes 0 et 1 sont faites. Le dépôt contient le présent document, `scripts/verification/`, et le paquet `src/weather_simulator/`, dont `sources/` récupère et assemble la série homogène de 1950 à 2050. La classe de ciel, la correction de nébulosité et l'API restent à écrire.
 
 L'enchaînement ci-dessous fixe **l'ordre**, imposé par les dépendances, et non le contenu de chaque étape — celui-ci se décide au moment de l'aborder, à la lumière de ce que la précédente aura révélé.
 
 | | Étape | Dépend de | État |
 |---|---|---|---|
 | 0 | Nettoyage du prototype, packaging, `.gitignore` | — | **fait** |
-| 1 | Récupération et série homogène, sans classe de ciel | 0 | à faire |
+| 1 | Récupération et série homogène, sans classe de ciel | 0 | **fait** |
 | 2 | Confirmation du modèle parmi les cinq éligibles | 1 | à faire |
 | 3 | Calage des seuils de nébulosité et classe de ciel | 1 | à faire |
 | 4 | Grille de calibration France et correction de nébulosité | 2 | à faire |
@@ -43,7 +43,7 @@ La finalité du projet est pédagogique et non technique.
 
 Le changement climatique est habituellement communiqué au moyen de moyennes globales et d'anomalies de température (« +2,7 °C à l'horizon 2100 »). Ces grandeurs sont exactes mais agrégées : elles ne renseignent pas sur les conditions concrètes rencontrées à une date et en un lieu déterminés.
 
-Le projet repose sur l'hypothèse que la restitution des projections climatiques sous une forme déjà familière — le bulletin météorologique quotidien — en améliore l'appropriation par un public non spécialiste. L'énoncé « 14 juillet 2046, Pontarlier : 21 °C / 39 °C, ciel dégagé, 0 mm » présente un caractère concret que l'anomalie globale n'a pas.
+Le projet repose sur l'hypothèse que la restitution des projections climatiques sous une forme déjà familière — le bulletin météorologique quotidien — en améliore l'appropriation par un public non spécialiste. L'énoncé « 14 juillet 2046, Paris : 21 °C / 39 °C, ciel dégagé, 0 mm » présente un caractère concret que l'anomalie globale n'a pas.
 
 Le format d'application météorologique constitue donc un choix fonctionnel et non un habillage. Toute décision de conception qui s'en écarte doit être justifiée au regard de cet objectif.
 
@@ -147,6 +147,22 @@ ERA5 n'est pas une mesure, mais une réanalyse : un modèle météorologique con
 
 La distinction est déterminante, car ERA5 sert de référence à toute évaluation du modèle climatique menée dans ce projet. Ses propres erreurs sont donc, par construction, invisibles à nos comparaisons.
 
+### ERA5 et ECMWF IFS : deux instruments, non deux degrés de justesse
+
+L'*Historical Weather API* expose une troisième source, `ecmwf_ifs` : l'analyse opérationnelle d'ECMWF, à 9 km, disponible **du 1er janvier 2017 au jour même, sans latence**, là où ERA5 et ERA5-Land accusent cinq à six jours de retard. Elle sert les huit variables du projet sans valeur nulle, en une seule requête.
+
+L'écart entre les deux sources n'est documenté nulle part sous forme chiffrée : la littérature compare chaque système aux observations de surface, jamais l'un à l'autre. Il a donc été mesuré ici (script 19), sur quatre sites français et sept années. Trois mécanismes l'expliquent.
+
+**La résolution.** ERA5 tourne à 31 km avec le cycle 41r2 d'IFS, figé en 2016 ; l'IFS opérationnel tourne à 9 km. Une maille de 31 km centrée sur Pontarlier moyenne la vallée du Doubs avec les plateaux voisins : au 1er janvier 2017, ERA5 y donne 0,2 °C de température maximale contre 5,4 °C pour IFS. À Paris, où il n'y a pas de relief à résoudre, les deux donnent 0,9 °C. L'écart est géométrique, non physique.
+
+**La correction d'altitude d'ERA5-Land.** ERA5-Land n'est pas une réanalyse indépendante mais le modèle de surface rejoué à 11 km, forcé par l'atmosphère d'ERA5 et corrigé par un gradient thermique vertical quotidien (Muñoz-Sabater et al., 2021). Il corrige donc précisément le défaut d'altitude qui fait diverger ERA5. D'où le classement observé sur la température : IFS ≈ ERA5-Land ≠ ERA5. Ce constat conforte après coup le forçage d'ERA5-Land retenu en section 3.
+
+**Les montées de version.** ERA5 rejoue quatre-vingts ans avec une seule version du modèle. IFS change une à deux fois par an. Or ECMWF annonce explicitement, d'une version à l'autre, l'amélioration des champs de vent et de température près de la surface — soit exactement ceux sur lesquels les deux sources divergent le plus. La série IFS porte donc ses propres ruptures internes, aux dates de mise à jour.
+
+Il en résulte qu'aucune des deux sources n'est « plus fausse » dans l'absolu : ni l'une ni l'autre n'est une mesure, et la question n'a de sens qu'au regard de l'usage. Pour restituer un point un jour donné, en terrain complexe surtout, IFS est meilleur — il voit le relief. Pour comparer deux dates séparées de décennies, ERA5 est meilleur — il ne change pas d'instrument en chemin. Open-Meteo tranche d'ailleurs dans le même sens : *« when studying climate change over decades, it is advisable to exclusively utilise ERA5 or ERA5-Land »*.
+
+Amplitude de l'écart, sur 2018-2024 : moins de 1 °C sur les températures, moins de 1 mm par jour sur les précipitations, moins de 1 point de nébulosité hors montagne. Deux exceptions. Le **vent** décale de −3,1 à +3,3 km/h selon le site, avec changement de signe — Brest vers le bas, Pontarlier vers le haut — soit le quart de la valeur. Et la **haute montagne** dégrade tout : à Chamonix, −5,2 points de nébulosité et +1,8 °C sur la température maximale hivernale. L'écart de température varie en outre avec la saison, ce qui interdit de le corriger par un décalage unique.
+
 ### Limites
 
 Les mesures citées ci-dessous reposent sur un nombre restreint de sites et de périodes. Elles établissent des motifs, non des amplitudes valables en tout point. L'échantillon est appelé à être élargi.
@@ -180,6 +196,9 @@ Les mesures citées ci-dessous reposent sur un nombre restreint de sites et de p
 - Hausfather, Z. & Peters, G. P. (2020). Emissions – the « business as usual » story is misleading. *Nature*, 577, 618-620. [10.1038/d41586-020-00177-3](https://doi.org/10.1038/d41586-020-00177-3)
 - Hawkins, E. & Sutton, R. (2009). The potential to narrow uncertainty in regional climate predictions. *Bulletin of the American Meteorological Society*, 90, 1095-1107. [10.1175/2009BAMS2607.1](https://doi.org/10.1175/2009BAMS2607.1)
 - Lavers, D. A., Simmons, A., Vamborg, F. & Rodwell, M. J. (2022). An evaluation of ERA5 precipitation for climate monitoring. *Quarterly Journal of the Royal Meteorological Society*, 148. [10.1002/qj.4351](https://doi.org/10.1002/qj.4351)
+- Muñoz-Sabater, J. et al. (2021). ERA5-Land: a state-of-the-art global reanalysis dataset for land applications. *Earth System Science Data*, 13, 4349-4383. [10.5194/essd-13-4349-2021](https://doi.org/10.5194/essd-13-4349-2021) — *établit la résolution de 9 km et la correction par gradient thermique.*
+- ECMWF (2024). IFS upgrade improves near-surface wind and temperature forecasts. *ECMWF Newsletter* 181. [ecmwf.int](https://www.ecmwf.int/en/newsletter/181/earth-system-science/ifs-upgrade-improves-near-surface-wind-and-temperature) — *une montée de version parmi d'autres ; illustre l'inhomogénéité propre à IFS.*
+- Open-Meteo. *Historical Weather API — documentation*. [open-meteo.com](https://open-meteo.com/en/docs/historical-weather-api) — *source de la recommandation de n'employer qu'ERA5 ou ERA5-Land pour l'étude du climat sur des décennies, et des latences annoncées.*
 
 ---
 
