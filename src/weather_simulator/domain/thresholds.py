@@ -31,9 +31,26 @@ PRECIPITATION_MM = 1.0
 # measurements.
 SNOW_TEMPERATURE_C = 1.5
 
-# Cloud cover. Still the values carried over from the design document, to be set
-# against the observed distribution so that the frequency of each class stays
-# plausible over the historical period. Step 3.
+# Cloud cover, among dry days — the wet ones are already taken by the two rules
+# above, so these two thresholds partition those and nothing else.
+#
+# Confirmed at step 3, not merely carried over. They were provisional, and the
+# obvious yardsticks for settling them both turned out to be traps.
+# sunshine_duration overstates real sunshine by a third to a factor of two, the
+# error growing with cloudiness; weather_code is the daily maximum of 24 hourly
+# codes, calls half of Marseille's dry days overcast, and is circular anyway —
+# a deterministic function of cloud cover itself.
+#
+# What settles them is the light that actually reaches the ground, from
+# shortwave radiation over a clear-sky estimate. Script scripts/sky_thresholds/
+# measures, over ten sites, that the three classes receive about 90 %, 80 % and
+# 60 % of what a clear sky would give. Three clear steps, ordered the same way
+# everywhere. No candidate pair did better: raising the overcast bar lowers the
+# median but widens the spread by as much.
+#
+# Where "cloudy" ends and "overcast" begins remains a convention of language
+# over a continuum. Measurement cannot place that line; it can only say what
+# falls either side of it, which is what these figures do.
 OVERCAST_PERCENT = 70.0
 CLOUDY_PERCENT = 30.0
 

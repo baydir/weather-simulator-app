@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Avancement
 
-Les étapes 0, 1 et 2 sont faites. Le dépôt contient le présent document, `scripts/verification/`, `scripts/model_selection/`, et le paquet `src/weather_simulator/`, dont `sources/` récupère et assemble la série homogène de 1950 à 2050. La classe de ciel, la correction de nébulosité et l'API restent à écrire.
+Les étapes 0 à 3 sont faites. Le dépôt contient le présent document, `scripts/verification/`, `scripts/model_selection/`, `scripts/sky_thresholds/`, et le paquet `src/weather_simulator/`, dont `sources/` récupère et assemble la série homogène de 1950 à 2050 et `domain/` porte la classe de ciel. La correction de nébulosité et l'API restent à écrire.
 
 L'enchaînement ci-dessous fixe **l'ordre**, imposé par les dépendances, et non le contenu de chaque étape — celui-ci se décide au moment de l'aborder, à la lumière de ce que la précédente aura révélé.
 
@@ -17,7 +17,7 @@ L'enchaînement ci-dessous fixe **l'ordre**, imposé par les dépendances, et no
 | 0 | Nettoyage du prototype, packaging, `.gitignore` | — | **fait** |
 | 1 | Récupération et série homogène, sans classe de ciel | 0 | **fait** |
 | 2 | Confirmation du modèle parmi les cinq éligibles | 1 | **fait** |
-| 3 | Calage des seuils de nébulosité et classe de ciel | 1 | à faire |
+| 3 | Calage des seuils de nébulosité et classe de ciel | 1 | **fait** |
 | 4 | Grille de calibration France et correction de nébulosité | 2 | à faire |
 | 5 | API, validation des entrées et bloc de transformation | 3, 4 | à faire |
 | 6 | Interface : accueil, résultats, bande journalière | 5 | à faire |
@@ -25,7 +25,7 @@ L'enchaînement ci-dessous fixe **l'ordre**, imposé par les dépendances, et no
 
 La confirmation du modèle venait en deuxième position pour deux raisons : l'étape 1 produisait l'outil qui permettait de la mener, et tout ce qui suit en dépend. Changer de modèle après avoir généré la grille de calibration aurait imposé de la refaire entièrement.
 
-Deux décisions demeurent ouvertes et relèvent du porteur du projet : les seuils de nébulosité de 30 % et 70 %, provisoires ; et la méthode de correction du biais, dont le document exige seulement qu'elle préserve la tendance.
+Une décision demeure ouverte et relève du porteur du projet : la méthode de correction du biais, dont le document exige seulement qu'elle préserve la tendance. Le seuil de neige de 1,5 °C reste par ailleurs calé sur une base mince, deux sites et une saison.
 
 ---
 
@@ -260,6 +260,13 @@ La complétude n'a finalement pas pesé sur le choix du modèle : la classe de c
 ### Améliorations envisagées
 
 - Correction du biais de nébulosité par calibration sur la période de recouvrement.
+- **Classe de ciel apprise sur des observations réelles.** L'étape 3 a montré qu'aucun étalon interne à Open-Meteo ne convient : `sunshine_duration` est faux d'un facteur 1,3 à 2,0, et le `weather_code` est un maximum horaire circulaire. Mais de vraies observations existent en dehors : les relevés synoptiques de surface donnent la nébulosité totale en octas, mesurée plusieurs fois par jour — Météo-France en open data pour la France, la NOAA mondialement. C'est une observation, non une dérivation.
+
+  Un modèle ajusté sur cette cible, prenant en entrée les agrégats journaliers dont on dispose sur les trois segments, ferait mieux qu'un seuil unique sur la nébulosité. La mesure le montre déjà : ajouter la seule **amplitude thermique** — un grand écart entre minimale et maximale signe un ciel dégagé, le sol chauffant le jour et rayonnant la nuit sans couverture — fait passer la variance expliquée de 0,50 à 0,64 à Strasbourg, de 0,30 à 0,52 à Bamako. Cette variable est servie par les trois sources.
+
+  **Le plafond reste celui de la section précédente** : les entrées étant journalières côté futur, aucun apprentissage ne récupère la structure interne d'une journée. Le gain porte sur la discrimination *entre* journées de même nébulosité, jamais *à l'intérieur* d'une journée.
+
+  **C'est un travail en soi**, de l'ampleur de l'étape 2 : seconde source avec sa licence et son contrôle qualité, appariement station-maille — une station est un point, ERA5 une maille de 25 km, et la section 2 documente déjà ce que cet écart produit —, définition conventionnelle de « l'allure dominante » à partir de relevés horaires, et un modèle ajusté devenant un artefact embarqué, moins lisible qu'un arbre de décision sur des pages qui doivent expliquer la méthode.
 - Enveloppe d'incertitude fondée sur l'écart entre les cinq modèles éligibles, sans renoncer à l'affichage d'une trajectoire unique.
 - Comparaison aux projections régionalisées DRIAS de Météo-France, mieux évaluées sur la France, et à la trajectoire de référence TRACC.
 - Ouverture à d'autres scénarios d'émissions, ce qui suppose de changer de source.
@@ -380,9 +387,47 @@ Le seuil de 1,5 °C est calé sur 35 hivers à Strasbourg et Briançon, contre l
 
 Concordance obtenue : environ 90 % en plaine, 82 % à 1300 m. **La règle sous-appelle la neige en montagne par construction** — au-dessus de 1300 m elle tient au sol même les jours dont la moyenne dépasse 2 °C, parce qu'elle tombe la nuit ou plus haut que la station, et une moyenne journalière ne porte pas cette information. Aucun seuil unique ne convient aux deux sites.
 
-Les seuils de nébulosité sont **provisoires** et doivent être calés sur la distribution observée, de sorte que la fréquence des classes sur la période historique demeure vraisemblable. Le seuil de neige l'est également : deux sites et une seule saison sont une base mince.
+Le seuil de neige demeure **provisoire** : deux sites et une seule saison sont une base mince.
 
 Aucune gradation d'intensité n'est proposée : les cumuls journaliers ne portent pas l'information nécessaire pour la fonder. Une bruine et un orage de quarante millimètres reçoivent donc la même classe — appauvrissement assumé, et à réexaminer si la restitution s'en trouve trop pauvre.
+
+### Ce que reçoit chaque classe
+
+Les seuils de nébulosité de 30 % et 70 % étaient provisoires. Ils sont **confirmés à l'étape 3**, et l'établir a d'abord consisté à écarter deux étalons qui paraissaient évidents et se sont révélés être des pièges (`scripts/sky_thresholds/`).
+
+**`sunshine_duration` est inexploitable.** Il donne 3 311 heures de soleil par an à Brest pour environ 1 700 réelles, 3 103 à Strasbourg pour 1 690 — un facteur 1,3 à 2,0. L'erreur suit la nébulosité du site, ce qui trahit le mécanisme : le seuil de 120 W/m² est appliqué à des moyennes horaires, et l'heure compte entière dès que sa moyenne le franchit, là où un héliographe compte les minutes. Là où le soleil joue à cache-cache, l'erreur est maximale.
+
+**Le `weather_code` ne vaut pas mieux, et pour deux raisons.** Étant le maximum des 24 codes horaires, une seule heure à 80 % de nébulosité couvre la journée entière : il déclare Marseille couverte un jour sec sur deux, et attribue un code de brouillard ou de bruine à 15-29 % des jours secs. C'est le mécanisme déjà constaté sur la neige. Et il est circulaire — une fonction déterministe de la nébulosité, la variable même dont on cherche les seuils.
+
+**Ce qui tranche est la lumière qui atteint réellement le sol.** `shortwave_radiation_sum` est un champ primaire d'ERA5, non une dérivation ; ses cumuls annuels concordent avec les valeurs publiées ; et les trois sources le servent. Rapporté à une estimation de ciel clair — géométrie FAO-56 plus un terme d'altitude, donc calculable identiquement de 1950 à 2050 — il donne la part de lumière disponible qu'une journée a reçue, comparable de Brest à Bamako.
+
+Sur les jours secs, les trois classes reçoivent :
+
+| Site | Dégagé | Nuageux | Couvert |
+|---|---|---|---|
+| Brest | 17 % → 93 % | 44 % → 80 % | 39 % → 61 % |
+| Marseille | 50 % → 92 % | 35 % → 84 % | 15 % → 67 % |
+| Strasbourg | 26 % → 89 % | 45 % → 74 % | 29 % → 54 % |
+| Pontarlier | 29 % → 88 % | 43 % → 78 % | 27 % → 60 % |
+| Reykjavik | 14 % → 92 % | 41 % → 82 % | 45 % → 59 % |
+
+*(part des jours secs → lumière médiane reçue, en % du ciel clair)*
+
+**Environ 90 %, 80 % et 60 %.** Trois paliers nets, dans le même ordre aux dix sites testés. Aucun autre jeu de seuils ne fait mieux : monter la barre du couvert à 80 ou 85 % abaisse la médiane mais élargit la dispersion d'autant.
+
+Il faut dire ce que cette mesure ne fait pas. **Où finit « nuageux » et où commence « couvert » reste une convention de langage sur un continuum.** La mesure ne place pas la frontière ; elle dit seulement ce qui tombe de part et d'autre. C'est déjà ce qui manquait.
+
+### Ce que la moyenne journalière ne peut pas dire
+
+À nébulosité égale, la lumière reçue s'étale considérablement. À Strasbourg, deux journées portant 90 % de nébulosité moyenne reçoivent, du premier au neuvième décile, de 29 % à 79 % de la lumière d'un ciel clair — 49 points d'écart. Ce sont deux journées opposées sous le même chiffre : celle qui fut grise de bout en bout, et celle dont la matinée bouchée a cédé à un après-midi radieux.
+
+**Et l'ambiguïté croît avec la nébulosité** : 20 points d'étendue vers 30 %, 49 points vers 90 %. À 30 % de nuages il n'y a pas grand-chose à redistribuer dans la journée ; à 90 %, il y a tout.
+
+Aucun seuil n'y remédie, et aucun modèle non plus, puisque l'information infra-journalière n'existe pas côté futur : **l'API Climate accepte le paramètre `hourly`, répond HTTP 200 et ne renvoie aucun bloc horaire** — la même absence silencieuse que pour `weather_code`. Et le principe directeur interdirait de découper les journées du seul côté du passé.
+
+Il en découle que **le pictogramme est l'élément le moins sûr de la carte**. Les températures et les millimètres décrivent cette journée-là ; l'icône décrit une espèce de journées. C'est le même arbitrage que celui déjà consenti en refusant toute gradation d'intensité pour la pluie.
+
+Deux conséquences pratiques. Près des pôles en hiver, le ciel clair tend vers zéro et le rapport perd son sens — 14,3 % des jours à Reykjavik ; la classe y repose sur la seule nébulosité. Et trois classes de ciel sec sur une variable aussi ambiguë sont peut-être une de trop : deux — ensoleillé et nuageux — seraient plus défendables, au prix de la finesse d'affichage. Point non tranché, signalé pour mémoire.
 
 ### Correction de la nébulosité
 
