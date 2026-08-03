@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Avancement
 
-Les étapes 0 et 1 sont faites. Le dépôt contient le présent document, `scripts/verification/`, et le paquet `src/weather_simulator/`, dont `sources/` récupère et assemble la série homogène de 1950 à 2050. La classe de ciel, la correction de nébulosité et l'API restent à écrire.
+Les étapes 0, 1 et 2 sont faites. Le dépôt contient le présent document, `scripts/verification/`, `scripts/model_selection/`, et le paquet `src/weather_simulator/`, dont `sources/` récupère et assemble la série homogène de 1950 à 2050. La classe de ciel, la correction de nébulosité et l'API restent à écrire.
 
 L'enchaînement ci-dessous fixe **l'ordre**, imposé par les dépendances, et non le contenu de chaque étape — celui-ci se décide au moment de l'aborder, à la lumière de ce que la précédente aura révélé.
 
@@ -16,16 +16,16 @@ L'enchaînement ci-dessous fixe **l'ordre**, imposé par les dépendances, et no
 |---|---|---|---|
 | 0 | Nettoyage du prototype, packaging, `.gitignore` | — | **fait** |
 | 1 | Récupération et série homogène, sans classe de ciel | 0 | **fait** |
-| 2 | Confirmation du modèle parmi les cinq éligibles | 1 | à faire |
+| 2 | Confirmation du modèle parmi les cinq éligibles | 1 | **fait** |
 | 3 | Calage des seuils de nébulosité et classe de ciel | 1 | à faire |
 | 4 | Grille de calibration France et correction de nébulosité | 2 | à faire |
 | 5 | API, validation des entrées et bloc de transformation | 3, 4 | à faire |
 | 6 | Interface : accueil, résultats, bande journalière | 5 | à faire |
 | 7 | Élargissement mondial de la grille | 4 | à faire |
 
-La confirmation du modèle vient en deuxième position pour deux raisons : l'étape 1 produit l'outil qui permet de la mener, et tout ce qui suit en dépend. Changer de modèle après avoir généré la grille de calibration imposerait de la refaire entièrement.
+La confirmation du modèle venait en deuxième position pour deux raisons : l'étape 1 produisait l'outil qui permettait de la mener, et tout ce qui suit en dépend. Changer de modèle après avoir généré la grille de calibration aurait imposé de la refaire entièrement.
 
-Trois décisions demeurent ouvertes et relèvent du porteur du projet : les seuils de nébulosité de 30 % et 70 %, provisoires ; la méthode de correction du biais, dont le document exige seulement qu'elle préserve la tendance ; et le modèle lui-même, `MRI_AGCM3_2_S` restant provisoire.
+Deux décisions demeurent ouvertes et relèvent du porteur du projet : les seuils de nébulosité de 30 % et 70 %, provisoires ; et la méthode de correction du biais, dont le document exige seulement qu'elle préserve la tendance.
 
 ---
 
@@ -140,13 +140,76 @@ Deux des sept modèles sont écartés pour indisponibilité de données, non par
 - `CMCC_CM2_VHR4` — ne fournit aucune valeur de nébulosité. C'est le modèle utilisé par défaut dans le prototype initial.
 - `EC_Earth3P_HR` — ne couvre pas l'année 2050.
 
-Les cinq restants couvrent 1950-2050 sur l'ensemble des sites testés. **`MRI_AGCM3_2_S` est retenu à titre provisoire**, pour sa résolution native la plus fine (20 km).
+Les cinq restants couvrent 1950-2050 sur l'ensemble des sites testés. **`MRI_AGCM3_2_S` est retenu**, à l'issue de la comparaison décrite ci-dessous. Il l'était auparavant à titre provisoire, pour sa seule résolution native (20 km, la plus fine des cinq) ; il l'est désormais pour ses résultats. Le modèle demeure paramétrable, sans valeur codée en dur.
 
-Ce choix reste à confirmer par comparaison sur la période de recouvrement : biais et RMSE sur les températures extrêmes, distribution des précipitations, fréquence des jours de pluie, variance jour à jour, sur des sites de climats contrastés. Le modèle doit demeurer paramétrable, sans valeur codée en dur.
+### Comment les cinq ont été départagés
+
+La comparaison porte sur 1979-2014, dix sites de climats contrastés, quinze mesures — `scripts/model_selection/`. Les deux bornes sont contraintes : les runs historiques HighResMIP s'arrêtent fin 2014, au-delà de quoi les modèles suivent leur scénario et l'on confondrait le modèle avec son forçage ; et ERA5 avant 1979 est l'extension arrière préliminaire, de qualité moindre, ce qui ferait passer les faiblesses de la référence pour des erreurs de modèle.
+
+**Les critères annoncés dans une version antérieure de ce document — biais et RMSE sur les températures extrêmes — ont dû être abandonnés, tous les deux.**
+
+Le biais est fixé d'avance : Open-Meteo ramène chaque modèle sur ERA5-Land par coefficients mensuels (voir *La correction de biais d'Open-Meteo*), si bien que comparer les moyennes aurait classé ses coefficients et non les modèles. Le RMSE, lui, suppose que les deux séries décrivent les mêmes journées. Elles ne les décrivent pas : les runs HighResMIP sont forcés par les températures de surface océaniques observées mais leur atmosphère est libre, et la corrélation jour à jour des anomalies de température avec la réanalyse vaut 0,04 à Brest, 0,08 à Singapour — nulle. Le modèle ne rejoue pas plus le 14 juillet 1994 qu'il ne prédira le 14 juillet 2046. Un RMSE aurait mesuré cette désynchronisation, totale par construction, et donné à peu près la même valeur pour les cinq.
+
+Ne subsiste que ce qu'une correction linéaire mensuelle laisse intact et qui ne suppose aucune synchronie : la comparaison de deux **populations de journées** sur 36 ans. Deux familles de mesures, appliquées aux mêmes agrégats journaliers que ceux que l'application affiche.
+
+*Dispersion et persistance* — écarts-types des anomalies de température maximale, minimale et de nébulosité ; autocorrélation à j+1 de la température et de la nébulosité ; amplitude du cycle saisonnier ; longueur moyenne et p95 des séquences sèches, longueur moyenne des séquences humides. Les écarts-types et les autocorrélations se calculent sur les **anomalies**, climatologie du jour de l'année retirée : sur les valeurs brutes, l'autocorrélation à j+1 vaut environ 0,97 dans toute série qui a un été et un hiver, et mesurerait le cycle annuel au lieu de la persistance météorologique.
+
+*Forme des distributions* — fréquence des jours humides, intensité moyenne et p99 des jours humides, p99 des anomalies de température maximale, p1 des anomalies de température minimale, étendue interdécile de la nébulosité. Les seuils employés sont ceux de la section 3, non des seuils forgés pour l'occasion.
+
+Le **niveau** de nébulosité est délibérément exclu du classement : le biais y est en partie fabriqué par la correction d'Open-Meteo, et sa correction relève de l'étape 4. Seule la largeur de la distribution est lue, jamais son centre.
+
+### Résultat
+
+Rang moyen sur les dix sites, 1 étant le plus proche de la réanalyse et 5 le plus éloigné ; 3,00 serait le hasard.
+
+| Modèle | Dispersion | Forme | Ensemble |
+|---|---|---|---|
+| **MRI_AGCM3_2_S** | 2,52 | 2,38 | **2,46** |
+| FGOALS_f3_H | 3,16 | 2,99 | 3,09 |
+| HiRAM_SIT_HR | 3,00 | 3,23 | 3,09 |
+| MPI_ESM1_2_XR | 3,08 | 3,17 | 3,11 |
+| NICAM16_8S | 3,24 | 3,23 | 3,24 |
+
+**L'argument décisif n'est toutefois pas la moyenne, et il importe de le dire :** les quatre autres sont indiscernables entre eux, tous au niveau du hasard. Ce qui sépare `MRI_AGCM3_2_S` est **l'absence de site défaillant**. Il est premier ou deuxième sur huit sites sur dix, dernier nulle part, et son plus mauvais site — Strasbourg — le laisse à 3,10. Chacun des quatre autres s'effondre quelque part : NICAM16_8S à 4,60 à Singapour, MPI_ESM1_2_XR à 4,33 à Reykjavik, FGOALS_f3_H à 3,73 à Singapour, HiRAM_SIT_HR à 3,60 à Chamonix. Pour une application qui doit répondre en tout point du globe, c'est la robustesse qui compte, non la performance moyenne.
+
+Deux illustrations. Sous les tropiques, où la référence donne 82,3 % de jours humides à Singapour, FGOALS_f3_H en donne 34,8 points de moins et HiRAM_SIT_HR 21,0 de moins : ils ne font pas la mousson, quand MRI_AGCM3_2_S s'en écarte de 1,4 point. Et NICAM16_8S fabrique des chaleurs qui n'existent pas, son p99 d'anomalie de température maximale dépassant la référence de 7,2 °C à Bamako et de 6,4 °C à Singapour.
+
+Un défaut est en revanche **commun aux cinq**, et ne peut donc pas départager : la nébulosité change trop vite d'un jour au lendemain. Son autocorrélation à j+1 est en retrait sur presque tous les sites, de 0,01 à 0,17 point. Le ciel des modèles papillonne plus que le vrai ; `MRI_AGCM3_2_S` est le moins atteint. À retenir comme limite du dispositif.
+
+**Une indisponibilité découverte à cette occasion :** `FGOALS_f3_H` et `HiRAM_SIT_HR` ne servent jamais `wind_speed_10m_max` — aucune valeur sur 36 ans, aux dix sites. Le vent moyen, lui, est servi par les cinq. L'audit de couverture initial (script 05) ne testait que quatre variables et ne pouvait pas le voir. Le fait est sans conséquence sur le choix retenu, `MRI_AGCM3_2_S` servant les deux, mais il aurait éliminé ces deux modèles d'office.
 
 ### Scénario d'émissions
 
 L'API Climate n'expose aucun sélecteur de scénario. Les paramètres `scenario`, `ssp` et `experiment` sont acceptés sans erreur mais demeurent sans effet : les valeurs renvoyées sont identiques quelle que soit la demande. La seule trajectoire disponible approche RCP8.5, soit une hypothèse d'émissions haute. Sa lecture courante comme scénario tendanciel est contestée : elle a été conçue pour explorer un futur à risque élevé et peu probable, non pour décrire la trajectoire attendue (Hausfather & Peters, 2020). Ce statut doit être explicite dans l'interface.
+
+### La correction de biais d'Open-Meteo
+
+Le mécanisme conditionne tout ce que l'on peut mesurer sur ces sorties, et il n'était pas documenté ici. Il a été relevé dans la documentation d'Open-Meteo, puis vérifié en comparant la sortie servie à la sortie brute — le paramètre `disable_bias_correction=true`, non documenté dans nos scripts jusque-là, expose le modèle avant retouche.
+
+**Douze coefficients par variable et par point de grille.** Un par mois du calendrier, non par mois de la série. Pour un point et une variable, on moyenne les cinquante janviers du modèle, on moyenne les cinquante janviers d'ERA5-Land, et l'écart des deux devient le coefficient de janvier. Tout 17 janvier le reçoit ensuite, celui de 1963 comme celui de 2049.
+
+**La forme diffère selon la variable**, et la mesure la tranche sans ambiguïté : si l'écart corrigé−brut est constant sur le mois, la correction est additive ; si c'est le rapport, elle est multiplicative.
+
+| Variable | Écart, écart-type | Rapport, écart-type | Nature |
+|---|---|---|---|
+| Température maximale | ±0,05 °C | ±5,5 | **additive**, +2,2 à +3,0 °C selon le mois |
+| Précipitations | ±2,7 mm | ±0,001 | **multiplicative**, ×0,78 à ×0,83 |
+| Vent moyen | ±4,5 km/h | ±0,003 | **multiplicative**, ×0,56 à ×0,59 |
+| Nébulosité | ±2,3 pt | ±0,21 | **ni l'une ni l'autre** |
+
+Additif pour une grandeur non bornée, multiplicatif pour une grandeur bornée à zéro : la cohérence est celle qu'on attend.
+
+**La correction est aussi la descente d'échelle.** Trois points distants de 12 km autour de Pontarlier portent des jeux de coefficients entièrement différents — +3,02 °C en janvier au premier, +0,90 au deuxième, −0,04 au troisième — quand le modèle brut leur donne pratiquement la même valeur, tombant dans la même maille native de 20 km. Toute l'information de relief entre 20 et 10 km est portée par le champ de coefficients, non par le modèle. D'où une conséquence pratique : désactiver la correction ne retire pas seulement un décalage, elle rend le modèle aveugle au terrain.
+
+**Trois propriétés commandent le reste du dispositif.**
+
+La correction ne dépend pas de la valeur du jour : un 17 janvier doux et un 17 janvier glacial reçoivent le même décalage. La moyenne bouge, la variance et les extrêmes ne bougent pas — c'est ce qui fonde les critères de départage retenus à l'étape 2.
+
+Elle ne change pas dans le temps : mêmes coefficients en 1980 et en 2046. La stationnarité du biais, que la section 3 postulait pour justifier une calibration sur la période de recouvrement, est donc mécanique et non plus seulement empirique. La tendance survit pour la même raison : un décalage ou un facteur constant par mois ne modifie pas une pente.
+
+Elle introduit enfin **douze petites marches par an**, à date fixe : le 31 mars reçoit +2,94 °C à Pontarlier, le 1ᵉʳ avril +2,51. L'écart est très inférieur au bruit météorologique quotidien, donc invisible sur une carte journalière — mais il est réel, et à garder en mémoire si une moyenne mensuelle ou saisonnière venait à être affichée.
+
+**La nébulosité fait exception, et c'est la variable la plus exposée du projet.** Ni écart ni rapport constant : elle ne reçoit pas de correction linéaire simple au pas journalier. L'explication la plus plausible — hypothèse, non fait établi — est que la correction s'applique au pas horaire et que la nébulosité, seule des quatre à être bornée des *deux* côtés, se fait rogner à 0 et à 100 avant d'être remoyennée sur la journée. Une température ne bute sur rien, une pluie multipliée par 0,8 n'atteint jamais zéro ; un ciel, si. Une partie des écarts relevés à la limite 2 est donc vraisemblablement fabriquée par la correction elle-même plutôt qu'héritée du modèle. Le point est à reprendre à l'étape 4, où la correction de nébulosité se décide.
 
 ### Statut de la référence
 
@@ -180,7 +243,7 @@ Les mesures citées ci-dessous reposent sur un nombre restreint de sites et de p
 
 **3. Précipitations lissées par ERA5.** La réanalyse surestime les pluies faibles et le nombre de jours pluvieux, et sous-estime les épisodes intenses (Lavers et al., 2022). Deux mécanismes se cumulent. D'abord l'agrégation spatiale : une maille de 30 km ne livre qu'une moyenne, dans laquelle une cellule convective de quelques kilomètres est diluée par construction. Ensuite la paramétrisation de la convection, non résolue explicitement, que les schémas déclenchent trop souvent et trop longtemps à intensité trop faible — biais documenté sur les modèles de climat, où il s'aggrave à mesure que la résolution se dégrade (Chen et al., 2021). Les épisodes orageux ne sont donc pas absents, mais représentés de façon diffuse. Conséquence directe : les cumuls journaliers sont exploitables, les intensités ne le sont pas.
 
-**4. Correction de biais restreinte à la moyenne.** Le procédé appliqué par Open-Meteo — correction linéaire à coefficients mensuels — ajuste la moyenne mensuelle sans corriger la variance ni les extrêmes. Nos mesures le confirment : les écarts de moyenne sur la température restent inférieurs à 0,35 °C, tandis que les rapports d'écart-type s'échelonnent de 0,61 à 1,41 selon la variable et le site.
+**4. Correction de biais restreinte à la moyenne.** Le procédé appliqué par Open-Meteo — correction linéaire à coefficients mensuels, détaillé ci-dessous — ajuste la moyenne mensuelle sans corriger la variance ni les extrêmes. Nos mesures le confirment : les écarts de moyenne sur la température restent inférieurs à 0,35 °C, tandis que les rapports d'écart-type s'échelonnent de 0,61 à 1,41 selon la variable et le site.
 
 **5. Extrêmes de température et sécheresses : aucun déficit constaté.** Contrairement à ce qu'on pouvait craindre, le modèle produit sur la période de recouvrement *davantage* de jours chauds que l'observation, davantage de vagues de chaleur d'au moins trois jours, et des sécheresses maximales plus longues. L'autocorrélation d'ordre 1 des températures est reproduite à 0,01 près : la persistance temporelle tient. Deux réserves : le test chevauche la période d'ajustement des coefficients de correction, donc flatte le modèle ; et il ne dit rien de l'amplification future des extrêmes, invérifiable par nature. Aucune correction n'est appliquée sur ce point — en introduire une là où la mesure n'établit pas de déficit reviendrait à injecter une erreur.
 
@@ -188,7 +251,11 @@ Les mesures citées ci-dessous reposent sur un nombre restreint de sites et de p
 
 **7. Asymétrie de résolution temporelle.** L'historique est disponible au pas horaire, les projections au pas journalier seulement. Toute grandeur dérivée doit donc être construite à partir d'agrégats journaliers des deux côtés, sous peine de rupture à la date du jour. C'est la contrainte structurante de la section 3.
 
-**8. Neige servie par plages manquantes.** Le modèle laisse dans `snowfall_sum` — et dans `rain_sum` — des trous qui ne sont ni saisonniers ni uniformes : 61 jours chaque été à Marseille et à Brest, du 3 juillet au 1er septembre ; la moitié de l'année à Christchurch, hiver austral compris ; aucun à Ushuaia. Ils ne coïncident ni avec les jours secs — 19 jours de pluie mesurée en sont dépourvus — ni avec une saison. Leur ampleur dépend aussi du modèle : `NICAM16_8S` est le seul des cinq à servir la neige tous les jours, `FGOALS_f3_H` ne la sert jamais, `MPI_ESM1_2_XR` en perd 122 jours par an. Les précipitations totales et les températures, elles, sont complètes partout, ce qui fonde le critère dérivé retenu en section 3. La complétude constitue un critère parmi d'autres au moment de trancher le modèle à l'étape 2, sans primer sur la qualité climatique.
+**8. Neige servie par plages manquantes.** Le modèle laisse dans `snowfall_sum` — et dans `rain_sum` — des trous qui ne sont ni saisonniers ni uniformes : 61 jours chaque été à Marseille et à Brest, du 3 juillet au 1er septembre ; la moitié de l'année à Christchurch, hiver austral compris ; aucun à Ushuaia. Ils ne coïncident ni avec les jours secs — 19 jours de pluie mesurée en sont dépourvus — ni avec une saison. Leur ampleur dépend aussi du modèle : `FGOALS_f3_H` ne la sert jamais, `MPI_ESM1_2_XR` en perd 122 jours par an. Les précipitations totales et les températures, elles, sont complètes partout, ce qui fonde le critère dérivé retenu en section 3.
+
+Un échantillon élargi à dix sites, à l'étape 2, apporte deux corrections à ce tableau. Aucun des cinq n'est complet : `NICAM16_8S`, que la mesure initiale donnait pour tel, descend à 83 % à Brest et à Christchurch. Et **aux sites tropicaux — Bamako, Singapour — les cinq servent 0 %** : là où la neige n'a pas d'objet, la variable est absente plutôt que nulle, ce qui n'est pas une défaillance. Ailleurs les taux vont de 50 à 100 % selon le modèle et le lieu.
+
+La complétude n'a finalement pas pesé sur le choix du modèle : la classe de ciel ne lisant plus la neige, seule comptait la complétude des précipitations et des températures, acquise partout et pour les cinq.
 
 ### Améliorations envisagées
 
@@ -281,7 +348,7 @@ Aucune clé d'accès n'est requise pour un usage non commercial. Les limites de 
 | Températures min et max | directes sur les trois segments |
 | Température moyenne | directe ; sert le critère de neige, n'est pas affichée |
 | Précipitations | cumul journalier, direct sur les trois segments |
-| Vitesse du vent | directe sur les trois segments |
+| Vitesse du vent, moyenne et maximale | directes sur les trois segments ; les deux sont affichées |
 | Cumul de neige | **récupéré mais non lu** — étalon de calibration, voir plus bas |
 | Pluie (`rain_sum`) | **écartée** — inutilisée, et trouée comme la neige |
 | Direction du vent | **écartée** — valeurs nulles côté Climate |
@@ -425,7 +492,7 @@ Une bande journalière, une carte par jour, défilant horizontalement lorsqu'ell
 
 La plage est bornée à **90 jours**, soit une saison. La contrainte est appliquée à la fois dans l'interface et dans l'API : jamais dans le seul navigateur.
 
-Chaque journée porte les températures minimale et maximale, le cumul de précipitations, la vitesse du vent et un **pictogramme de la classe de ciel** :
+Chaque journée porte les températures minimale et maximale, le cumul de précipitations, les vitesses de vent moyenne et maximale, et un **pictogramme de la classe de ciel** :
 
 | Classe | Pictogramme |
 |---|---|
@@ -440,6 +507,10 @@ Les émojis conviennent à une première version : disponibles partout, sans res
 Le contrat JSON transporte **la classe, jamais le pictogramme**. Le passage à un jeu d'icônes dessinées, qui corrigerait les variations d'apparence d'une plateforme à l'autre, ne touchera donc que l'affichage.
 
 Chaque pictogramme s'accompagne d'un équivalent textuel, l'émoji seul n'étant pas accessible aux lecteurs d'écran.
+
+**Le vent maximal ne doit pas être libellé « rafale ».** `wind_speed_10m_max` est le plus fort vent *établi* de la journée, moyenné sur l'intervalle du modèle. Une rafale est autre chose, et vaut couramment deux fois plus : mesuré à Pontarlier sur juin 2024, 36,8 km/h de rafale contre 14,4 km/h de vent maximal sous ERA5. Les libellés retenus sont « vent moyen » et « vent maximal ».
+
+La rafale existe pourtant comme variable propre, `wind_gusts_10m_max`, et les trois segments la servent — ERA5, ECMWF IFS et `MRI_AGCM3_2_S`. Elle n'est pas retenue pour l'instant, et son adoption relèverait du régime de validation scientifique : une rafale est par nature un phénomène sous-maille, que la limite 6 de la section 2 place hors de portée d'un modèle à 20 km. La servir donnerait un chiffre juste de forme et faiblement fondé.
 
 Enfin, conformément à la section 1, tout écran affichant une date future porte un avertissement explicite et visible.
 
@@ -470,6 +541,34 @@ Il ne reste côté serveur qu'un calcul sans état portant sur 90 lignes au plus
 **Le contrat JSON de sortie** : un tableau d'objets journaliers, stable et documenté. Un graphique de températures, un cumul de précipitations ou une carte s'y brancheront sans toucher au pipeline.
 
 **Les pages explicatives** : statiques, elles ne demandent aucune infrastructure particulière.
+
+### Envisagé : la comparaison à l'ancien climat
+
+**Non retenu pour la première version.** Consigné ici parce que le dispositif s'y prête déjà et que quelques constats de mesure risquent sinon d'être perdus.
+
+L'application affiche « 14 juillet 2046 : 21 °C / 39 °C ». C'est plus parlant qu'une anomalie globale, mais 39 °C ne dit quelque chose qu'à qui sait ce qu'était un 14 juillet auparavant — or c'est précisément ce que le lecteur vient chercher. La pédagogie est dans l'écart, pas dans la valeur.
+
+Le principe envisagé : sur la page de résultats, **dès que la plage comporte un segment futur**, un bouton « comparer avec l'ancien climat » affiche sous la bande initiale les **mêmes dates du calendrier** d'une année ancienne, présentée dans le même format. La règle de déclenchement est celle qui gouverne déjà le refus hors grille, pour n'en avoir qu'une à retenir.
+
+**L'année de référence est codée en dur, par grande région.** Une région de la taille de la France ou d'un État américain, avec sa propre année. Aucun calcul à la requête, aucun appel supplémentaire hors la récupération de la météo de cette année-là : une table figée, lue en mémoire, comme celle des coefficients de nébulosité.
+
+Le découpage par grande région n'est pas une commodité. Une année ne peut pas être ordinaire partout : 1980 fut le plus froid des trente étés en France et le vingt-deuxième sur trente à Reykjavik. Le point serait la maille idéale, mais le choisir supposerait de rapatrier trente ans de données pour élire une année, ce que le report de la charge sur le navigateur interdit.
+
+**Trois constats de mesure conditionnent le choix de l'année** (`scripts/model_selection/reference_year.py`, cinq sites français, écarts en écarts-types de la période) :
+
+- **Une année choisie d'intuition se trompe lourdement.** 1980 est à −2,00 en été et −2,14 sur l'année : le plus froid des trente à Marseille, Strasbourg, Pontarlier et Chamonix, le deuxième à Brest. La comparaison y ajouterait un écart artificiel d'environ 2 °C, soit l'ordre de grandeur du réchauffement qu'elle prétend montrer. Symétriquement, 2003 est à +3,25 en été.
+- **L'année doit être ordinaire sur plusieurs saisons à la fois.** Une moyenne annuelle centrée peut recouvrir un été chaud compensé par un hiver doux. Sur 1979-1994, la plus ordinaire est **1991** (+0,49 en été, −0,46 en hiver, +0,03 sur l'année) ; sur 1979-2008, **2004** (+0,08 / −0,06 / −0,03).
+- **Une référence tardive dépense le signal avant de commencer.** Entre 1979-1988 et 1999-2008, les sites français se réchauffent de **+0,92 °C**. Une année de référence prise dans les années 2000 escamote près d'un degré de ce qu'il s'agit de montrer.
+
+À privilégier, donc : la plus ordinaire de la période la plus ancienne exploitable — ERA5 avant 1979 étant l'extension arrière préliminaire, de qualité moindre.
+
+**Deux exigences d'honnêteté** accompagnent la fonctionnalité, faute de quoi elle induit en erreur :
+
+Le libellé doit dire que l'année a été **choisie pour être ordinaire** — « 1991, une année sans particularité » et non « 1991 ». Le tirage futur, lui, n'est pas sélectionné : il peut porter une canicule. Comparer un tirage libre à un tirage choisi pour sa sagesse laisserait croire que le passé n'avait pas d'extrêmes, alors que c'est la sélection qui les a écartés.
+
+Et la sélection portant sur la seule température, la pluie de l'année retenue est quelconque. Mieux vaut l'assumer que le découvrir.
+
+Enfin, deux bandes de quatre-vingt-dix cartes ne se comparent pas à l'œil. Une ligne de synthèse au-dessus — nombre de journées à 30 °C ou plus de part et d'autre, par exemple — porte ce que les bandes ne peuvent pas porter.
 
 ### Choix techniques
 

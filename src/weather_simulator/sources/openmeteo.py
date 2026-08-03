@@ -22,8 +22,7 @@ GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
 
 # Models covering 1950-2050 with cloud cover. CMCC_CM2_VHR4 (no cloud cover at
 # all) and EC_Earth3P_HR (stops before 2050) are excluded for lack of data, not
-# by preference. MRI_AGCM3_2_S is provisional, pending step 2: nothing may
-# hard-code it.
+# by preference.
 ELIGIBLE_MODELS = (
     "MRI_AGCM3_2_S",
     "FGOALS_f3_H",
@@ -31,6 +30,19 @@ ELIGIBLE_MODELS = (
     "MPI_ESM1_2_XR",
     "NICAM16_8S",
 )
+
+# Settled at step 2 over 1979-2014, ten sites, fifteen measures — see
+# scripts/model_selection/. Not for leading on average: the other four are
+# indistinguishable from each other and from chance. For having no site where it
+# fails. It ranks first or second at eight sites of ten and last at none, while
+# each of the others collapses somewhere — NICAM16_8S at Singapore, MPI_ESM1_2_XR
+# at Reykjavik, FGOALS_f3_H at Singapore, HiRAM_SIT_HR at Chamonix. An
+# application answering anywhere on Earth needs the absence of a hole, not a good
+# average.
+#
+# Still a default and not a constant: the comparison rests on ten sites, and a
+# wider sample must be able to overturn it without touching anything but this
+# line.
 DEFAULT_MODEL = "MRI_AGCM3_2_S"
 
 # The day boundary. Both APIs honour this parameter and re-aggregate

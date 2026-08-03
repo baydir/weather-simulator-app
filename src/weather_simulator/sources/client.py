@@ -8,10 +8,19 @@ Rate limiting is the one thing worth handling: Open-Meteo limits per IP
 address, and the limit was reached repeatedly during the preparatory work from
 a single machine. A 429 or a 503 is therefore retried with a growing pause
 rather than treated as a failure.
+
+It is not, however, the only way a long request ends badly. A server under
+pressure also drops the connection outright, after the request has been sent
+and before a status line comes back. That arrives as ``RemoteDisconnected``,
+which ``urllib`` does not wrap in a ``URLError`` — it escaped this module
+untouched and killed a collection run three quarters of the way through. Every
+transport failure is retried here, and whatever survives the retries leaves as
+a ``FetchError`` like the rest, so that a caller has one exception to catch.
 """
 
 from __future__ import annotations
 
+import http.client
 import json
 import time
 import urllib.error
@@ -55,12 +64,16 @@ def get_json(
             # Open-Meteo puts a usable explanation in the error body.
             detail = _reason(error)
             raise FetchError(f"HTTP {error.code} from {url}: {detail}") from error
-        except (urllib.error.URLError, TimeoutError) as error:
+        # Everything else the transport can raise: a name that will not resolve,
+        # a refused or reset connection, a timeout, a reply that is not HTTP.
+        # OSError covers URLError and the connection errors; HTTPException
+        # covers a malformed or absent status line, which is not an OSError.
+        except (OSError, http.client.HTTPException) as error:
             last = error
             if attempt < retries - 1:
                 sleep(backoff * (attempt + 1))
                 continue
-            raise FetchError(f"{url} unreachable: {error}") from error
+            raise FetchError(f"{url} unreachable: {error!r}") from error
 
     raise FetchError(f"{url} gave up after {retries} attempts: {last}")
 

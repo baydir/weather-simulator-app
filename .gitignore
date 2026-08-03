@@ -16,5 +16,9 @@ dist/
 .mypy_cache/
 .ipynb_checkpoints/
 
+# Raw payloads cached by the model-selection collection. Reproducible from
+# scripts/model_selection/collect.py, and far too bulky to track.
+data/
+
 # OS
 .DS_Store
