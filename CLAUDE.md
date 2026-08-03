@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-> Document en cours de rédaction. Sections rédigées : 1, 2, 3, 4.
+> Les quatre sections sont rédigées. Elles sont amendées à chaque étape, à mesure que la mesure corrige ce que la conception avait supposé.
 
 ---
 
@@ -96,16 +96,20 @@ Un prototype antérieur (Flask, JavaScript) occupait `src/meteo_app/` et `notebo
 
 Le dépôt contient désormais :
 
-- `src/weather_simulator/` — `sources/` récupère et assemble la série ; `domain/` porte l'enregistrement journalier et les seuils ; `transform/`, `api/` et `calibration/` attendent leur étape.
+- `src/weather_simulator/` — `sources/` récupère et assemble la série ; `domain/` porte l'enregistrement journalier, les seuils et la classe de ciel ; `transform/`, `api/` et `calibration/` attendent leur étape.
 - `tests/` — tests hors réseau, l'accès aux API étant injecté.
-- `scripts/verification/` — les mesures qui fondent les chiffres du présent document.
+- `scripts/verification/` — les mesures de conception, antérieures à tout code applicatif.
+- `scripts/model_selection/` — le départage des cinq modèles, étape 2.
+- `scripts/sky_thresholds/` — le calage des seuils de ciel, étape 3.
 - `scripts/inspect_seam.py` — lecture des coutures sur requête réelle.
 
 Les commentaires du code portent la justification des choix et renvoient aux constats du présent document. En cas de divergence entre les deux, **c'est le document qui fait foi** et le code qui doit être corrigé — ou le document amendé, si c'est lui qui a pris du retard.
 
-**`scripts/verification/` et le présent document ne se modifient pas sans validation.** Le reste du code relève de l'autonomie de développement définie plus haut.
+**Les trois dossiers de mesure et le présent document ne se modifient pas sans validation.** Le reste du code relève de l'autonomie de développement définie plus haut.
 
-Les faits chiffrés cités dans les sections 2, 3 et 4 sont établis par les scripts de `scripts/verification/`, exécutables isolément et sans dépendance. Leur `README.md` indique ce que chacun démontre. Toute valeur contestée doit être remesurée par le script correspondant, puis corrigée dans le présent document — jamais ajoutée à côté de l'ancienne.
+Les faits chiffrés cités dans les sections 2, 3 et 4 sont établis par ces dossiers, dont chaque `README.md` indique ce qui s'y démontre. Toute valeur contestée doit être remesurée par le script correspondant, puis corrigée dans le présent document — jamais ajoutée à côté de l'ancienne.
+
+Les trois dossiers ne se ressemblent pas, et c'est délibéré. `verification/` date de la conception : sans aucune dépendance, `urllib` seul, chaque script isolé, et **gelé** — ses valeurs ont fondé les décisions initiales. `model_selection/` et `sky_thresholds/` sont postérieurs au paquet et s'appuient sur lui : refaire la construction des requêtes ou la détection des valeurs nulles y aurait ouvert la porte à deux comportements divergents. Tous deux séparent la collecte, lente et limitée en débit, de l'analyse, qui se rejoue hors réseau depuis `data/`.
 
 ---
 
@@ -128,10 +132,13 @@ Ce choix tient à l'homogénéité de format des deux jeux et à l'absence de cl
 | Hors bornes | — | HTTP 400, « Invalid date » |
 | Pas de temps | horaire et journalier | journalier seulement |
 | `weather_code` | disponible | **valeurs nulles, sans erreur** |
+| Paramètre `hourly` | honoré | **accepté, aucun bloc renvoyé** |
 
-Variables non nulles dans les deux sources : températures (max, min, moyenne), précipitations (totales, pluie, neige), nébulosité moyenne, rayonnement, humidité relative, vent, pression au niveau de la mer, point de rosée. Réservées à l'historique : `weather_code`, `sunshine_duration`, `precipitation_hours`, évapotranspiration, température ressentie.
+Variables non nulles dans les deux sources : températures (max, min, moyenne), précipitations (totales, pluie, neige), nébulosité moyenne, rayonnement, humidité relative, vent — moyen et maximal —, rafales, pression au niveau de la mer, point de rosée. Réservées à l'historique : `weather_code`, `sunshine_duration`, `precipitation_hours`, évapotranspiration, température ressentie, nébulosité maximale et minimale.
 
-L'API Climate accepte le paramètre `weather_code`, répond HTTP 200 et renvoie des valeurs nulles assorties d'une unité `undefined`. L'absence est donc silencieuse : tout code appelant doit la détecter explicitement plutôt que se fier au statut HTTP.
+**L'absence est silencieuse, et de deux manières.** L'API Climate accepte le paramètre `weather_code`, répond HTTP 200 et renvoie des valeurs nulles assorties d'une unité `undefined`. Elle accepte de même `hourly` et `temporal_resolution`, répond HTTP 200, et ne renvoie tout simplement aucun bloc horaire. Tout code appelant doit donc détecter l'absence explicitement plutôt que se fier au statut HTTP.
+
+Deux de ces variables historiques paraissent utiles et ne le sont pas : `weather_code` et `sunshine_duration` sont l'une et l'autre des étalons trompeurs, pour des raisons développées en section 3.
 
 ### Modèle retenu
 
@@ -239,7 +246,11 @@ Les mesures citées ci-dessous reposent sur un nombre restreint de sites et de p
 
 **1. Aucun code météorologique pour le futur.** La variable existe dans l'historique mais pas dans les projections. L'aspect du ciel doit être reconstruit à partir des autres variables ; les modalités relèvent de la section 3.
 
-**2. Nébulosité sous-estimée deux fois.** Le modèle est en retrait d'ERA5 sur tous les sites testés — de −5,1 points à Pontarlier à −30,2 à Singapour, en passant par −8,1 à Brest, −10,2 à Marseille, −6,7 à Reykjavik et −21,2 à Bamako. Ces valeurs sont mesurées contre ERA5 explicitement forcé : l'endpoint par défaut sélectionne sa source variable par variable et bascule vers ECMWF IFS en 2017, ce qui fausse toute comparaison. L'écart n'est donc ni local ni imputable au relief : Pontarlier est le site le moins touché. Il est en revanche stable dans le temps, les valeurs 2041-2050 étant indiscernables de l'historique du modèle, ce qui le rend calibrable sur la période de recouvrement. Les réanalyses sont par ailleurs elles-mêmes en retrait des observations de surface — constat établi en Méditerranée sur ERA-Interim et MERRA, antérieurs à ERA5 (Enriquez-Alonso et al., 2015). L'extrapolation à ERA5 n'est donc pas démontrée, mais si elle se vérifie, les deux erreurs s'additionnent dans le même sens.
+**2. Nébulosité sous-estimée deux fois.** Le modèle est en retrait d'ERA5 sur tous les sites testés — de −5,1 points à Pontarlier à −30,2 à Singapour, en passant par −8,1 à Brest, −10,2 à Marseille, −6,7 à Reykjavik et −21,2 à Bamako. Ces valeurs sont mesurées contre ERA5 explicitement forcé : l'endpoint par défaut sélectionne sa source variable par variable et bascule vers ECMWF IFS en 2017, ce qui fausse toute comparaison. L'écart n'est donc ni local ni imputable au relief : Pontarlier est le site le moins touché. Il est en revanche stable dans le temps, les valeurs 2041-2050 étant indiscernables de l'historique du modèle, ce qui le rend calibrable sur la période de recouvrement.
+
+**Le titre de cette limite est trompeur, et l'étape 3 l'a établi : l'écart n'est pas entièrement hérité du modèle, il est en partie fabriqué par la correction d'Open-Meteo** — voir *Correction de la nébulosité* en section 3. À Pontarlier le modèle brut est à +0,5 point d'ERA5 et le corrigé à −8,8. La conclusion pratique ne change pas — une correction reste nécessaire, et la stationnarité la rend possible — mais son origine n'est pas celle qu'on supposait.
+
+Les réanalyses sont par ailleurs elles-mêmes en retrait des observations de surface — constat établi en Méditerranée sur ERA-Interim et MERRA, antérieurs à ERA5 (Enriquez-Alonso et al., 2015). L'extrapolation à ERA5 n'est donc pas démontrée, mais si elle se vérifie, les deux erreurs s'additionnent dans le même sens.
 
 **3. Précipitations lissées par ERA5.** La réanalyse surestime les pluies faibles et le nombre de jours pluvieux, et sous-estime les épisodes intenses (Lavers et al., 2022). Deux mécanismes se cumulent. D'abord l'agrégation spatiale : une maille de 30 km ne livre qu'une moyenne, dans laquelle une cellule convective de quelques kilomètres est diluée par construction. Ensuite la paramétrisation de la convection, non résolue explicitement, que les schémas déclenchent trop souvent et trop longtemps à intensité trop faible — biais documenté sur les modèles de climat, où il s'aggrave à mesure que la résolution se dégrade (Chen et al., 2021). Les épisodes orageux ne sont donc pas absents, mais représentés de façon diffuse. Conséquence directe : les cumuls journaliers sont exploitables, les intensités ne le sont pas.
 
@@ -431,11 +442,17 @@ Deux conséquences pratiques. Près des pôles en hiver, le ciel clair tend vers
 
 ### Correction de la nébulosité
 
-C'est la seule correction appliquée. Elle est nécessaire parce que la nébulosité détermine trois des cinq classes et que le modèle la sous-estime systématiquement, de 5,1 à 10,2 points sur les sites français testés. Appliquer les seuils bruts produirait un futur artificiellement ensoleillé.
+C'est la seule correction appliquée. Elle est nécessaire parce que la nébulosité détermine trois des cinq classes et que le modèle la sous-estime systématiquement — de 5,1 à 10,2 points sur les premiers sites testés, et de 8,6 à 10,8 points sur ceux de l'étape 2. Appliquer les seuils bruts produirait un futur artificiellement ensoleillé.
 
 La correction est calibrée sur la période de recouvrement, mois par mois et par lieu, par transposition de quantiles. La variante à privilégier est celle qui **préserve la tendance** du modèle : une transposition naïve forcerait la distribution future sur la distribution passée et effacerait précisément le signal que l'application cherche à montrer. Le choix de la méthode relève du régime de validation scientifique défini en section 1.
 
-Cette correction est légitime parce que le biais est stable dans le temps : les valeurs du modèle sur 2041-2050 sont indiscernables de son propre historique.
+Cette correction est légitime parce que le biais est stable dans le temps, et l'on sait désormais pourquoi : les coefficients d'Open-Meteo sont figés une fois pour toutes, identiques en 1980 et en 2046. La stationnarité est mécanique, non plus seulement constatée sur 2041-2050.
+
+**Deux constats de l'étape 3 changent la manière d'aborder cette correction, et l'étape 4 doit en partir.**
+
+D'abord, une part du biais est **fabriquée par Open-Meteo**. La nébulosité est la seule des variables examinées dont la retouche ne converge pas vers la réanalyse : ni écart ni rapport constant sur le mois, contrairement aux températures, précipitations et vent. À Pontarlier, le modèle brut est à +0,5 point d'ERA5 et le modèle corrigé à −8,8 ; à Singapour, −1,7 brut contre −27,2 corrigé. L'hypothèse la plus plausible — non démontrée — est que la correction s'applique au pas horaire et que la nébulosité, seule à être bornée des *deux* côtés, se fait rogner à 0 et à 100 avant d'être remoyennée. Se rabattre sur le modèle brut n'est toutefois pas la solution : la correction *est* la descente d'échelle, et la désactiver rend le modèle aveugle au relief.
+
+Ensuite, **le rayonnement du modèle n'est pas biaisé** : −0 à +1 % contre ERA5 à Brest, Marseille et Pontarlier, quand la nébulosité y est fausse de 9 à 11 points. Or l'étape 3 a établi que c'est le rayonnement, et non la nébulosité, qui dit ce qu'une journée a reçu. Il fournit donc un étalon pour caler la correction : ajuster la nébulosité du modèle de sorte que sa relation nuage-lumière rejoigne celle de la référence, plutôt que de transposer des quantiles à l'aveugle. Mesuré sur trois sites seulement, à élargir avant d'engager quoi que ce soit.
 
 Aucune autre correction n'est appliquée. En particulier, ni les extrêmes de température ni la durée des sécheresses ne sont retouchés, la mesure n'y ayant établi aucun déficit.
 
@@ -459,7 +476,7 @@ L'étape 4 distingue deux sortes de valeur nulle, et c'est essentiel : une varia
 
 - Absence de marche **aux deux coutures** : comparaison des niveaux et des variances de part et d'autre de chacune. `scripts/inspect_seam.py` les repère sans les supposer, en suivant le changement de source d'un jour au suivant.
 - Continuité de la série : ni trou ni doublon aux raccords, et un jour porte les mêmes champs renseignés quelle que soit la source qui l'a servi.
-- Vraisemblance de la distribution des classes de ciel, comparée à la distribution observée.
+- Vraisemblance de la distribution des classes de ciel. Non contre la seule fréquence observée, mais contre la lumière reçue : les trois classes de ciel sec doivent rester séparées d'environ 90 %, 80 % et 60 % du rayonnement d'un ciel clair, comme sur la période historique.
 - Détection explicite des valeurs nulles. L'API Climate répond `HTTP 200` avec des valeurs nulles pour les variables qu'elle ne sert pas ; se fier au statut HTTP ne suffit pas.
 
 ### Limites du dispositif
@@ -520,7 +537,8 @@ Le serveur n'expose qu'un seul endpoint utile. Sans état et sans base de donné
 
 ```
 src/weather_simulator/
-    domain/        classe de ciel, seuils, correction de biais
+    sources/       requêtes, lecture des payloads, assemblage des trois segments
+    domain/        enregistrement journalier, seuils, classe de ciel
     transform/     bloc de transformation, neutre par défaut
     api/           endpoint, validation des entrées
     calibration/   table de coefficients et interpolation
@@ -539,13 +557,15 @@ La plage est bornée à **90 jours**, soit une saison. La contrainte est appliqu
 
 Chaque journée porte les températures minimale et maximale, le cumul de précipitations, les vitesses de vent moyenne et maximale, et un **pictogramme de la classe de ciel** :
 
-| Classe | Pictogramme |
-|---|---|
-| Dégagé | ☀️ |
-| Nuageux | ⛅ |
-| Couvert | ☁️ |
-| Pluie | 🌧️ |
-| Neige | 🌨️ |
+| Classe | Contrat JSON | Pictogramme |
+|---|---|---|
+| Dégagé | `clear` | ☀️ |
+| Nuageux | `cloudy` | ⛅ |
+| Couvert | `overcast` | ☁️ |
+| Pluie | `rain` | 🌧️ |
+| Neige | `snow` | 🌨️ |
+
+Une sixième valeur circule : **l'absence de classe**. Une journée dont il manque une variable nécessaire ne reçoit pas de classe, et le contrat porte alors `null` plutôt qu'une valeur inventée. L'interface doit prévoir cette carte-là.
 
 Les émojis conviennent à une première version : disponibles partout, sans ressource à charger, immédiatement lisibles. Deux points en découlent.
 
