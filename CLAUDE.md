@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Avancement
 
-Les étapes 0 à 3 sont faites. Le dépôt contient le présent document, `scripts/verification/`, `scripts/model_selection/`, `scripts/sky_thresholds/`, et le paquet `src/weather_simulator/`, dont `sources/` récupère et assemble la série homogène de 1950 à 2050 et `domain/` porte la classe de ciel. La correction de nébulosité et l'API restent à écrire.
+Les étapes 0 à 3 sont faites, la 4 est engagée : la méthode de correction, la table et son interpolation sont écrites, la collecte des 594 nœuds reste à mener. Le dépôt contient le présent document, `scripts/verification/`, `scripts/model_selection/`, `scripts/sky_thresholds/`, `scripts/calibration_grid/`, et le paquet `src/weather_simulator/`, dont `sources/` récupère et assemble la série homogène de 1950 à 2050 et `domain/` porte la classe de ciel et la correction de biais. L'API et l'interface restent à écrire.
 
 L'enchaînement ci-dessous fixe **l'ordre**, imposé par les dépendances, et non le contenu de chaque étape — celui-ci se décide au moment de l'aborder, à la lumière de ce que la précédente aura révélé.
 
@@ -18,14 +18,14 @@ L'enchaînement ci-dessous fixe **l'ordre**, imposé par les dépendances, et no
 | 1 | Récupération et série homogène, sans classe de ciel | 0 | **fait** |
 | 2 | Confirmation du modèle parmi les cinq éligibles | 1 | **fait** |
 | 3 | Calage des seuils de nébulosité et classe de ciel | 1 | **fait** |
-| 4 | Grille de calibration France et correction de nébulosité | 2 | à faire |
+| 4 | Grille de calibration France et correction de nébulosité | 2 | *en cours* |
 | 5 | API, validation des entrées et bloc de transformation | 3, 4 | à faire |
 | 6 | Interface : accueil, résultats, bande journalière | 5 | à faire |
 | 7 | Élargissement mondial de la grille | 4 | à faire |
 
 La confirmation du modèle venait en deuxième position pour deux raisons : l'étape 1 produisait l'outil qui permettait de la mener, et tout ce qui suit en dépend. Changer de modèle après avoir généré la grille de calibration aurait imposé de la refaire entièrement.
 
-Une décision demeure ouverte et relève du porteur du projet : la méthode de correction du biais, dont le document exige seulement qu'elle préserve la tendance. Le seuil de neige de 1,5 °C reste par ailleurs calé sur une base mince, deux sites et une saison.
+Aucune décision scientifique n'est en attente. Deux points restent toutefois calés sur une base mince et méritent d'être réexaminés le moment venu : le seuil de neige de 1,5 °C, établi sur deux sites et une saison, et l'ensemble des mesures de ce document, qui reposent sur dix sites.
 
 ---
 
@@ -101,6 +101,7 @@ Le dépôt contient désormais :
 - `scripts/verification/` — les mesures de conception, antérieures à tout code applicatif.
 - `scripts/model_selection/` — le départage des cinq modèles, étape 2.
 - `scripts/sky_thresholds/` — le calage des seuils de ciel, étape 3.
+- `scripts/calibration_grid/` — la grille de correction, étape 4 : sonde, collecte, construction de la table.
 - `scripts/inspect_seam.py` — lecture des coutures sur requête réelle.
 
 Les commentaires du code portent la justification des choix et renvoient aux constats du présent document. En cas de divergence entre les deux, **c'est le document qui fait foi** et le code qui doit être corrigé — ou le document amendé, si c'est lui qui a pris du retard.
@@ -596,17 +597,49 @@ Enfin, conformément à la section 1, tout écran affichant une date future port
 
 ### Grille de correction
 
-Les coefficients de correction de nébulosité sont **précalculés hors ligne** et embarqués comme ressource serveur. À la requête, l'application repère les quatre nœuds entourant le point, interpole et applique — sans aucun appel externe.
+La correction de nébulosité est **précalculée hors ligne** et embarquée comme ressource serveur. À la requête, l'application repère les quatre nœuds entourant le point, interpole et applique — sans aucun appel externe.
+
+**Ce n'est pas une table de coefficients**, comme une version antérieure de ce document l'annonçait, et c'est la conséquence directe de la méthode retenue : une correction quantile par quantile ne se résume pas à un nombre par mois. Chaque nœud porte, pour chacun des douze mois, **trois vecteurs de quantiles** — la réanalyse sur la période de calibration, le modèle sur cette même période, le modèle sur la projection. Le premier écart est le biais, le second la tendance à préserver. Trente-neuf niveaux par vecteur, arrondis au dixième de point, ce qui reste plus fin que tout ce qui les lit ensuite.
 
 La grille est définie sur un **réseau mondial fixe** au pas de 0,5°, aux multiples exacts depuis −180° et −90°. Ce point n'est pas négociable : caler l'origine sur la France imposerait de tout recalculer lors du premier élargissement.
 
+**Le pas de 0,5° est confirmé par la mesure, contre 1° qui aurait coûté quatre fois moins.** Le biais a été relevé tous les 0,25° le long de trois transects traversant la côte — atlantique, méditerranéen, Manche — puis on a calculé l'erreur qu'une interpolation linéaire commettrait entre nœuds espacés d'un degré, puis d'un demi.
+
+| Transect | Erreur à 0,5° (moy / max) | à 1,0° (moy / max) |
+|---|---|---|
+| Atlantique (Landes) | 0,17 / 0,30 | 0,20 / 0,50 |
+| Méditerranée (Languedoc) | 0,32 / 0,73 | 0,39 / 1,02 |
+| Manche (Normandie) | 0,21 / 0,56 | 0,41 / 0,90 |
+
+L'écart moyen entre les deux pas est faible parce que la France est majoritairement plate ; il se concentre là où le sol monte, c'est-à-dire là où le modèle est déjà le moins fiable. C'est ce qui a fait retenir 0,5°.
+
+**Deux constats de cette mesure méritent d'être isolés.** La côte n'y est pour rien : le franchissement terre-mer ne produit aucune rupture du biais — à −1,25° de longitude sur l'Atlantique, il vaut −10,59 des deux côtés. C'est le **relief** qui commande, et fortement : 5,52 points sur un seul degré à la montée vers les Cévennes, de 87 m à 1 147 m. Le script 15 concluait « champ de biais lisse, ≤ 1,6 point pour 3 500 m de dénivelé » sur un transect jurassien ; ce constat n'est pas faux mais il n'est pas général, et le versant méditerranéen le contredit.
+
+**L'interpolation porte donc une erreur propre, à déclarer avec les autres** : 0,3 point de nébulosité en moyenne, 0,7 au maximum sur relief, même à 0,5°.
+
 Le remplissage est progressif et ordonné par densité de population décroissante — la France d'abord, puis l'Europe, puis les régions les plus peuplées. La collecte est ainsi interruptible et reprenable, et couvre l'essentiel des recherches réelles dès ses premières heures.
+
+**Cet ordre n'est pas un confort, c'est ce qui rend la collecte supportable.** Une première tentative collectait par latitude croissante et a passé ses premières heures sur le plateau ibérique, qu'aucune recherche ne touchera jamais. L'ordre est désormais donné par la population desservie, estimée en sommant les aires d'attraction françaises pondérées par l'inverse du carré de la distance. Il n'a besoin d'être qu'approximativement juste : il décide de ce qu'on collecte en premier, pas de ce qu'on calcule.
+
+**Volume de la grille française**, établi par une sonde d'altitude d'un jour sur chaque nœud de la boîte englobante — ERA5 renvoyant zéro en mer, l'altitude sépare la terre de l'eau pour un coût négligeable :
+
+| | |
+|---|---|
+| Nœuds dans la boîte (41,0-51,5 N, −5,5-10,0 E) | 704 |
+| Terrestres | 475 |
+| À collecter : terre + couronne côtière | **594** |
+
+La couronne de nœuds marins touchant la terre est conservée délibérément : une ville littorale a des nœuds en mer parmi les quatre qui l'entourent, et les omettre laisserait l'interpolation manchote là précisément où les gens habitent.
+
+**Le coût de la collecte est la contrainte dominante.** Deux requêtes par nœud — la réanalyse sur la période de calibration, le modèle sur 1985-2050 d'un seul tenant, cette requête portant à la fois son passé et son futur. Le réseau ne représente qu'une heure ; c'est le débit autorisé par Open-Meteo qui commande, de l'ordre de **trente nœuds par heure**, soit une quinzaine à une vingtaine d'heures pour la France entière. La documentation d'Open-Meteo annonce des limites qui impliqueraient quatre nœuds par jour, deux cents fois moins que ce qu'on observe ; l'API n'expose aucun en-tête de quota. Le débit ne se prédit donc pas, il se mesure. À prévoir avant l'élargissement mondial de l'étape 7, où le facteur d'échelle est sans commune mesure.
 
 Hors de la zone couverte, l'application **refuse la recherche avec un message explicite**. Afficher des données non corrigées reviendrait à montrer un futur artificiellement ensoleillé, ce qui n'est pas neutre ; se rabattre sur le nœud le plus proche serait silencieux et trompeur.
 
 Ce refus ne vaut toutefois que si la plage demandée **comporte un segment futur**. Une requête entièrement passée n'appelle aucun coefficient : la correction ne s'applique qu'aux projections. La refuser serait gratuit, et priverait sans motif un utilisateur de Santiago de l'histoire météorologique de sa ville.
 
-La table porte ses propres métadonnées : emprise, maille, période de calibration, date de génération.
+La table porte ses propres métadonnées : modèle corrigé, maille, périodes de calibration et de projection, date de génération, nombre de nœuds. Une table lue sans savoir cela est une source d'erreur silencieuse, et la grille est précisément la pièce dont un successeur héritera sans avoir vu comment elle a été faite.
+
+**Une table provisoire existe, et elle se dénonce.** La collecte se comptant en heures de quota, une table à correction identité couvre toute la boîte française pour que le reste de la chaîne s'écrive sans l'attendre. Elle ne doit jamais être servie : une correction nulle affiche un futur artificiellement ensoleillé de 8 à 11 points, et trois des cinq classes de ciel en dépendent. Quatre verrous plutôt qu'un — un drapeau `placeholder` dans les métadonnées, dont un test vérifie qu'il survit à l'écriture-relecture ; une propriété exposée à l'appelant ; un nom de fichier distinct ; et une exclusion du dépôt.
 
 ### Montée en charge
 

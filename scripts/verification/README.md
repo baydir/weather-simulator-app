@@ -34,7 +34,7 @@ patientent. Ne pas les lancer en parallèle.
 | `12_era5land_vs_ifs_attribution.py` | L'écart ERA5-Land / IFS n'est pas altitudinal |
 | `13_era5land_variable_gaps.py` | **ERA5-Land ne sert que la température** |
 | `14_two_call_split_and_revised_cloud_bias.py` | Validation de la double requête ; biais de nébulosité contre ERA5 forcé |
-| `15_cloud_bias_spatial_variation.py` | Le champ de biais est lisse : ≤ 1,6 point pour 3 500 m de dénivelé |
+| `15_cloud_bias_spatial_variation.py` | Le champ de biais est lisse : ≤ 1,6 point pour 3 500 m de dénivelé — **constat local, voir la réserve ci-dessous** |
 | `16_calibration_years_required.py` | 10 ans de calibration produisent une erreur du même ordre que la correction |
 | `17_seam_reference_choice.py` | Le modèle est deux fois plus proche d'ERA5-Land que d'ERA5 |
 | `18_payloads_geocoding_and_bulk.py` | Volumes, géocodage Open-Meteo, absence de CMIP6 sur le miroir AWS |
@@ -60,3 +60,11 @@ avec un espacement suffisant.
 Les mesures portent sur un nombre restreint de sites et de périodes, ce que
 `CLAUDE.md` signale explicitement. Elles établissent des motifs, non des
 amplitudes valables en tout point.
+
+**Le script 15 en est l'illustration.** Il conclut que le champ de biais de
+nébulosité est lisse, sur la foi d'un transect jurassien. L'étape 4 l'a remesuré
+sur trois transects côtiers et trouvé 5,52 points d'écart sur un seul degré à la
+montée vers les Cévennes, de 87 m à 1 147 m d'altitude. Le constat du script 15
+n'est pas faux là où il a été pris ; il ne se généralise pas. La côte, elle,
+s'avère innocente — le franchissement terre-mer ne produit aucune rupture, c'est
+le relief qui commande.
