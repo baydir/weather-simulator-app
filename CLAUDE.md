@@ -284,6 +284,7 @@ La complétude n'a finalement pas pesé sur le choix du modèle : la classe de c
 
 ### Références
 
+- Cannon, A. J., Sobie, S. R. & Murdock, T. Q. (2015). Bias correction of GCM precipitation by quantile mapping: how well do methods preserve changes in quantiles and extremes? *Journal of Climate*, 28, 6938-6959. [10.1175/JCLI-D-14-00754.1](https://doi.org/10.1175/JCLI-D-14-00754.1) — *établit le quantile delta mapping et la manière dont les transpositions ordinaires déforment les tendances.*
 - Chen, D., Dai, A. & Hall, A. (2021). The convective-to-total precipitation ratio and the « drizzling » bias in climate models. *Journal of Geophysical Research: Atmospheres*. [10.1029/2020JD034198](https://doi.org/10.1029/2020JD034198) — *porte sur les modèles CMIP5, non sur ERA5.*
 - Enriquez-Alonso, A. et al. (2015). Cloud cover climatologies in the Mediterranean obtained from satellites, surface observations, reanalyses, and CMIP5 simulations. *Climate Dynamics*. [10.1007/s00382-015-2834-4](https://doi.org/10.1007/s00382-015-2834-4) — *porte sur ERA-Interim et MERRA, antérieurs à ERA5.*
 - Haarsma, R. J. et al. (2016). High Resolution Model Intercomparison Project (HighResMIP v1.0) for CMIP6. *Geoscientific Model Development*, 9, 4185-4208. [10.5194/gmd-9-4185-2016](https://doi.org/10.5194/gmd-9-4185-2016)
@@ -444,7 +445,21 @@ Deux conséquences pratiques. Près des pôles en hiver, le ciel clair tend vers
 
 C'est la seule correction appliquée. Elle est nécessaire parce que la nébulosité détermine trois des cinq classes et que le modèle la sous-estime systématiquement — de 5,1 à 10,2 points sur les premiers sites testés, et de 8,6 à 10,8 points sur ceux de l'étape 2. Appliquer les seuils bruts produirait un futur artificiellement ensoleillé.
 
-La correction est calibrée sur la période de recouvrement, mois par mois et par lieu, par transposition de quantiles. La variante à privilégier est celle qui **préserve la tendance** du modèle : une transposition naïve forcerait la distribution future sur la distribution passée et effacerait précisément le signal que l'application cherche à montrer. Le choix de la méthode relève du régime de validation scientifique défini en section 1.
+La correction est calibrée sur la période de recouvrement, mois par mois et par lieu, par transposition de quantiles.
+
+**La méthode retenue est la transposition de quantiles préservant la tendance** — *quantile delta mapping*, Cannon, Sobie & Murdock (2015). Une journée future est située dans la distribution *future* du modèle ; on mesure le déplacement que le modèle donne lui-même à ce quantile entre son passé et son futur ; et ce déplacement est reporté sur la distribution de référence. Le biais s'en va, l'évolution reste.
+
+**Deux raisons de travailler quantile par quantile plutôt que par un décalage mensuel.** Le biais n'est pas constant : mesuré décile par décile, il s'étend sur 4 à 20 points selon le site, maximal sur les journées claires et s'annulant sur les couvertes — le modèle ne pouvant dépasser 100 %, il converge par le haut et fabrique trop de ciels dégagés par le bas. Un décalage unique laisserait donc les classes fausses précisément là où se joue la frontière dégagé/nuageux.
+
+**Une précision sur ce qu'on appelle « transposition naïve ».** Le terme recouvre deux procédés distincts, et une version antérieure de ce document les confondait.
+
+Transposer à travers la distribution *passée* du modèle ne supprime pas la tendance : cela la multiplie par la pente locale d'une correspondance qui n'est pas linéaire. Avec le biais mesuré ici, cinq points de dégagement ressortent à environ 4,4 — et rien dans le résultat ne signale ce redimensionnement.
+
+Transposer à travers la distribution *future*, en revanche, force la distribution de sortie à coïncider avec celle de la référence : la tendance disparaît entièrement. C'est ce procédé-là que le document écartait, à juste titre.
+
+**La tendance à préserver est faible, et la méthode est retenue quand même.** Entre 1985-2014 et 2021-2050, la nébulosité du modèle bouge de −0,4 à −1,8 point selon le site, et le rayonnement de −1,0 à +1,2 % — deux variables cohérentes entre elles, ce qui écarte l'artefact. Le biais à corriger vaut 8 à 11 points : la correction le domine d'un facteur cinq à dix.
+
+Le choix ne tient donc pas à ce que la méthode gagne ici. Il tient à ce qu'elle évite ailleurs : la mesure porte sur cinq sites, quatre en France, et la grille a vocation à couvrir le monde à l'étape 7 — sous RCP8.5 les zones subtropicales s'assèchent nettement. Une méthode retenue au motif que la tendance est négligeable en France déformerait sans avertissement un signal réel sous les tropiques. La variante préservant la tendance coûte quelques lignes de plus.
 
 Cette correction est légitime parce que le biais est stable dans le temps, et l'on sait désormais pourquoi : les coefficients d'Open-Meteo sont figés une fois pour toutes, identiques en 1980 et en 2046. La stationnarité est mécanique, non plus seulement constatée sur 2041-2050.
 
