@@ -225,6 +225,8 @@ ERA5 n'est pas une mesure, mais une réanalyse : un modèle météorologique con
 
 La distinction est déterminante, car ERA5 sert de référence à toute évaluation du modèle climatique menée dans ce projet. Ses propres erreurs sont donc, par construction, invisibles à nos comparaisons.
 
+**Un seul contrôle externe a été mené, et il a trouvé un facteur deux.** Confrontée aux normales publiées, la durée d'ensoleillement d'ERA5 donne 3 311 heures par an à Brest pour environ 1 700 réelles (section 3). Ce contrôle n'était pas prévu : un chiffre a paru suspect. **Les autres variables n'ont subi aucun test de ce genre** — les précipitations et le vent, affichés à l'utilisateur, ne sont vérifiés que contre eux-mêmes. À traiter avant l'élargissement mondial de l'étape 7.
+
 ### ERA5 et ECMWF IFS : deux instruments, non deux degrés de justesse
 
 L'*Historical Weather API* expose une troisième source, `ecmwf_ifs` : l'analyse opérationnelle d'ECMWF, à 9 km, disponible **du 1er janvier 2017 au jour même, sans latence**, là où ERA5 et ERA5-Land accusent cinq à six jours de retard. Elle sert les huit variables du projet sans valeur nulle, en une seule requête.
