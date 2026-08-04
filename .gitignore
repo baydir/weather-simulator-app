@@ -22,3 +22,7 @@ data/
 
 # OS
 .DS_Store
+
+# Table de correction provisoire — correction identite, generee par
+# scripts/calibration_grid/build.py --neutral. Jamais livree.
+src/weather_simulator/calibration/data/cloud_correction_placeholder.json
