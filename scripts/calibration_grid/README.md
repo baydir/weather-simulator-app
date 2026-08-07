@@ -65,6 +65,6 @@ pour que l'API et l'interface s'écrivent sans attendre la collecte.
 
 **Elle ne doit jamais être servie.** Un futur non corrigé est un futur
 artificiellement ensoleillé de 8 à 11 points de nébulosité, et trois des cinq
-classes de ciel en dépendent. D'où quatre verrous : drapeau `placeholder` dans
-les métadonnées, propriété `is_placeholder` sur la grille, nom de fichier
-distinct, exclusion du dépôt.
+classes de ciel en dépendent. Les verrous qui l'en empêchent sont énumérés dans
+[`docs/application.md`](../../docs/application.md) — le dernier étant que
+l'application refuse de démarrer sur une telle table.

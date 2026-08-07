@@ -8,13 +8,13 @@ se met à jour.
 
 ## Où on en est
 
-Les étapes 0 à 3 sont faites, la 4 est engagée. **L'API et l'interface ne sont
-pas commencées.**
+Les étapes 0 à 3 et la 5 sont faites, la 4 est engagée. **L'interface n'est pas
+commencée.**
 
-Le déséquilibre est net et vaut d'être dit : quatre étapes de mesure et de
-caractérisation des données, zéro ligne d'application. Les étapes 5 et 6
-n'attendent pourtant que d'être écrites — la table provisoire de l'étape 4
-existe exactement pour ça.
+L'ordre effectif s'écarte de l'ordre annoncé : l'étape 5 a été menée avant que la
+collecte de l'étape 4 soit finie. Elle le pouvait sans la table provisoire, la
+collecte ayant déjà refermé trois mailles autour de Paris — de quoi éprouver la
+chaîne complète sur une correction authentique.
 
 | | Étape | Dépend de | État |
 |---|---|---|---|
@@ -23,7 +23,7 @@ existe exactement pour ça.
 | 2 | Confirmation du modèle parmi les cinq éligibles | 1 | **fait** |
 | 3 | Calage des seuils de nébulosité et classe de ciel | 1 | **fait** |
 | 4 | Grille de calibration France et correction de nébulosité | 2 | *en cours, 23 nœuds sur 594* |
-| 5 | API, validation des entrées et bloc de transformation | 3, 4 | à faire |
+| 5 | API, validation des entrées et bloc de transformation | 3, 4 | **fait** |
 | 6 | Interface : accueil, résultats, bande journalière | 5 | à faire |
 | 7 | Élargissement mondial de la grille | 4 | à faire |
 
@@ -128,6 +128,33 @@ qui commande — de l'ordre de trente nœuds par heure, soit une quinzaine d'heu
 encore.
 
 → [`application.md`](application.md), `scripts/calibration_grid/`
+
+---
+
+## Étape 5 — API
+
+Trois endpoints sans état, la validation des entrées, le contrat JSON et le bloc
+de transformation, laissé neutre. Éprouvée de bout en bout sur données réelles :
+une plage à cheval sur aujourd'hui rend 41 jours — 15 de réanalyse, 6 d'IFS, 20
+du modèle — sans trou ni doublon.
+
+**Ce qu'elle a corrigé.** La conception voulait que le navigateur récupère les
+données *et* ne dérive rien. Les deux exigences se contredisent en apparence,
+puisque **décider quoi demander est une dérivation**. Il a fallu un endpoint de
+plan : le serveur remet des URL déjà construites, le navigateur les exécute à
+l'aveugle. D'où trois endpoints, non plus un.
+
+Second écart, de même origine : **la borne entre les deux passés se lit dans la
+réponse**, et ne peut donc pas figurer dans un plan construit d'avance. IFS est
+désormais demandé en chevauchement, la réanalyse l'emportant à l'assemblage — une
+requête de plus contre un aller-retour de moins, et la borne toujours lue dans
+les données.
+
+Rien de scientifique n'a bougé. Le chiffre à retenir est un coût : la correction
+d'une requête de 90 jours prend **1,2 ms**, et la table complète tiendra en
+**29 Mo** résidents.
+
+→ [`application.md`](application.md)
 
 ---
 

@@ -193,6 +193,12 @@ cadre de ce fichier.
 Nécessaire : les deux API limitent le débit **par adresse IP**, et la limite a
 été atteinte à plusieurs reprises depuis un seul poste.
 
+**Il vit dans le navigateur**, la récupération s'y étant déplacée
+→ [`application.md`](application.md). Ce n'est pas un pis-aller : la limite se
+comptant par adresse, un cache par visiteur épouse exactement l'unité à laquelle
+le quota s'épuise. Un cache serveur ne protégerait plus personne, le serveur
+n'appelant plus les API. **Rien n'est fait à ce jour.**
+
 **La durée de conservation ne peut pas être uniforme**, et c'est la conséquence
 directe de la section précédente :
 

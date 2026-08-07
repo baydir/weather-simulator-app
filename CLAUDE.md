@@ -106,9 +106,10 @@ qui se rejoue hors réseau depuis `data/`.
 
 ## Où on en est
 
-Étapes 0 à 3 faites, **étape 4 en cours** : la méthode de correction, la table et
-son interpolation sont écrites, la collecte des 594 nœuds reste à mener (23
-faits). **L'API et l'interface ne sont pas commencées.**
+Étapes 0 à 3 et **étape 5 faites**. **Étape 4 en cours** : la méthode de
+correction, la table et son interpolation sont écrites, la collecte des 594
+nœuds reste à mener (23 faits, dont trois mailles refermées autour de Paris —
+assez pour éprouver la chaîne). **L'interface n'est pas commencée.**
 
 Le détail, et ce que chaque étape a corrigé de ce que la précédente supposait →
 [`docs/journal.md`](docs/journal.md).

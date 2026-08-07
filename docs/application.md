@@ -36,9 +36,45 @@ sa duplication entre JavaScript et Python.
 
 Le navigateur poste les données brutes ; le serveur valide les entrées, applique
 la correction de nébulosité, le bloc de transformation et la classe de ciel, et
-renvoie le JSON journalier. **Il n'expose qu'un seul endpoint utile.** Sans état et sans base de
-données, il monte en charge par simple multiplication des instances, derrière un
-frontend statique servi par CDN.
+renvoie le JSON journalier. Sans état et sans base de données, il monte en charge
+par simple multiplication des instances, derrière un frontend statique servi par
+CDN.
+
+### Une recherche se fait en deux appels
+
+**Décider quoi demander est une dérivation** : il faut découper la plage à
+aujourd'hui, choisir les modèles, savoir que le passé ancien coûte deux requêtes
+parce que la source se choisit par variable. Le navigateur ne peut donc pas le
+faire. Le serveur décide et lui remet des **URL déjà construites**, requête
+encodée comprise ; le navigateur appelle `fetch` sur chacune et n'a aucune
+décision à prendre.
+
+| Appel | Entrée | Sortie |
+|---|---|---|
+| `POST /api/plan` | lieu et plage | `today`, et la liste `{id, url}` des requêtes à exécuter |
+| `POST /api/days` | les mêmes, `today` renvoyé tel quel, les payloads bruts | la série journalière classée |
+| `GET /api/config` | — | gabarit de géocodage, bornes de couverture, plage maximale |
+
+`today` circule du premier appel au second pour que les deux moitiés s'accordent
+sur l'endroit où l'observé s'arrête. Il est **vérifié à un jour près** de
+l'horloge du serveur, et la recherche est refusée sinon : au passage de minuit,
+la coupure entre ce qui a eu lieu et ce qui pourrait avoir lieu s'est déplacée.
+
+`/api/config` existe pour que la plage maximale soit **servie et non recopiée** :
+la borne de 90 jours s'applique dans l'interface comme dans l'API, et une
+seconde copie divergerait.
+
+Les trois appels sont sans état, de sorte que la propriété que défendait la
+règle antérieure d'un endpoint unique — monter en charge en multipliant les
+instances — reste entière.
+
+**La requête IFS est demandée en chevauchement.** La borne entre les deux passés
+se lit dans la réponse des réanalyses ; elle n'est donc pas connue au moment de
+construire le plan. Plutôt qu'un second aller-retour, ou qu'une latence codée en
+dur que [`donnees.md`](donnees.md) proscrit, IFS est demandé sur toute la portion
+de la plage postérieure à 2017, et **la réanalyse l'emporte à l'assemblage
+partout où elle a servi**. La série produite est identique ; le coût est une
+requête de plus, de 90 jours au plus, sur toute plage touchant 2017.
 
 ---
 
@@ -49,12 +85,17 @@ src/weather_simulator/
     sources/       requêtes, lecture des payloads, assemblage des trois segments
     domain/        enregistrement journalier, seuils, classe de ciel
     transform/     bloc de transformation, neutre par défaut
-    api/           endpoint, validation des entrées
+    api/           endpoints, validation, plan de requêtes, contrat JSON
     calibration/   table de coefficients et interpolation
 web/
     static/js/     fetch.js (transport seul), render.js, i18n.js
     templates/     accueil, résultats
 ```
+
+Dans `api/`, `plan.py` porte **à la fois la façon de demander chaque segment et
+la façon de le relire**. Les deux tiennent dans le même objet à dessein : un plan
+et une lecture en désaccord sur les variables qu'une requête portait échoueraient
+de la manière la moins visible qui soit — une colonne silencieusement absente.
 
 La séparation entre `domain` et `transform` est délibérée : `domain` porte les
 règles arrêtées et n'a pas vocation à bouger, `transform` est le point de
@@ -98,6 +139,35 @@ libellés retenus sont « vent moyen » et « vent maximal ».
 
 **Tout écran affichant une date future porte un avertissement explicite et
 visible** → [`projet.md`](projet.md).
+
+---
+
+## Le contrat JSON
+
+Un tableau d'objets journaliers, stable et documenté, pour qu'un graphique, un
+cumul ou une carte s'y branchent sans toucher au pipeline. Chaque journée porte
+`date`, `origin`, `source`, les deux températures, `precipitation`,
+`cloud_cover`, les deux vents et `sky`.
+
+**Ce qu'il ne transporte pas est aussi arrêté que ce qu'il transporte.** Ni
+`temperature_mean`, demandée pour le seul critère de neige et que
+[`donnees.md`](donnees.md) dit non affichée ; ni `snowfall`, conservée comme
+témoin mais servie d'un seul côté de la couture ; ni le pictogramme, ni aucune
+gradation d'intensité.
+
+La réponse porte en outre **`has_simulated`** et les métadonnées de la grille.
+Le premier dit si l'avertissement est dû : l'interface ne dérivant rien, la
+question se tranche au serveur. Les secondes sont nulles quand rien n'a été
+corrigé, ce qui est la réponse honnête pour une plage entièrement passée.
+
+**La nébulosité est arrondie au dixième à la sortie, et à la sortie seulement.**
+L'interpolation des quatre nœuds laisse dix-sept décimales, qui revendiquent une
+précision que la table n'a pas — elle stocke des dixièmes. L'arrondi intervient
+**après** que la classe a été décidée : une journée à 29,97 % ne doit pas devenir
+nuageuse parce qu'on l'a rangée.
+
+Les refus sortent en français, prêts à afficher, sous un champ `message` unique
+quelle que soit la cause.
 
 ---
 
@@ -197,10 +267,20 @@ pièce dont un successeur héritera sans avoir vu comment elle a été faite.
 heures de quota, une table à correction identité couvre toute la boîte française
 pour que le reste de la chaîne s'écrive sans l'attendre. **Elle ne doit jamais
 être servie** : une correction nulle affiche un futur artificiellement ensoleillé
-de 8 à 11 points, et trois des cinq classes en dépendent. Quatre verrous plutôt
+de 8 à 11 points, et trois des cinq classes en dépendent. Cinq verrous plutôt
 qu'un — un drapeau `placeholder` dans les métadonnées, dont un test vérifie
 qu'il survit à l'écriture-relecture ; une propriété exposée à l'appelant ; un nom
-de fichier distinct ; une exclusion du dépôt.
+de fichier distinct ; une exclusion du dépôt ; et **le refus de démarrer**.
+
+Le dernier est le seul qu'aucun oubli ne contourne, les quatre autres supposant
+qu'un appelant pense à les consulter. L'application lit la table une fois au
+démarrage et s'arrête net si elle porte le drapeau.
+
+L'exclusion du dépôt, elle, ne tenait au départ que par ricochet : la règle
+`data/` du `.gitignore`, non ancrée, excluait tout dossier de ce nom — dont
+celui de la ressource serveur, ce qui privait un déploiement de la table réelle
+et empêchait git de lire la ligne écrite pour le fichier provisoire. La règle est
+désormais ancrée à la racine.
 
 ---
 
@@ -208,9 +288,6 @@ de fichier distinct ; une exclusion du dépôt.
 
 - **L'internationalisation** : tous les textes visibles sont extraits dans un
   dictionnaire dès le départ. Trivial maintenant, coûteux plus tard.
-- **Le contrat JSON de sortie** : un tableau d'objets journaliers, stable et
-  documenté. Un graphique, un cumul ou une carte s'y brancheront sans toucher au
-  pipeline.
 - **Les pages explicatives** : statiques, aucune infrastructure particulière.
 
 ---
