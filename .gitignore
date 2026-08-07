@@ -16,9 +16,16 @@ dist/
 .mypy_cache/
 .ipynb_checkpoints/
 
-# Raw payloads cached by the model-selection collection. Reproducible from
-# scripts/model_selection/collect.py, and far too bulky to track.
-data/
+# Raw payloads cached by the collection scripts. Reproducible from
+# scripts/*/collect.py, and far too bulky to track.
+#
+# Anchored to the repository root, and it has to be. Written "data/" this rule
+# matches any directory of that name at any depth, which swept up the shipped
+# correction table under src/ — a program resource, not a cache, and the one
+# artifact in the project that is *not* cheaply reproducible: rebuilding it
+# costs fifteen to twenty hours of Open-Meteo quota. It also short-circuited the
+# placeholder rule below, git never looking inside a directory it has excluded.
+/data/
 
 # OS
 .DS_Store
