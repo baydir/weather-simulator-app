@@ -14,6 +14,7 @@ one cannot.
 
 from __future__ import annotations
 
+import urllib.parse
 from datetime import date
 
 ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive"
@@ -106,6 +107,17 @@ SURFACE_MODEL = "era5"  # ~25 km, everything else
 # placed wherever they actually stop — never on a hard-coded number of days.
 RECENT_MODEL = "ecmwf_ifs"  # ~9 km, 2017 -> today, no latency
 RECENT_START = date(2017, 1, 1)
+
+
+def encode(url: str, params: dict[str, object]) -> str:
+    """The request as it goes on the wire, query included.
+
+    One spelling for two callers that must not diverge: the offline client
+    fetches this, and the API hands the very same string to the browser to
+    fetch on its own. ``doseq`` is what turns the ``daily`` and ``models`` lists
+    into repeated keys, which is the form both endpoints expect.
+    """
+    return f"{url}?{urllib.parse.urlencode(params, doseq=True)}"
 
 
 def _params(

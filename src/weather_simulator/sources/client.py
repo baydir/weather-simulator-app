@@ -24,11 +24,11 @@ import http.client
 import json
 import time
 import urllib.error
-import urllib.parse
 import urllib.request
 from collections.abc import Callable
 from typing import Any
 
+from weather_simulator.sources import openmeteo
 from weather_simulator.sources.errors import FetchError
 
 DEFAULT_TIMEOUT = 180
@@ -48,8 +48,7 @@ def get_json(
     sleep: Callable[[float], None] = time.sleep,
 ) -> dict[str, Any]:
     """GET ``url`` with ``params`` and return the decoded payload."""
-    query = urllib.parse.urlencode(params, doseq=True)
-    target = f"{url}?{query}"
+    target = openmeteo.encode(url, params)
 
     last: Exception | None = None
     for attempt in range(retries):
