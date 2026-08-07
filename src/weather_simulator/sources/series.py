@@ -62,6 +62,31 @@ def split_range(start: date, end: date, today: date) -> tuple[DateRange | None, 
     return observed, simulated
 
 
+def resume_after(columns: DailyColumns, boundary: date | None) -> DailyColumns:
+    """Trim ``columns`` to the days strictly after ``boundary``.
+
+    This is how the first seam is closed when the two segments were fetched
+    without waiting for one another — the browser executes a plan built in one
+    go, so IFS is asked for the whole stretch the reanalyses might not reach,
+    and the overlap is settled here instead.
+
+    **The reanalyses win wherever they served**, and the boundary is read from
+    the days they actually returned, never from a number of days: the latency is
+    five or six days, but a constant would be wrong as often as right. The
+    outcome is the same series the sequential fetch produces; only the order of
+    operations differs.
+    """
+    if boundary is None:
+        return columns
+    kept = sum(1 for day in columns.dates if day <= boundary)
+    if not kept:
+        return columns
+    return DailyColumns(
+        columns.dates[kept:],
+        {field: column[kept:] for field, column in columns.columns.items()},
+    )
+
+
 def build_series(*segments: tuple[DailyColumns | None, Origin, str]) -> list[DailyRecord]:
     """Turn parsed columns into one chronological list of days."""
     records: list[DailyRecord] = []

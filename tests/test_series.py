@@ -10,7 +10,8 @@ from conftest import fake_openmeteo
 from weather_simulator.domain.records import Origin
 from weather_simulator.sources import openmeteo
 from weather_simulator.sources.errors import CoverageError, MissingVariableError
-from weather_simulator.sources.series import fetch_series, split_range
+from weather_simulator.sources.parse import DailyColumns
+from weather_simulator.sources.series import fetch_series, resume_after, split_range
 
 TODAY = date(2026, 8, 2)
 LAG = 6  # the reanalyses stop here, at 2026-07-27
@@ -200,3 +201,43 @@ class TestRequestShape:
         assert len(series) == 30
         assert all(record.snowfall is None for record in series)
         assert all(record.precipitation is not None for record in series)
+
+
+class TestResumeAfter:
+    """Settling the overlap when IFS was fetched without waiting for the reanalyses.
+
+    The browser executes a plan built in one go, so IFS is asked for the whole
+    stretch the reanalyses might not reach. The reanalyses win wherever they
+    served, and the boundary is read from the days they actually returned.
+    """
+
+    @staticmethod
+    def columns(first: date, last: date) -> DailyColumns:
+        span = (last - first).days + 1
+        dates = [first + timedelta(days=offset) for offset in range(span)]
+        return DailyColumns(dates, {"cloud_cover": [float(i) for i in range(span)]})
+
+    def test_the_days_the_reanalyses_served_are_given_up(self):
+        recent = self.columns(date(2026, 7, 1), date(2026, 8, 2))
+        trimmed = resume_after(recent, date(2026, 7, 27))
+
+        assert trimmed.dates[0] == date(2026, 7, 28)
+        assert trimmed.dates[-1] == date(2026, 8, 2)
+        assert len(trimmed.columns["cloud_cover"]) == len(trimmed.dates)
+
+    def test_the_values_follow_their_dates(self):
+        """A column trimmed out of step with its dates would misdate every day."""
+        recent = self.columns(date(2026, 7, 1), date(2026, 7, 5))
+        trimmed = resume_after(recent, date(2026, 7, 2))
+
+        assert trimmed.dates == [date(2026, 7, 3), date(2026, 7, 4), date(2026, 7, 5)]
+        assert trimmed.columns["cloud_cover"] == [2.0, 3.0, 4.0]
+
+    def test_without_a_boundary_nothing_is_given_up(self):
+        """No reanalysis at all — a range wholly after they stopped, say."""
+        recent = self.columns(date(2026, 7, 1), date(2026, 7, 5))
+        assert resume_after(recent, None) is recent
+
+    def test_a_boundary_before_the_segment_gives_up_nothing(self):
+        recent = self.columns(date(2026, 7, 1), date(2026, 7, 5))
+        assert resume_after(recent, date(2026, 6, 30)).dates[0] == date(2026, 7, 1)
