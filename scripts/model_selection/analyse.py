@@ -9,7 +9,7 @@ measures at ten sites into one number, and that compression hides as much as it
 shows — a model may lead on average while failing outright somewhere the
 application will actually be used. The tables are printed in full for that
 reason, and the choice of model belongs to the scientific-validation regime of
-section 1 of the design document.
+CLAUDE.md.
 """
 
 from __future__ import annotations

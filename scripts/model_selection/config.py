@@ -23,7 +23,8 @@ the signal, and that is what the metrics read.
 **Sites.** Five in France, where the correction grid of step 4 starts, chosen
 for contrasting climates rather than for population; five elsewhere, so that a
 model is not selected on Europe alone — the grid is meant to widen, and the
-southern hemisphere has already caught out one rule (the snow gaps of section 2).
+southern hemisphere has already caught out one rule (the snow gaps of
+docs/science.md).
 Continuity with the verification scripts is deliberate: these are the same points
 the design figures were measured at.
 """

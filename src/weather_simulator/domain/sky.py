@@ -1,7 +1,7 @@
 """The sky class: one day of numbers turned into one of five words.
 
 **One function, called three times.** That is the whole point of this module,
-and it is a requirement of section 3 of the design document rather than a
+and it is a requirement of docs/regles.md rather than a
 stylistic preference. The old past, the recent past and the future must be
 classified by the same code path, or the seam the whole of ``sources`` works to
 erase would reappear here, one branch at a time. The earlier prototype held this
@@ -24,7 +24,7 @@ morning under cloud followed by a radiant afternoon carries the same number as
 an evenly grey day, and at equal cloud cover the light received spreads by 20 to
 49 points. The pictogram is therefore the least certain thing on the card: the
 temperatures and the millimetres describe that day, the icon describes the kind
-of day. That is the same trade section 3 already accepted in refusing any
+of day. That is the same trade docs/regles.md already accepted in refusing any
 intensity grading for rain.
 """
 
@@ -59,7 +59,7 @@ def classify(
 
     ``None`` is returned rather than a guess. A missing value is a gap in the
     data, and substituting a class for it would be a data-treatment decision
-    made in passing — precisely what section 1 reserves for validation.
+    made in passing — precisely what CLAUDE.md reserves for validation.
 
     The wet gate is crossed first, and rules 1 and 2 share it, so they partition
     the same set of days rather than overlap: among wet days, the temperature

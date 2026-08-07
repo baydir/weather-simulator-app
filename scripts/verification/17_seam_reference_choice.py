@@ -1,6 +1,6 @@
 """Which reanalysis should serve past TEMPERATURE?
 
-Two findings, both underpinning section 3:
+Two findings, both underpinning docs/donnees.md:
   (A) the archive default is ECMWF IFS from 2017 onward, ERA5-Land before;
   (B) the CMIP6 model sits far closer to ERA5-Land than to ERA5, because
       Open-Meteo bias-corrects its climate data against ERA5-Land.

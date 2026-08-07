@@ -11,7 +11,7 @@ the whole French box whose corrections return their input untouched — the thre
 quantile vectors being identical, quantile delta mapping is the identity.
 
 **That table must never be served.** An uncorrected future is an artificially
-sunny future, which is precisely the failure section 3 exists to prevent: the
+sunny future, which is precisely the failure docs/regles.md exists to prevent: the
 model is short of the reanalysis by eight to eleven points of cloud, and three
 of the five sky classes turn on that variable. So the flag rides along in the
 metadata, the file carries a different name, and the loader is expected to check

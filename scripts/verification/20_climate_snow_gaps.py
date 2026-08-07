@@ -1,7 +1,7 @@
 """Does the Climate API serve snow every day? No — and the gap is systematic.
 
 Sky class rule 1 rests on snowfall: a day is a snow day at 1 cm or more. If the
-variable is missing, the rule cannot be evaluated, and section 3 forbids filling
+variable is missing, the rule cannot be evaluated, and docs/regles.md forbids filling
 a gap silently.
 
 The gap is neither seasonal nor uniform, and that is the finding. At Marseille

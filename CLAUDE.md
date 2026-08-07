@@ -2,691 +2,133 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-> Les quatre sections sont rédigées. Elles sont amendées à chaque étape, à mesure que la mesure corrige ce que la conception avait supposé.
+Ce fichier ne porte que **les règles qui s'appliquent toujours** et **la carte
+des documents**. Tout le reste — l'intention, les données, les méthodes, la
+science, l'application — vit dans `docs/`, un document par sujet, à charger
+quand la tâche le touche.
 
 ---
 
-## Avancement
+## Les règles qui ne se négocient pas
 
-Les étapes 0 à 3 sont faites, la 4 est engagée : la méthode de correction, la table et son interpolation sont écrites, la collecte des 594 nœuds reste à mener. Le dépôt contient le présent document, `scripts/verification/`, `scripts/model_selection/`, `scripts/sky_thresholds/`, `scripts/calibration_grid/`, et le paquet `src/weather_simulator/`, dont `sources/` récupère et assemble la série homogène de 1950 à 2050 et `domain/` porte la classe de ciel et la correction de biais. L'API et l'interface restent à écrire.
+### 1. L'application ne produit pas de prévision
 
-L'enchaînement ci-dessous fixe **l'ordre**, imposé par les dépendances, et non le contenu de chaque étape — celui-ci se décide au moment de l'aborder, à la lumière de ce que la précédente aura révélé.
+Cette contrainte prime sur toutes les autres. Un modèle climatique ne prédit pas
+les conditions du 14 juillet 2046 : il produit une trajectoire plausible. Trois
+règles en découlent, applicables au code comme aux textes de l'interface :
 
-| | Étape | Dépend de | État |
-|---|---|---|---|
-| 0 | Nettoyage du prototype, packaging, `.gitignore` | — | **fait** |
-| 1 | Récupération et série homogène, sans classe de ciel | 0 | **fait** |
-| 2 | Confirmation du modèle parmi les cinq éligibles | 1 | **fait** |
-| 3 | Calage des seuils de nébulosité et classe de ciel | 1 | **fait** |
-| 4 | Grille de calibration France et correction de nébulosité | 2 | *en cours* |
-| 5 | API, validation des entrées et bloc de transformation | 3, 4 | à faire |
-| 6 | Interface : accueil, résultats, bande journalière | 5 | à faire |
-| 7 | Élargissement mondial de la grille | 4 | à faire |
+- **Vocabulaire de la prévision proscrit pour les dates futures** — « prévision »,
+  « il fera ». Les termes retenus sont « simulation », « météo plausible »,
+  « scénario ».
+- **Tout écran affichant une date future porte un avertissement explicite et
+  visible.**
+- **Aucune assertion d'exactitude portant sur une date déterminée n'est admise.**
 
-La confirmation du modèle venait en deuxième position pour deux raisons : l'étape 1 produisait l'outil qui permettait de la mener, et tout ce qui suit en dépend. Changer de modèle après avoir généré la grille de calibration aurait imposé de la refaire entièrement.
+Le pourquoi → [`docs/projet.md`](docs/projet.md).
 
-Aucune décision scientifique n'est en attente. Deux points restent toutefois calés sur une base mince et méritent d'être réexaminés le moment venu : le seuil de neige de 1,5 °C, établi sur deux sites et une saison, et l'ensemble des mesures de ce document, qui reposent sur dix sites.
+### 2. Toute grandeur affichée se calcule identiquement sur toute la série
 
----
+Quelle que soit la source qui a fourni la journée. **Ce principe prime sur la
+précision.**
 
-## 1. Contexte général du projet
+Il en découle une règle contre-intuitive : lorsqu'une information n'existe que
+du côté du passé, **elle est écartée plutôt qu'exploitée**. Le passé est
+délibérément ramené au niveau du futur, jamais l'inverse. Une richesse
+disponible d'un seul côté produirait une rupture à la couture — l'artefact que
+tout le dispositif vise à empêcher. La série comportant **deux coutures** et non
+une, le principe vaut à chacune.
 
-### Objet
+### 3. La classe de ciel est servie par une fonction unique, appelée trois fois
 
-Weather Simulator App est une application web restituant, jour par jour, les conditions météorologiques d'un lieu donné, pour toute date comprise entre 1950 et 2050.
+Toute duplication de cette logique — entre segments, ou entre Python et
+JavaScript comme dans le prototype initial — rouvre la divergence que la règle 2
+interdit. **Le navigateur ne dérive rien** : il récupère, transmet, affiche.
 
-L'utilisateur renseigne une localisation et une plage de dates. L'application retourne pour chaque journée les températures minimale et maximale, l'aspect du ciel et les précipitations, selon les modalités de présentation d'une application météorologique grand public.
+### 4. Gouvernance : la science se valide, le développement s'autonomise
 
-### Finalité
+**Domaine scientifique et traitement des données — validation obligatoire.** Le
+porteur du projet est compétent sur ces sujets et en conserve l'arbitrage. Y
+relèvent : le choix des modèles et du scénario, les méthodes de correction de
+biais, la reconstruction de variables absentes, l'homogénéisation des séries,
+les choix statistiques et les métriques de validation. Les options s'exposent
+avec leurs implications et leurs limites ; **la décision revient au porteur du
+projet**.
 
-La finalité du projet est pédagogique et non technique.
+**Développement logiciel — autonomie étendue.** Architecture, bibliothèques,
+organisation du code et modalités d'implémentation s'arrêtent sans validation
+préalable. Les difficultés et les compromis notables sont signalés.
 
-Le changement climatique est habituellement communiqué au moyen de moyennes globales et d'anomalies de température (« +2,7 °C à l'horizon 2100 »). Ces grandeurs sont exactes mais agrégées : elles ne renseignent pas sur les conditions concrètes rencontrées à une date et en un lieu déterminés.
+**Cas mixtes : le premier régime l'emporte.** Une décision de développement
+emportant une conséquence scientifique relève de la validation, quelle que soit
+son apparence technique — cache modifiant la granularité temporelle, agrégation
+ou arrondi côté interface, remplissage de valeurs manquantes, simplification
+introduite pour la performance. **En cas de doute, la validation est requise.**
 
-Le projet repose sur l'hypothèse que la restitution des projections climatiques sous une forme déjà familière — le bulletin météorologique quotidien — en améliore l'appropriation par un public non spécialiste. L'énoncé « 14 juillet 2046, Paris : 21 °C / 39 °C, ciel dégagé, 0 mm » présente un caractère concret que l'anomalie globale n'a pas.
+### 5. Conventions de langue
 
-Le format d'application météorologique constitue donc un choix fonctionnel et non un habillage. Toute décision de conception qui s'en écarte doit être justifiée au regard de cet objectif.
-
-### Contrainte principale : l'application ne produit pas de prévision
-
-Cette contrainte prime sur toutes les autres.
-
-Un modèle climatique ne prédit pas les conditions du 14 juillet 2046. Il produit une trajectoire cohérente, c'est-à-dire une séquence de journées statistiquement plausible dans un climat modifié. La date affichée situe la journée dans une saison et dans une décennie ; elle n'engage aucune exactitude sur cette journée.
-
-Il en découle les règles suivantes, applicables au code comme aux textes de l'interface :
-
-- Le vocabulaire de la prévision est proscrit pour les dates futures : « prévision », « il fera ». Les termes retenus sont « simulation », « météo plausible », « scénario ».
-- Tout écran affichant une date future comporte un avertissement explicite et visible.
-- Aucune assertion d'exactitude portant sur une date déterminée n'est admise.
-
-L'application doit être suffisamment réaliste pour remplir sa fonction pédagogique, et suffisamment explicite sur son statut pour ne pas induire en erreur. Cet arbitrage se pose à chaque décision d'interface.
-
-### Public visé
-
-Public francophone non spécialiste. La compréhension de l'application ne doit supposer aucune connaissance préalable des modèles climatiques.
-
-### Régimes de données
-
-Une requête peut couvrir simultanément le passé et le futur. L'application combine alors deux sources de nature différente :
-
-- Passé (1950 → date du jour) : observations issues de réanalyses météorologiques.
-- Futur (date du jour → 2050) : sorties d'un modèle climatique.
-
-Les deux sources proviennent d'Open-Meteo. Le choix des modèles est traité en section 2 ; la construction d'une série homogène malgré le changement de source est traitée en section 3.
-
-### Gouvernance des décisions techniques
-
-Tout point technique bloquant est soumis à validation préalable. Le degré d'autonomie diffère toutefois selon le domaine.
-
-**Domaine scientifique et traitement des données — validation obligatoire.** Le porteur du projet est compétent sur ces sujets et en conserve l'arbitrage. Relèvent notamment de ce régime : le choix des modèles climatiques et du scénario d'émissions, les méthodes de correction de biais, la reconstruction de variables absentes des sources, les procédés d'homogénéisation des séries, ainsi que les choix statistiques et les métriques de validation associées. Ces décisions ne sont pas prises unilatéralement : les options sont exposées avec leurs implications et leurs limites, la décision revient au porteur du projet.
-
-**Développement logiciel — autonomie étendue.** L'architecture, le choix des bibliothèques, l'organisation du code et les modalités d'implémentation peuvent être arrêtés sans validation préalable. Les difficultés rencontrées et les compromis notables sont néanmoins signalés.
-
-**Cas mixtes.** Une décision de développement emportant une conséquence scientifique ou statistique relève du premier régime, quelle que soit son apparence technique. Sont notamment concernés : un mécanisme de cache modifiant la granularité temporelle des données, une agrégation ou un arrondi effectué côté interface, un remplissage de valeurs manquantes, ou toute simplification introduite pour des raisons de performance. En cas de doute sur le régime applicable, la validation est requise.
-
-### Conventions de langue
-
-- Code, identifiants, commentaires et messages de commit : anglais.
-- Interface et textes destinés à l'utilisateur : français.
-- Présent document : français ; traduction en anglais prévue ultérieurement.
-
-### État du dépôt
-
-Un prototype antérieur (Flask, JavaScript) occupait `src/meteo_app/` et `notebooks/`. **Il a été supprimé à l'étape 0**, l'autorisation permanente qui figurait ici ayant été exercée ; il reste récupérable par l'historique Git. Il contredisait la conception sur tous les points structurants — modèle climatique dépourvu de nébulosité, endpoint d'archive par défaut, logique de découpage dupliquée entre JavaScript et Python, géocodage par Nominatim.
-
-Le dépôt contient désormais :
-
-- `src/weather_simulator/` — `sources/` récupère et assemble la série ; `domain/` porte l'enregistrement journalier, les seuils et la classe de ciel ; `transform/`, `api/` et `calibration/` attendent leur étape.
-- `tests/` — tests hors réseau, l'accès aux API étant injecté.
-- `scripts/verification/` — les mesures de conception, antérieures à tout code applicatif.
-- `scripts/model_selection/` — le départage des cinq modèles, étape 2.
-- `scripts/sky_thresholds/` — le calage des seuils de ciel, étape 3.
-- `scripts/calibration_grid/` — la grille de correction, étape 4 : sonde, collecte, construction de la table.
-- `scripts/inspect_seam.py` — lecture des coutures sur requête réelle.
-
-Les commentaires du code portent la justification des choix et renvoient aux constats du présent document. En cas de divergence entre les deux, **c'est le document qui fait foi** et le code qui doit être corrigé — ou le document amendé, si c'est lui qui a pris du retard.
-
-**Les trois dossiers de mesure et le présent document ne se modifient pas sans validation.** Le reste du code relève de l'autonomie de développement définie plus haut.
-
-Les faits chiffrés cités dans les sections 2, 3 et 4 sont établis par ces dossiers, dont chaque `README.md` indique ce qui s'y démontre. Toute valeur contestée doit être remesurée par le script correspondant, puis corrigée dans le présent document — jamais ajoutée à côté de l'ancienne.
-
-Les trois dossiers ne se ressemblent pas, et c'est délibéré. `verification/` date de la conception : sans aucune dépendance, `urllib` seul, chaque script isolé, et **gelé** — ses valeurs ont fondé les décisions initiales. `model_selection/` et `sky_thresholds/` sont postérieurs au paquet et s'appuient sur lui : refaire la construction des requêtes ou la détection des valeurs nulles y aurait ouvert la porte à deux comportements divergents. Tous deux séparent la collecte, lente et limitée en débit, de l'analyse, qui se rejoue hors réseau depuis `data/`.
+- Code, identifiants, commentaires, messages de commit : **anglais**.
+- Interface et textes destinés à l'utilisateur : **français**.
+- Documentation : français ; traduction anglaise prévue ultérieurement.
 
 ---
 
-## 2. Scientifique
+## La carte des documents
 
-### Sources
-
-Deux jeux de données, tous deux exposés par Open-Meteo :
-
-- **Passé** — *Historical Weather API*, réanalyses ERA5 (0,25°, depuis 1940) et ERA5-Land (0,1°, depuis 1950).
-- **Futur** — *Climate API*, modèles CMIP6 du protocole HighResMIP (Haarsma et al., 2016), corrigés de leur biais et ramenés à une grille de 10 km par Open-Meteo.
-
-Ce choix tient à l'homogénéité de format des deux jeux et à l'absence de clé d'accès pour un usage non commercial. Il n'est pas définitif : d'autres sources sont envisageables (voir *Améliorations envisagées*).
-
-### Couverture, vérifiée le 31 juillet 2026
-
-| | Historical API | Climate API |
-|---|---|---|
-| Période | 1940-01-01 → veille du jour courant | 1950-01-01 → 2050-12-31 |
-| Hors bornes | — | HTTP 400, « Invalid date » |
-| Pas de temps | horaire et journalier | journalier seulement |
-| `weather_code` | disponible | **valeurs nulles, sans erreur** |
-| Paramètre `hourly` | honoré | **accepté, aucun bloc renvoyé** |
-
-Variables non nulles dans les deux sources : températures (max, min, moyenne), précipitations (totales, pluie, neige), nébulosité moyenne, rayonnement, humidité relative, vent — moyen et maximal —, rafales, pression au niveau de la mer, point de rosée. Réservées à l'historique : `weather_code`, `sunshine_duration`, `precipitation_hours`, évapotranspiration, température ressentie, nébulosité maximale et minimale.
-
-**L'absence est silencieuse, et de deux manières.** L'API Climate accepte le paramètre `weather_code`, répond HTTP 200 et renvoie des valeurs nulles assorties d'une unité `undefined`. Elle accepte de même `hourly` et `temporal_resolution`, répond HTTP 200, et ne renvoie tout simplement aucun bloc horaire. Tout code appelant doit donc détecter l'absence explicitement plutôt que se fier au statut HTTP.
-
-Deux de ces variables historiques paraissent utiles et ne le sont pas : `weather_code` et `sunshine_duration` sont l'une et l'autre des étalons trompeurs, pour des raisons développées en section 3.
-
-### Modèle retenu
-
-Deux des sept modèles sont écartés pour indisponibilité de données, non par arbitrage :
-
-- `CMCC_CM2_VHR4` — ne fournit aucune valeur de nébulosité. C'est le modèle utilisé par défaut dans le prototype initial.
-- `EC_Earth3P_HR` — ne couvre pas l'année 2050.
-
-Les cinq restants couvrent 1950-2050 sur l'ensemble des sites testés. **`MRI_AGCM3_2_S` est retenu**, à l'issue de la comparaison décrite ci-dessous. Il l'était auparavant à titre provisoire, pour sa seule résolution native (20 km, la plus fine des cinq) ; il l'est désormais pour ses résultats. Le modèle demeure paramétrable, sans valeur codée en dur.
-
-### Comment les cinq ont été départagés
-
-La comparaison porte sur 1979-2014, dix sites de climats contrastés, quinze mesures — `scripts/model_selection/`. Les deux bornes sont contraintes : les runs historiques HighResMIP s'arrêtent fin 2014, au-delà de quoi les modèles suivent leur scénario et l'on confondrait le modèle avec son forçage ; et ERA5 avant 1979 est l'extension arrière préliminaire, de qualité moindre, ce qui ferait passer les faiblesses de la référence pour des erreurs de modèle.
-
-**Les critères annoncés dans une version antérieure de ce document — biais et RMSE sur les températures extrêmes — ont dû être abandonnés, tous les deux.**
-
-Le biais est fixé d'avance : Open-Meteo ramène chaque modèle sur ERA5-Land par coefficients mensuels (voir *La correction de biais d'Open-Meteo*), si bien que comparer les moyennes aurait classé ses coefficients et non les modèles. Le RMSE, lui, suppose que les deux séries décrivent les mêmes journées. Elles ne les décrivent pas : les runs HighResMIP sont forcés par les températures de surface océaniques observées mais leur atmosphère est libre, et la corrélation jour à jour des anomalies de température avec la réanalyse vaut 0,04 à Brest, 0,08 à Singapour — nulle. Le modèle ne rejoue pas plus le 14 juillet 1994 qu'il ne prédira le 14 juillet 2046. Un RMSE aurait mesuré cette désynchronisation, totale par construction, et donné à peu près la même valeur pour les cinq.
-
-Ne subsiste que ce qu'une correction linéaire mensuelle laisse intact et qui ne suppose aucune synchronie : la comparaison de deux **populations de journées** sur 36 ans. Deux familles de mesures, appliquées aux mêmes agrégats journaliers que ceux que l'application affiche.
-
-*Dispersion et persistance* — écarts-types des anomalies de température maximale, minimale et de nébulosité ; autocorrélation à j+1 de la température et de la nébulosité ; amplitude du cycle saisonnier ; longueur moyenne et p95 des séquences sèches, longueur moyenne des séquences humides. Les écarts-types et les autocorrélations se calculent sur les **anomalies**, climatologie du jour de l'année retirée : sur les valeurs brutes, l'autocorrélation à j+1 vaut environ 0,97 dans toute série qui a un été et un hiver, et mesurerait le cycle annuel au lieu de la persistance météorologique.
-
-*Forme des distributions* — fréquence des jours humides, intensité moyenne et p99 des jours humides, p99 des anomalies de température maximale, p1 des anomalies de température minimale, étendue interdécile de la nébulosité. Les seuils employés sont ceux de la section 3, non des seuils forgés pour l'occasion.
-
-Le **niveau** de nébulosité est délibérément exclu du classement : le biais y est en partie fabriqué par la correction d'Open-Meteo, et sa correction relève de l'étape 4. Seule la largeur de la distribution est lue, jamais son centre.
-
-### Résultat
-
-Rang moyen sur les dix sites, 1 étant le plus proche de la réanalyse et 5 le plus éloigné ; 3,00 serait le hasard.
-
-| Modèle | Dispersion | Forme | Ensemble |
-|---|---|---|---|
-| **MRI_AGCM3_2_S** | 2,52 | 2,38 | **2,46** |
-| FGOALS_f3_H | 3,16 | 2,99 | 3,09 |
-| HiRAM_SIT_HR | 3,00 | 3,23 | 3,09 |
-| MPI_ESM1_2_XR | 3,08 | 3,17 | 3,11 |
-| NICAM16_8S | 3,24 | 3,23 | 3,24 |
-
-**L'argument décisif n'est toutefois pas la moyenne, et il importe de le dire :** les quatre autres sont indiscernables entre eux, tous au niveau du hasard. Ce qui sépare `MRI_AGCM3_2_S` est **l'absence de site défaillant**. Il est premier ou deuxième sur huit sites sur dix, dernier nulle part, et son plus mauvais site — Strasbourg — le laisse à 3,10. Chacun des quatre autres s'effondre quelque part : NICAM16_8S à 4,60 à Singapour, MPI_ESM1_2_XR à 4,33 à Reykjavik, FGOALS_f3_H à 3,73 à Singapour, HiRAM_SIT_HR à 3,60 à Chamonix. Pour une application qui doit répondre en tout point du globe, c'est la robustesse qui compte, non la performance moyenne.
-
-Deux illustrations. Sous les tropiques, où la référence donne 82,3 % de jours humides à Singapour, FGOALS_f3_H en donne 34,8 points de moins et HiRAM_SIT_HR 21,0 de moins : ils ne font pas la mousson, quand MRI_AGCM3_2_S s'en écarte de 1,4 point. Et NICAM16_8S fabrique des chaleurs qui n'existent pas, son p99 d'anomalie de température maximale dépassant la référence de 7,2 °C à Bamako et de 6,4 °C à Singapour.
-
-Un défaut est en revanche **commun aux cinq**, et ne peut donc pas départager : la nébulosité change trop vite d'un jour au lendemain. Son autocorrélation à j+1 est en retrait sur presque tous les sites, de 0,01 à 0,17 point. Le ciel des modèles papillonne plus que le vrai ; `MRI_AGCM3_2_S` est le moins atteint. À retenir comme limite du dispositif.
-
-**Une indisponibilité découverte à cette occasion :** `FGOALS_f3_H` et `HiRAM_SIT_HR` ne servent jamais `wind_speed_10m_max` — aucune valeur sur 36 ans, aux dix sites. Le vent moyen, lui, est servi par les cinq. L'audit de couverture initial (script 05) ne testait que quatre variables et ne pouvait pas le voir. Le fait est sans conséquence sur le choix retenu, `MRI_AGCM3_2_S` servant les deux, mais il aurait éliminé ces deux modèles d'office.
-
-### Scénario d'émissions
-
-L'API Climate n'expose aucun sélecteur de scénario. Les paramètres `scenario`, `ssp` et `experiment` sont acceptés sans erreur mais demeurent sans effet : les valeurs renvoyées sont identiques quelle que soit la demande. La seule trajectoire disponible approche RCP8.5, soit une hypothèse d'émissions haute. Sa lecture courante comme scénario tendanciel est contestée : elle a été conçue pour explorer un futur à risque élevé et peu probable, non pour décrire la trajectoire attendue (Hausfather & Peters, 2020). Ce statut doit être explicite dans l'interface.
-
-### La correction de biais d'Open-Meteo
-
-Le mécanisme conditionne tout ce que l'on peut mesurer sur ces sorties, et il n'était pas documenté ici. Il a été relevé dans la documentation d'Open-Meteo, puis vérifié en comparant la sortie servie à la sortie brute — le paramètre `disable_bias_correction=true`, non documenté dans nos scripts jusque-là, expose le modèle avant retouche.
-
-**Douze coefficients par variable et par point de grille.** Un par mois du calendrier, non par mois de la série. Pour un point et une variable, on moyenne les cinquante janviers du modèle, on moyenne les cinquante janviers d'ERA5-Land, et l'écart des deux devient le coefficient de janvier. Tout 17 janvier le reçoit ensuite, celui de 1963 comme celui de 2049.
-
-**La forme diffère selon la variable**, et la mesure la tranche sans ambiguïté : si l'écart corrigé−brut est constant sur le mois, la correction est additive ; si c'est le rapport, elle est multiplicative.
-
-| Variable | Écart, écart-type | Rapport, écart-type | Nature |
-|---|---|---|---|
-| Température maximale | ±0,05 °C | ±5,5 | **additive**, +2,2 à +3,0 °C selon le mois |
-| Précipitations | ±2,7 mm | ±0,001 | **multiplicative**, ×0,78 à ×0,83 |
-| Vent moyen | ±4,5 km/h | ±0,003 | **multiplicative**, ×0,56 à ×0,59 |
-| Nébulosité | ±2,3 pt | ±0,21 | **ni l'une ni l'autre** |
-
-Additif pour une grandeur non bornée, multiplicatif pour une grandeur bornée à zéro : la cohérence est celle qu'on attend.
-
-**La correction est aussi la descente d'échelle.** Trois points distants de 12 km autour de Pontarlier portent des jeux de coefficients entièrement différents — +3,02 °C en janvier au premier, +0,90 au deuxième, −0,04 au troisième — quand le modèle brut leur donne pratiquement la même valeur, tombant dans la même maille native de 20 km. Toute l'information de relief entre 20 et 10 km est portée par le champ de coefficients, non par le modèle. D'où une conséquence pratique : désactiver la correction ne retire pas seulement un décalage, elle rend le modèle aveugle au terrain.
-
-**Trois propriétés commandent le reste du dispositif.**
-
-La correction ne dépend pas de la valeur du jour : un 17 janvier doux et un 17 janvier glacial reçoivent le même décalage. La moyenne bouge, la variance et les extrêmes ne bougent pas — c'est ce qui fonde les critères de départage retenus à l'étape 2.
-
-Elle ne change pas dans le temps : mêmes coefficients en 1980 et en 2046. La stationnarité du biais, que la section 3 postulait pour justifier une calibration sur la période de recouvrement, est donc mécanique et non plus seulement empirique. La tendance survit pour la même raison : un décalage ou un facteur constant par mois ne modifie pas une pente.
-
-Elle introduit enfin **douze petites marches par an**, à date fixe : le 31 mars reçoit +2,94 °C à Pontarlier, le 1ᵉʳ avril +2,51. L'écart est très inférieur au bruit météorologique quotidien, donc invisible sur une carte journalière — mais il est réel, et à garder en mémoire si une moyenne mensuelle ou saisonnière venait à être affichée.
-
-**La nébulosité fait exception, et c'est la variable la plus exposée du projet.** Ni écart ni rapport constant : elle ne reçoit pas de correction linéaire simple au pas journalier. L'explication la plus plausible — hypothèse, non fait établi — est que la correction s'applique au pas horaire et que la nébulosité, seule des quatre à être bornée des *deux* côtés, se fait rogner à 0 et à 100 avant d'être remoyennée sur la journée. Une température ne bute sur rien, une pluie multipliée par 0,8 n'atteint jamais zéro ; un ciel, si. Une partie des écarts relevés à la limite 2 est donc vraisemblablement fabriquée par la correction elle-même plutôt qu'héritée du modèle. Le point est à reprendre à l'étape 4, où la correction de nébulosité se décide.
-
-### Statut de la référence
-
-ERA5 n'est pas une mesure, mais une réanalyse : un modèle météorologique contraint par assimilation d'observations. Là où celles-ci sont denses, il s'en approche ; ailleurs, il produit surtout du modèle.
-
-La distinction est déterminante, car ERA5 sert de référence à toute évaluation du modèle climatique menée dans ce projet. Ses propres erreurs sont donc, par construction, invisibles à nos comparaisons.
-
-**Un seul contrôle externe a été mené, et il a trouvé un facteur deux.** Confrontée aux normales publiées, la durée d'ensoleillement d'ERA5 donne 3 311 heures par an à Brest pour environ 1 700 réelles (section 3). Ce contrôle n'était pas prévu : un chiffre a paru suspect. **Les autres variables n'ont subi aucun test de ce genre** — les précipitations et le vent, affichés à l'utilisateur, ne sont vérifiés que contre eux-mêmes. À traiter avant l'élargissement mondial de l'étape 7.
-
-### ERA5 et ECMWF IFS : deux instruments, non deux degrés de justesse
-
-L'*Historical Weather API* expose une troisième source, `ecmwf_ifs` : l'analyse opérationnelle d'ECMWF, à 9 km, disponible **du 1er janvier 2017 au jour même, sans latence**, là où ERA5 et ERA5-Land accusent cinq à six jours de retard. Elle sert les huit variables du projet sans valeur nulle, en une seule requête.
-
-L'écart entre les deux sources n'est documenté nulle part sous forme chiffrée : la littérature compare chaque système aux observations de surface, jamais l'un à l'autre. Il a donc été mesuré ici (script 19), sur quatre sites français et sept années. Trois mécanismes l'expliquent.
-
-**La résolution.** ERA5 tourne à 31 km avec le cycle 41r2 d'IFS, figé en 2016 ; l'IFS opérationnel tourne à 9 km. Une maille de 31 km centrée sur Pontarlier moyenne la vallée du Doubs avec les plateaux voisins : au 1er janvier 2017, ERA5 y donne 0,2 °C de température maximale contre 5,4 °C pour IFS. À Paris, où il n'y a pas de relief à résoudre, les deux donnent 0,9 °C. L'écart est géométrique, non physique.
-
-**La correction d'altitude d'ERA5-Land.** ERA5-Land n'est pas une réanalyse indépendante mais le modèle de surface rejoué à 11 km, forcé par l'atmosphère d'ERA5 et corrigé par un gradient thermique vertical quotidien (Muñoz-Sabater et al., 2021). Il corrige donc précisément le défaut d'altitude qui fait diverger ERA5. D'où le classement observé sur la température : IFS ≈ ERA5-Land ≠ ERA5. Ce constat conforte après coup le forçage d'ERA5-Land retenu en section 3.
-
-**Les montées de version.** ERA5 rejoue quatre-vingts ans avec une seule version du modèle. IFS change une à deux fois par an. Or ECMWF annonce explicitement, d'une version à l'autre, l'amélioration des champs de vent et de température près de la surface — soit exactement ceux sur lesquels les deux sources divergent le plus. La série IFS porte donc ses propres ruptures internes, aux dates de mise à jour.
-
-Il en résulte qu'aucune des deux sources n'est « plus fausse » dans l'absolu : ni l'une ni l'autre n'est une mesure, et la question n'a de sens qu'au regard de l'usage. Pour restituer un point un jour donné, en terrain complexe surtout, IFS est meilleur — il voit le relief. Pour comparer deux dates séparées de décennies, ERA5 est meilleur — il ne change pas d'instrument en chemin. Open-Meteo tranche d'ailleurs dans le même sens : *« when studying climate change over decades, it is advisable to exclusively utilise ERA5 or ERA5-Land »*.
-
-Amplitude de l'écart, sur 2018-2024 : moins de 1 °C sur les températures, moins de 1 mm par jour sur les précipitations, moins de 1 point de nébulosité hors montagne. Deux exceptions. Le **vent** décale de −3,1 à +3,3 km/h selon le site, avec changement de signe — Brest vers le bas, Pontarlier vers le haut — soit le quart de la valeur. Et la **haute montagne** dégrade tout : à Chamonix, −5,2 points de nébulosité et +1,8 °C sur la température maximale hivernale. L'écart de température varie en outre avec la saison, ce qui interdit de le corriger par un décalage unique.
-
-### Limites
-
-Les mesures citées ci-dessous reposent sur un nombre restreint de sites et de périodes. Elles établissent des motifs, non des amplitudes valables en tout point. L'échantillon est appelé à être élargi.
-
-**1. Aucun code météorologique pour le futur.** La variable existe dans l'historique mais pas dans les projections. L'aspect du ciel doit être reconstruit à partir des autres variables ; les modalités relèvent de la section 3.
-
-**2. Nébulosité sous-estimée deux fois.** Le modèle est en retrait d'ERA5 sur tous les sites testés — de −5,1 points à Pontarlier à −30,2 à Singapour, en passant par −8,1 à Brest, −10,2 à Marseille, −6,7 à Reykjavik et −21,2 à Bamako. Ces valeurs sont mesurées contre ERA5 explicitement forcé : l'endpoint par défaut sélectionne sa source variable par variable et bascule vers ECMWF IFS en 2017, ce qui fausse toute comparaison. L'écart n'est donc ni local ni imputable au relief : Pontarlier est le site le moins touché. Il est en revanche stable dans le temps, les valeurs 2041-2050 étant indiscernables de l'historique du modèle, ce qui le rend calibrable sur la période de recouvrement.
-
-**Le titre de cette limite est trompeur, et l'étape 3 l'a établi : l'écart n'est pas entièrement hérité du modèle, il est en partie fabriqué par la correction d'Open-Meteo** — voir *Correction de la nébulosité* en section 3. À Pontarlier le modèle brut est à +0,5 point d'ERA5 et le corrigé à −8,8. La conclusion pratique ne change pas — une correction reste nécessaire, et la stationnarité la rend possible — mais son origine n'est pas celle qu'on supposait.
-
-Les réanalyses sont par ailleurs elles-mêmes en retrait des observations de surface — constat établi en Méditerranée sur ERA-Interim et MERRA, antérieurs à ERA5 (Enriquez-Alonso et al., 2015). L'extrapolation à ERA5 n'est donc pas démontrée, mais si elle se vérifie, les deux erreurs s'additionnent dans le même sens.
-
-**3. Précipitations lissées par ERA5.** La réanalyse surestime les pluies faibles et le nombre de jours pluvieux, et sous-estime les épisodes intenses (Lavers et al., 2022). Deux mécanismes se cumulent. D'abord l'agrégation spatiale : une maille de 30 km ne livre qu'une moyenne, dans laquelle une cellule convective de quelques kilomètres est diluée par construction. Ensuite la paramétrisation de la convection, non résolue explicitement, que les schémas déclenchent trop souvent et trop longtemps à intensité trop faible — biais documenté sur les modèles de climat, où il s'aggrave à mesure que la résolution se dégrade (Chen et al., 2021). Les épisodes orageux ne sont donc pas absents, mais représentés de façon diffuse. Conséquence directe : les cumuls journaliers sont exploitables, les intensités ne le sont pas.
-
-**4. Correction de biais restreinte à la moyenne.** Le procédé appliqué par Open-Meteo — correction linéaire à coefficients mensuels, détaillé ci-dessous — ajuste la moyenne mensuelle sans corriger la variance ni les extrêmes. Nos mesures le confirment : les écarts de moyenne sur la température restent inférieurs à 0,35 °C, tandis que les rapports d'écart-type s'échelonnent de 0,61 à 1,41 selon la variable et le site.
-
-**5. Extrêmes de température et sécheresses : aucun déficit constaté.** Contrairement à ce qu'on pouvait craindre, le modèle produit sur la période de recouvrement *davantage* de jours chauds que l'observation, davantage de vagues de chaleur d'au moins trois jours, et des sécheresses maximales plus longues. L'autocorrélation d'ordre 1 des températures est reproduite à 0,01 près : la persistance temporelle tient. Deux réserves : le test chevauche la période d'ajustement des coefficients de correction, donc flatte le modèle ; et il ne dit rien de l'amplification future des extrêmes, invérifiable par nature. Aucune correction n'est appliquée sur ce point — en introduire une là où la mesure n'établit pas de déficit reviendrait à injecter une erreur.
-
-**6. Modèle unique et phénomènes non résolus.** Retenir une seule sortie interdit toute estimation de l'incertitude inter-modèles. Or aux échéances proches, celle-ci et la variabilité interne l'emportent sur l'incertitude de scénario (Hawkins & Sutton, 2009) — c'est-à-dire que le choix du modèle pèse ici davantage que celui de la trajectoire d'émissions. Par ailleurs, malgré une grille ramenée à 10 km, la résolution effective reste celle de la maille d'origine : orages, brouillards de vallée et effets de relief fins ne sont pas représentés. La descente d'échelle recale et redistribue, elle n'ajoute pas d'information.
-
-**7. Asymétrie de résolution temporelle.** L'historique est disponible au pas horaire, les projections au pas journalier seulement. Toute grandeur dérivée doit donc être construite à partir d'agrégats journaliers des deux côtés, sous peine de rupture à la date du jour. C'est la contrainte structurante de la section 3.
-
-**8. Neige servie par plages manquantes.** Le modèle laisse dans `snowfall_sum` — et dans `rain_sum` — des trous qui ne sont ni saisonniers ni uniformes : 61 jours chaque été à Marseille et à Brest, du 3 juillet au 1er septembre ; la moitié de l'année à Christchurch, hiver austral compris ; aucun à Ushuaia. Ils ne coïncident ni avec les jours secs — 19 jours de pluie mesurée en sont dépourvus — ni avec une saison. Leur ampleur dépend aussi du modèle : `FGOALS_f3_H` ne la sert jamais, `MPI_ESM1_2_XR` en perd 122 jours par an. Les précipitations totales et les températures, elles, sont complètes partout, ce qui fonde le critère dérivé retenu en section 3.
-
-Un échantillon élargi à dix sites, à l'étape 2, apporte deux corrections à ce tableau. Aucun des cinq n'est complet : `NICAM16_8S`, que la mesure initiale donnait pour tel, descend à 83 % à Brest et à Christchurch. Et **aux sites tropicaux — Bamako, Singapour — les cinq servent 0 %** : là où la neige n'a pas d'objet, la variable est absente plutôt que nulle, ce qui n'est pas une défaillance. Ailleurs les taux vont de 50 à 100 % selon le modèle et le lieu.
-
-La complétude n'a finalement pas pesé sur le choix du modèle : la classe de ciel ne lisant plus la neige, seule comptait la complétude des précipitations et des températures, acquise partout et pour les cinq.
-
-### Améliorations envisagées
-
-- Correction du biais de nébulosité par calibration sur la période de recouvrement.
-- **Classe de ciel apprise sur des observations réelles.** L'étape 3 a montré qu'aucun étalon interne à Open-Meteo ne convient : `sunshine_duration` est faux d'un facteur 1,3 à 2,0, et le `weather_code` est un maximum horaire circulaire. Mais de vraies observations existent en dehors : les relevés synoptiques de surface donnent la nébulosité totale en octas, mesurée plusieurs fois par jour — Météo-France en open data pour la France, la NOAA mondialement. C'est une observation, non une dérivation.
-
-  Un modèle ajusté sur cette cible, prenant en entrée les agrégats journaliers dont on dispose sur les trois segments, ferait mieux qu'un seuil unique sur la nébulosité. La mesure le montre déjà : ajouter la seule **amplitude thermique** — un grand écart entre minimale et maximale signe un ciel dégagé, le sol chauffant le jour et rayonnant la nuit sans couverture — fait passer la variance expliquée de 0,50 à 0,64 à Strasbourg, de 0,30 à 0,52 à Bamako. Cette variable est servie par les trois sources.
-
-  **Le plafond reste celui de la section précédente** : les entrées étant journalières côté futur, aucun apprentissage ne récupère la structure interne d'une journée. Le gain porte sur la discrimination *entre* journées de même nébulosité, jamais *à l'intérieur* d'une journée.
-
-  **C'est un travail en soi**, de l'ampleur de l'étape 2 : seconde source avec sa licence et son contrôle qualité, appariement station-maille — une station est un point, ERA5 une maille de 25 km, et la section 2 documente déjà ce que cet écart produit —, définition conventionnelle de « l'allure dominante » à partir de relevés horaires, et un modèle ajusté devenant un artefact embarqué, moins lisible qu'un arbre de décision sur des pages qui doivent expliquer la méthode.
-- Enveloppe d'incertitude fondée sur l'écart entre les cinq modèles éligibles, sans renoncer à l'affichage d'une trajectoire unique.
-- Comparaison aux projections régionalisées DRIAS de Météo-France, mieux évaluées sur la France, et à la trajectoire de référence TRACC.
-- Ouverture à d'autres scénarios d'émissions, ce qui suppose de changer de source.
-
-### Références
-
-- Cannon, A. J., Sobie, S. R. & Murdock, T. Q. (2015). Bias correction of GCM precipitation by quantile mapping: how well do methods preserve changes in quantiles and extremes? *Journal of Climate*, 28, 6938-6959. [10.1175/JCLI-D-14-00754.1](https://doi.org/10.1175/JCLI-D-14-00754.1) — *établit le quantile delta mapping et la manière dont les transpositions ordinaires déforment les tendances.*
-- Chen, D., Dai, A. & Hall, A. (2021). The convective-to-total precipitation ratio and the « drizzling » bias in climate models. *Journal of Geophysical Research: Atmospheres*. [10.1029/2020JD034198](https://doi.org/10.1029/2020JD034198) — *porte sur les modèles CMIP5, non sur ERA5.*
-- Enriquez-Alonso, A. et al. (2015). Cloud cover climatologies in the Mediterranean obtained from satellites, surface observations, reanalyses, and CMIP5 simulations. *Climate Dynamics*. [10.1007/s00382-015-2834-4](https://doi.org/10.1007/s00382-015-2834-4) — *porte sur ERA-Interim et MERRA, antérieurs à ERA5.*
-- Haarsma, R. J. et al. (2016). High Resolution Model Intercomparison Project (HighResMIP v1.0) for CMIP6. *Geoscientific Model Development*, 9, 4185-4208. [10.5194/gmd-9-4185-2016](https://doi.org/10.5194/gmd-9-4185-2016)
-- Hausfather, Z. & Peters, G. P. (2020). Emissions – the « business as usual » story is misleading. *Nature*, 577, 618-620. [10.1038/d41586-020-00177-3](https://doi.org/10.1038/d41586-020-00177-3)
-- Hawkins, E. & Sutton, R. (2009). The potential to narrow uncertainty in regional climate predictions. *Bulletin of the American Meteorological Society*, 90, 1095-1107. [10.1175/2009BAMS2607.1](https://doi.org/10.1175/2009BAMS2607.1)
-- Lavers, D. A., Simmons, A., Vamborg, F. & Rodwell, M. J. (2022). An evaluation of ERA5 precipitation for climate monitoring. *Quarterly Journal of the Royal Meteorological Society*, 148. [10.1002/qj.4351](https://doi.org/10.1002/qj.4351)
-- Muñoz-Sabater, J. et al. (2021). ERA5-Land: a state-of-the-art global reanalysis dataset for land applications. *Earth System Science Data*, 13, 4349-4383. [10.5194/essd-13-4349-2021](https://doi.org/10.5194/essd-13-4349-2021) — *établit la résolution de 9 km et la correction par gradient thermique.*
-- ECMWF (2024). IFS upgrade improves near-surface wind and temperature forecasts. *ECMWF Newsletter* 181. [ecmwf.int](https://www.ecmwf.int/en/newsletter/181/earth-system-science/ifs-upgrade-improves-near-surface-wind-and-temperature) — *une montée de version parmi d'autres ; illustre l'inhomogénéité propre à IFS.*
-- Open-Meteo. *Historical Weather API — documentation*. [open-meteo.com](https://open-meteo.com/en/docs/historical-weather-api) — *source de la recommandation de n'employer qu'ERA5 ou ERA5-Land pour l'étude du climat sur des décennies, et des latences annoncées.*
-
----
-
-## 3. Traitement des données
-
-### Principe directeur
-
-Toute grandeur affichée doit être calculée **de façon identique sur toute la série**, quelle que soit la source qui a fourni la journée. Ce principe prime sur la précision.
-
-Il en découle une règle contre-intuitive : lorsqu'une information n'existe que du côté du passé, elle est écartée plutôt qu'exploitée. Le passé est délibérément ramené au niveau du futur, jamais l'inverse. Une richesse disponible d'un seul côté produirait une rupture à la couture, c'est-à-dire exactement l'artefact que cette section a pour objet d'empêcher. Le cumul de neige en est l'application la plus coûteuse : mesuré fidèlement dans le passé, il est écarté de la classe de ciel parce que le futur ne le sert qu'irrégulièrement.
-
-La série comportant **deux coutures** et non une, le principe vaut à chacune.
-
-### Sources
-
-La série se compose de **trois segments**, et non de deux. Le choix de la source se fait par segment, et à l'intérieur du passé ancien, par variable.
-
-| Segment | Période | Sources |
-|---|---|---|
-| Passé ancien | 1950-01-01 → dernier jour servi par les réanalyses | `era5_land` (~11 km) pour les températures, `era5` (~25 km) pour le reste |
-| Passé récent | lendemain de cette borne → aujourd'hui | `ecmwf_ifs` (~9 km), toutes variables |
-| Futur | demain → 2050-12-31 | `MRI_AGCM3_2_S` (10 km), toutes variables |
-
-**Le troisième segment existe parce que les réanalyses accusent un retard.** Cinq à six jours selon le jour — mesuré à J−5 puis à J−6 à vingt-quatre heures d'intervalle. Sans lui, toute requête touchant aujourd'hui se terminerait par un trou d'une semaine. L'analyse opérationnelle d'ECMWF n'a aucune latence et sert les huit variables en une requête.
-
-**La borne entre les deux passés n'est jamais un nombre de jours codé en dur.** Elle se lit dans la réponse : le dernier jour effectivement servi par les réanalyses, IFS reprenant au lendemain. Une constante serait fausse un jour sur deux.
-
-**IFS n'est délibérément pas employé avant cette borne**, bien qu'il couvre 2017 → aujourd'hui. C'est l'instrument le plus juste au jour le jour, mais il change de version une à deux fois par an : sa série porte ses propres ruptures. Le passé reste donc sur les réanalyses aussi loin qu'elles portent, et l'inhomogénéité se trouve confinée à moins d'une semaine — au lieu de neuf ans si la couture était placée en 2017. Sur cette poignée de jours, l'écart est très inférieur à la variabilité météorologique : à Pontarlier, six jours ne suffisent pas à distinguer un décalage d'un demi-degré du bruit. Le vent fait exception, seul paramètre où il resterait détectable. Le raisonnement complet et les mesures figurent en section 2.
-
-Le forçage explicite de la source n'est jamais facultatif. L'endpoint par défaut sélectionne la sienne variable par variable et bascule vers ECMWF IFS en 2017, introduisant dans le passé une seconde couture, non documentée, dont l'écart varie de −1,8 à +0,9 °C selon le site, la saison et l'heure du jour. Un décalage constant serait corrigible ; celui-ci ne l'est pas.
-
-Le partage entre les deux réanalyses est contraint et non préférentiel : **ERA5-Land ne sert que les températures**, toutes les autres variables y étant nulles. Cette contrainte coïncide avec le bon choix pour la couture. Les projections ayant été calées sur ERA5-Land, l'écart du modèle à cette réanalyse reste compris entre +0,02 et +0,20 °C sur les sites testés, contre −0,75 à +0,43 °C face à ERA5.
-
-Les deux API rapportent la même altitude pour un point donné, dérivée du même modèle numérique de terrain. La jointure des deux requêtes se fait sur la seule date, sans réconciliation.
-
-### Adresses et paramètres
-
-| Usage | Adresse |
+| Si la tâche touche à… | Lire |
 |---|---|
-| Passé, réanalyses et IFS | `https://archive-api.open-meteo.com/v1/archive` |
-| Futur | `https://climate-api.open-meteo.com/v1/climate` |
-| Géocodage | `https://geocoding-api.open-meteo.com/v1/search` |
+| l'intention, la finalité, le public | [`docs/projet.md`](docs/projet.md) |
+| requêtes, sources, variables, assemblage, cache | [`docs/donnees.md`](docs/donnees.md) |
+| classe de ciel, seuils, correction de nébulosité | [`docs/regles.md`](docs/regles.md) |
+| modèles, référence, biais, limites, références | [`docs/science.md`](docs/science.md) |
+| architecture, affichage, grille de correction | [`docs/application.md`](docs/application.md) |
+| l'avancement, ce qu'une étape a établi | [`docs/journal.md`](docs/journal.md) |
+| une piste écartée ou une question ouverte | [`docs/idees.md`](docs/idees.md) |
 
-Les deux passés partagent la même adresse et ne se distinguent que par `models`.
+Les chiffres restent attachés au script qui les mesure : chaque `README.md` de
+`scripts/` dit ce qui s'y démontre.
 
-Paramètres communs : `latitude`, `longitude`, `start_date`, `end_date` (format `YYYY-MM-DD`), `daily` (liste), `timezone`, `models` (liste). L'API Climate n'accepte qu'un seul modèle à la fois pour rester homogène avec le reste du dispositif.
-
-**`timezone=auto`**, sans exception. Les deux API réagissent à ce paramètre et réagrègent les journées en conséquence : mesuré à Singapour, la série se décale d'un jour entier entre `GMT` et l'heure locale. Le choix est donc libre mais doit être unique — une couture ne tient que si ses deux côtés sont découpés à la même heure. Les journées locales s'imposent parce que l'application affiche un bulletin météorologique : un maximum courant de 9 h à 9 h, ce que `GMT` donnerait à Tokyo, ne signifie rien pour un lecteur. Le prix est une journée de 23 ou 25 heures deux fois l'an, ce qui est exactement ce que le lecteur a vécu. **La grille de calibration de la section 4 doit être calculée sous cette même convention**, et les biais mesurés en `GMT` dans la section 2 ne valent dès lors que comme ordres de grandeur.
-
-Une requête peut donc appeler jusqu'à **quatre requêtes**, et seulement pour les segments qu'elle recoupe :
-
-```
-models=era5_land  &  daily=temperature_2m_max,temperature_2m_min,
-                            temperature_2m_mean
-models=era5       &  daily=precipitation_sum,snowfall_sum,cloud_cover_mean,
-                            wind_speed_10m_max,wind_speed_10m_mean
-models=ecmwf_ifs  &  daily=<l'ensemble>
-models=MRI_AGCM3_2_S  &  daily=<l'ensemble>          (API Climate)
-```
-
-`temperature_2m_mean` est demandée parce que le critère de neige en dépend ; les quatre sources la servent, ERA5-Land compris. `rain_sum` n'est **pas** demandée : rien ne l'utilise, et elle porte les mêmes trous que la neige.
-
-Unités renvoyées : températures en °C, précipitations en mm, **neige en cm**, nébulosité en pourcentage, vent en km/h. L'unité de la neige est une source d'erreur classique.
-
-Aucune clé d'accès n'est requise pour un usage non commercial. Les limites de débit s'appliquent **par adresse IP**, ce qui fonde la répartition client / serveur exposée en section 4.
-
-### Variables retenues
-
-| Grandeur | Traitement |
+| Dossier | Ce qu'il établit |
 |---|---|
-| Températures min et max | directes sur les trois segments |
-| Température moyenne | directe ; sert le critère de neige, n'est pas affichée |
-| Précipitations | cumul journalier, direct sur les trois segments |
-| Vitesse du vent, moyenne et maximale | directes sur les trois segments ; les deux sont affichées |
-| Cumul de neige | **récupéré mais non lu** — étalon de calibration, voir plus bas |
-| Pluie (`rain_sum`) | **écartée** — inutilisée, et trouée comme la neige |
-| Direction du vent | **écartée** — valeurs nulles côté Climate |
-| Aspect du ciel | **reconstruit**, cinq classes |
+| `scripts/verification/` | les mesures de conception, antérieures à tout code — **gelé** |
+| `scripts/model_selection/` | le départage des cinq modèles, étape 2 |
+| `scripts/sky_thresholds/` | le calage des seuils de ciel, étape 3 |
+| `scripts/calibration_grid/` | la grille de correction, étape 4 |
+| `scripts/inspect_seam.py` | lecture des coutures sur requête réelle |
 
-### Pourquoi l'aspect du ciel doit être reconstruit
-
-Le `weather_code` d'Open-Meteo n'est pas un produit de réanalyse : c'est une variable dérivée, calculée heure par heure à partir de la nébulosité, des précipitations et de la neige, puis agrégée à la journée **par maximum** — la journée prend le code de son pire moment.
-
-Deux obstacles interdisent de la réutiliser. D'une part elle est nulle côté Climate. D'autre part, l'API Climate ne livre que des agrégats journaliers : appliquée à ceux-ci, la règle d'Open-Meteo ne reproduit son propre résultat que dans 15 % des cas. Deux millimètres tombés en deux heures et les mêmes deux millimètres étalés sur vingt-quatre ne donnent pas le même code, et l'information infra-journalière qui les sépare n'existe pas côté futur.
-
-Réduite à trois familles — sec, pluie, neige — la concordance remonte à 90,7 %. C'est ce signal grossier, et lui seul, qui survit au passage au pas journalier.
-
-### Classe de ciel
-
-Cinq classes, calculées par le même arbre de décision sur les deux régimes, à partir des seuls agrégats journaliers :
-
-1. **Neige** — si cumul de précipitations ≥ 1 mm **et** température moyenne < 1,5 °C
-2. **Pluie** — sinon, si cumul de précipitations ≥ 1 mm
-3. **Couvert** — sinon, si nébulosité moyenne ≥ 70 %
-4. **Nuageux** — sinon, si nébulosité moyenne ≥ 30 %
-5. **Dégagé** — sinon
-
-Les deux premières règles partagent la même porte à 1 mm et partitionnent donc le même ensemble de journées : parmi les jours humides, la température décide de la phase.
-
-**Le cumul de neige n'entre pas dans la règle**, alors qu'il en était la base initiale. Le modèle climatique le sert par plages manquantes, ni saisonnières ni uniformes — 61 jours d'été chaque année à Marseille, la moitié de l'année à Christchurch, hiver austral compris, rien du tout à Ushuaia. La lecture « pas de neige en été » ne survit pas au passage de l'équateur, et la grille a vocation à s'étendre au monde. Comme le passé, lui, sert la neige fidèlement, s'en servir d'un seul côté déplacerait la couture au lieu de la supprimer : la phase est donc déduite de la même façon sur les trois segments.
-
-Le seuil de 1,5 °C est calé sur 35 hivers à Strasbourg et Briançon, contre la profondeur réellement tombée. Il ne l'est pas contre le `weather_code`, qui est le maximum des 24 codes horaires et bascule sur une seule heure de neige : il surestime la neige de 16 points à Strasbourg et sature à Briançon, où 999 jours humides sur 1000 portent un code de neige.
-
-Concordance obtenue : environ 90 % en plaine, 82 % à 1300 m. **La règle sous-appelle la neige en montagne par construction** — au-dessus de 1300 m elle tient au sol même les jours dont la moyenne dépasse 2 °C, parce qu'elle tombe la nuit ou plus haut que la station, et une moyenne journalière ne porte pas cette information. Aucun seuil unique ne convient aux deux sites.
-
-Le seuil de neige demeure **provisoire** : deux sites et une seule saison sont une base mince.
-
-Aucune gradation d'intensité n'est proposée : les cumuls journaliers ne portent pas l'information nécessaire pour la fonder. Une bruine et un orage de quarante millimètres reçoivent donc la même classe — appauvrissement assumé, et à réexaminer si la restitution s'en trouve trop pauvre.
-
-### Ce que reçoit chaque classe
-
-Les seuils de nébulosité de 30 % et 70 % étaient provisoires. Ils sont **confirmés à l'étape 3**, et l'établir a d'abord consisté à écarter deux étalons qui paraissaient évidents et se sont révélés être des pièges (`scripts/sky_thresholds/`).
-
-**`sunshine_duration` est inexploitable.** Il donne 3 311 heures de soleil par an à Brest pour environ 1 700 réelles, 3 103 à Strasbourg pour 1 690 — un facteur 1,3 à 2,0. L'erreur suit la nébulosité du site, ce qui trahit le mécanisme : le seuil de 120 W/m² est appliqué à des moyennes horaires, et l'heure compte entière dès que sa moyenne le franchit, là où un héliographe compte les minutes. Là où le soleil joue à cache-cache, l'erreur est maximale.
-
-**Le `weather_code` ne vaut pas mieux, et pour deux raisons.** Étant le maximum des 24 codes horaires, une seule heure à 80 % de nébulosité couvre la journée entière : il déclare Marseille couverte un jour sec sur deux, et attribue un code de brouillard ou de bruine à 15-29 % des jours secs. C'est le mécanisme déjà constaté sur la neige. Et il est circulaire — une fonction déterministe de la nébulosité, la variable même dont on cherche les seuils.
-
-**Ce qui tranche est la lumière qui atteint réellement le sol.** `shortwave_radiation_sum` est un champ primaire d'ERA5, non une dérivation ; ses cumuls annuels concordent avec les valeurs publiées ; et les trois sources le servent. Rapporté à une estimation de ciel clair — géométrie FAO-56 plus un terme d'altitude, donc calculable identiquement de 1950 à 2050 — il donne la part de lumière disponible qu'une journée a reçue, comparable de Brest à Bamako.
-
-Sur les jours secs, les trois classes reçoivent :
-
-| Site | Dégagé | Nuageux | Couvert |
-|---|---|---|---|
-| Brest | 17 % → 93 % | 44 % → 80 % | 39 % → 61 % |
-| Marseille | 50 % → 92 % | 35 % → 84 % | 15 % → 67 % |
-| Strasbourg | 26 % → 89 % | 45 % → 74 % | 29 % → 54 % |
-| Pontarlier | 29 % → 88 % | 43 % → 78 % | 27 % → 60 % |
-| Reykjavik | 14 % → 92 % | 41 % → 82 % | 45 % → 59 % |
-
-*(part des jours secs → lumière médiane reçue, en % du ciel clair)*
-
-**Environ 90 %, 80 % et 60 %.** Trois paliers nets, dans le même ordre aux dix sites testés. Aucun autre jeu de seuils ne fait mieux : monter la barre du couvert à 80 ou 85 % abaisse la médiane mais élargit la dispersion d'autant.
-
-Il faut dire ce que cette mesure ne fait pas. **Où finit « nuageux » et où commence « couvert » reste une convention de langage sur un continuum.** La mesure ne place pas la frontière ; elle dit seulement ce qui tombe de part et d'autre. C'est déjà ce qui manquait.
-
-### Ce que la moyenne journalière ne peut pas dire
-
-À nébulosité égale, la lumière reçue s'étale considérablement. À Strasbourg, deux journées portant 90 % de nébulosité moyenne reçoivent, du premier au neuvième décile, de 29 % à 79 % de la lumière d'un ciel clair — 49 points d'écart. Ce sont deux journées opposées sous le même chiffre : celle qui fut grise de bout en bout, et celle dont la matinée bouchée a cédé à un après-midi radieux.
-
-**Et l'ambiguïté croît avec la nébulosité** : 20 points d'étendue vers 30 %, 49 points vers 90 %. À 30 % de nuages il n'y a pas grand-chose à redistribuer dans la journée ; à 90 %, il y a tout.
-
-Aucun seuil n'y remédie, et aucun modèle non plus, puisque l'information infra-journalière n'existe pas côté futur : **l'API Climate accepte le paramètre `hourly`, répond HTTP 200 et ne renvoie aucun bloc horaire** — la même absence silencieuse que pour `weather_code`. Et le principe directeur interdirait de découper les journées du seul côté du passé.
-
-Il en découle que **le pictogramme est l'élément le moins sûr de la carte**. Les températures et les millimètres décrivent cette journée-là ; l'icône décrit une espèce de journées. C'est le même arbitrage que celui déjà consenti en refusant toute gradation d'intensité pour la pluie.
-
-Deux conséquences pratiques. Près des pôles en hiver, le ciel clair tend vers zéro et le rapport perd son sens — 14,3 % des jours à Reykjavik ; la classe y repose sur la seule nébulosité. Et trois classes de ciel sec sur une variable aussi ambiguë sont peut-être une de trop : deux — ensoleillé et nuageux — seraient plus défendables, au prix de la finesse d'affichage. Point non tranché, signalé pour mémoire.
-
-### Correction de la nébulosité
-
-C'est la seule correction appliquée. Elle est nécessaire parce que la nébulosité détermine trois des cinq classes et que le modèle la sous-estime systématiquement — de 5,1 à 10,2 points sur les premiers sites testés, et de 8,6 à 10,8 points sur ceux de l'étape 2. Appliquer les seuils bruts produirait un futur artificiellement ensoleillé.
-
-La correction est calibrée sur la période de recouvrement, mois par mois et par lieu, par transposition de quantiles.
-
-**La méthode retenue est la transposition de quantiles préservant la tendance** — *quantile delta mapping*, Cannon, Sobie & Murdock (2015). Une journée future est située dans la distribution *future* du modèle ; on mesure le déplacement que le modèle donne lui-même à ce quantile entre son passé et son futur ; et ce déplacement est reporté sur la distribution de référence. Le biais s'en va, l'évolution reste.
-
-**Deux raisons de travailler quantile par quantile plutôt que par un décalage mensuel.** Le biais n'est pas constant : mesuré décile par décile, il s'étend sur 4 à 20 points selon le site, maximal sur les journées claires et s'annulant sur les couvertes — le modèle ne pouvant dépasser 100 %, il converge par le haut et fabrique trop de ciels dégagés par le bas. Un décalage unique laisserait donc les classes fausses précisément là où se joue la frontière dégagé/nuageux.
-
-**Une précision sur ce qu'on appelle « transposition naïve ».** Le terme recouvre deux procédés distincts, et une version antérieure de ce document les confondait.
-
-Transposer à travers la distribution *passée* du modèle ne supprime pas la tendance : cela la multiplie par la pente locale d'une correspondance qui n'est pas linéaire. Avec le biais mesuré ici, cinq points de dégagement ressortent à environ 4,4 — et rien dans le résultat ne signale ce redimensionnement.
-
-Transposer à travers la distribution *future*, en revanche, force la distribution de sortie à coïncider avec celle de la référence : la tendance disparaît entièrement. C'est ce procédé-là que le document écartait, à juste titre.
-
-**La tendance à préserver est faible, et la méthode est retenue quand même.** Entre 1985-2014 et 2021-2050, la nébulosité du modèle bouge de −0,4 à −1,8 point selon le site, et le rayonnement de −1,0 à +1,2 % — deux variables cohérentes entre elles, ce qui écarte l'artefact. Le biais à corriger vaut 8 à 11 points : la correction le domine d'un facteur cinq à dix.
-
-Le choix ne tient donc pas à ce que la méthode gagne ici. Il tient à ce qu'elle évite ailleurs : la mesure porte sur cinq sites, quatre en France, et la grille a vocation à couvrir le monde à l'étape 7 — sous RCP8.5 les zones subtropicales s'assèchent nettement. Une méthode retenue au motif que la tendance est négligeable en France déformerait sans avertissement un signal réel sous les tropiques. La variante préservant la tendance coûte quelques lignes de plus.
-
-Cette correction est légitime parce que le biais est stable dans le temps, et l'on sait désormais pourquoi : les coefficients d'Open-Meteo sont figés une fois pour toutes, identiques en 1980 et en 2046. La stationnarité est mécanique, non plus seulement constatée sur 2041-2050.
-
-**Deux constats de l'étape 3 changent la manière d'aborder cette correction, et l'étape 4 doit en partir.**
-
-D'abord, une part du biais est **fabriquée par Open-Meteo**. La nébulosité est la seule des variables examinées dont la retouche ne converge pas vers la réanalyse : ni écart ni rapport constant sur le mois, contrairement aux températures, précipitations et vent. À Pontarlier, le modèle brut est à +0,5 point d'ERA5 et le modèle corrigé à −8,8 ; à Singapour, −1,7 brut contre −27,2 corrigé. L'hypothèse la plus plausible — non démontrée — est que la correction s'applique au pas horaire et que la nébulosité, seule à être bornée des *deux* côtés, se fait rogner à 0 et à 100 avant d'être remoyennée. Se rabattre sur le modèle brut n'est toutefois pas la solution : la correction *est* la descente d'échelle, et la désactiver rend le modèle aveugle au relief.
-
-Ensuite, **le rayonnement du modèle n'est pas biaisé** : −0 à +1 % contre ERA5 à Brest, Marseille et Pontarlier, quand la nébulosité y est fausse de 9 à 11 points. Or l'étape 3 a établi que c'est le rayonnement, et non la nébulosité, qui dit ce qu'une journée a reçu. Il fournit donc un étalon pour caler la correction : ajuster la nébulosité du modèle de sorte que sa relation nuage-lumière rejoigne celle de la référence, plutôt que de transposer des quantiles à l'aveugle. Mesuré sur trois sites seulement, à élargir avant d'engager quoi que ce soit.
-
-Aucune autre correction n'est appliquée. En particulier, ni les extrêmes de température ni la durée des sécheresses ne sont retouchés, la mesure n'y ayant établi aucun déficit.
-
-### Ordre des opérations
-
-1. Géocodage de la localisation en coordonnées.
-2. Découpage de la plage à la date du jour, calculée côté serveur en `Europe/Paris` : l'observation court jusqu'à ce soir inclus, la simulation commence demain. Ce fuseau ne sert qu'à fixer *quel jour on est* — l'agrégation des journées, elle, suit le lieu (`timezone=auto`).
-3. Interrogation du passé ancien, deux requêtes, jusqu'à la veille au plus tard.
-4. Jointure sur la date de ces deux requêtes, et retrait des journées de queue qu'aucune des deux ne sert encore.
-5. Interrogation d'IFS du lendemain de cette borne jusqu'à aujourd'hui, si la plage va jusque-là.
-6. Interrogation du modèle climatique à partir de demain, si la plage va au-delà.
-7. Correction de la nébulosité sur le seul segment futur.
-8. Application de la classe de ciel aux trois segments, par la même fonction.
-9. Concaténation et tri chronologique.
-
-L'étape 8 doit être servie par une fonction unique, appelée trois fois. Toute duplication de cette logique rouvrirait la porte à la divergence que la section entière vise à interdire.
-
-L'étape 4 distingue deux sortes de valeur nulle, et c'est essentiel : une variable qu'une source ne sert jamais est une erreur, une journée qu'elle n'a pas encore rattrapée n'en est pas une. Seules les journées où *toutes* les variables manquent sont retirées, de sorte qu'une variable absente d'un bout à l'autre reste signalée au lieu d'être rognée en silence.
-
-### Validation
-
-- Absence de marche **aux deux coutures** : comparaison des niveaux et des variances de part et d'autre de chacune. `scripts/inspect_seam.py` les repère sans les supposer, en suivant le changement de source d'un jour au suivant.
-- Continuité de la série : ni trou ni doublon aux raccords, et un jour porte les mêmes champs renseignés quelle que soit la source qui l'a servi.
-- Vraisemblance de la distribution des classes de ciel. Non contre la seule fréquence observée, mais contre la lumière reçue : les trois classes de ciel sec doivent rester séparées d'environ 90 %, 80 % et 60 % du rayonnement d'un ciel clair, comme sur la période historique.
-- Détection explicite des valeurs nulles. L'API Climate répond `HTTP 200` avec des valeurs nulles pour les variables qu'elle ne sert pas ; se fier au statut HTTP ne suffit pas.
-
-### Limites du dispositif
-
-Le passé ancien mélange deux réanalyses selon la variable : la température ne provient pas du même système physique que la nébulosité. Ce compromis coûtait peu tant que la classe de ciel ne lisait qu'ERA5 — nébulosité, précipitations et neige. **Le critère de neige y fait désormais entrer la température moyenne, donc ERA5-Land.** Sur le segment ancien, la règle 1 confronte ainsi deux systèmes distincts, quand les segments IFS et futur la calculent chacun à partir d'une source unique.
-
-La portée reste bornée : la règle ne se déclenche que sur les jours humides et froids, et les deux réanalyses s'accordent à mieux d'un demi-degré en plaine. Mais l'asymétrie est réelle et n'existait pas dans la conception initiale. Elle disparaîtrait si ERA5-Land servait les précipitations, ce qu'il ne fait pas.
-
-La symétrie géographique n'est en revanche pas acquise. Elle vaut pour la température, à 11 km contre 10 km, mais non pour le reste : ERA5 est à ~25 km, soit deux fois et demie plus grossier que la grille du futur. Les précipitations et la nébulosité du passé sont donc **moins finement résolues que celles du futur**, à rebours de l'intuition courante. Le segment IFS, à 9 km, est le plus fin des trois — la résolution n'est donc pas monotone le long de la série.
-
-Deux conséquences du segment récent méritent d'être connues. **La valeur du jour courant est provisoire** : la journée n'étant pas finie, son agrégat comporte une part de prévision, et il bouge d'un passage du modèle au suivant — un maximum observé à Marseille est passé de 29,8 à 30,5 °C en quelques dizaines de minutes. **Et une journée récente change de source après coup** : servie par IFS aujourd'hui, elle le sera par la réanalyse dans cinq ou six jours, avec une valeur légèrement différente. Ces deux points commandent la politique de cache exposée plus bas.
-
-### Mise en cache
-
-Les deux API limitent le débit — la limite a été atteinte à plusieurs reprises pendant les travaux préparatoires. Une mise en cache est donc nécessaire.
-
-Elle ne doit toutefois ni altérer la granularité temporelle des données ni introduire d'agrégation supplémentaire : conformément à la section 1, un tel choix relèverait du régime de validation scientifique et non du développement.
-
-**La durée de conservation ne peut pas être uniforme.** Le passé ancien est figé et se garde indéfiniment ; le futur l'est tout autant, un modèle climatique ne changeant pas d'avis. Les jours récents, eux, bougent deux fois : le jour courant se précise d'un passage du modèle au suivant, et toute journée servie par IFS est remplacée par la réanalyse cinq à six jours plus tard. Servir une valeur périmée pour ces jours-là ferait réapparaître, dans le cache, la marche que le dispositif s'emploie à supprimer dans les données.
+Les trois premiers ne se ressemblent pas, et c'est délibéré. `verification/` date
+de la conception : aucune dépendance, `urllib` seul, chaque script isolé. Les
+deux autres sont postérieurs au paquet et s'appuient sur lui — refaire la
+construction des requêtes y aurait ouvert la porte à deux comportements
+divergents — et séparent la collecte, lente et limitée en débit, de l'analyse,
+qui se rejoue hors réseau depuis `data/`.
 
 ---
 
-## 4. Spécifications du site
+## Où on en est
 
-### Nature du site
+Étapes 0 à 3 faites, **étape 4 en cours** : la méthode de correction, la table et
+son interpolation sont écrites, la collecte des 594 nœuds reste à mener (23
+faits). **L'API et l'interface ne sont pas commencées.**
 
-Un site grand public, volontairement restreint : une page d'accueil portant le formulaire, une page de résultats. Des pages explicatives sur les modèles et la méthode viendront plus tard ; elles seront statiques et peu interactives.
+Le détail, et ce que chaque étape a corrigé de ce que la précédente supposait →
+[`docs/journal.md`](docs/journal.md).
 
-L'objectif de conception est qu'il soit simple d'abord et extensible ensuite. Chaque brique est donc pensée pour être remplacée sans que les autres bougent.
+---
 
-### Répartition entre client et serveur
+## Tenue du dépôt
 
-**Les données sont récupérées par le navigateur**, y compris le géocodage. Le motif n'est pas le volume — une plage de 90 jours pèse 4 Ko — mais le fait que **les limites d'Open-Meteo s'appliquent par adresse IP**. Un serveur qui interrogerait les API concentrerait toute l'affluence sur une seule adresse et atteindrait la limite immédiatement. Nous l'avons atteinte à plusieurs reprises depuis un seul poste pendant les travaux préparatoires.
+**Un fait vit dans un seul fichier.** Une valeur contestée se remesure par le
+script correspondant, puis se corrige **sur place** — jamais ajoutée à côté de
+l'ancienne, jamais recopiée dans un second document.
 
-Le géocodage passe par l'API dédiée d'Open-Meteo, et non par Nominatim, dont les conditions d'usage proscrivent les usages intensifs. Le prototype initial utilisait Nominatim.
+**Chaque document fait foi sur son domaine.** En cas de divergence entre un
+document et le code, c'est le document qui l'emporte et le code qui doit être
+corrigé — ou le document amendé, si c'est lui qui a pris du retard.
 
-**Le navigateur ne dérive rien.** Il récupère, il transmet, il affiche. Toute donnée calculée l'est en Python, côté serveur. Cette règle découle directement de la section 3 : la classe de ciel doit être produite par une fonction unique, et le prototype initial montre ce qu'entraîne sa duplication entre JavaScript et Python.
+**Les documents et les dossiers de mesure ne se modifient pas sans
+validation** : `docs/`, `CLAUDE.md`, `scripts/verification/`,
+`scripts/model_selection/`, `scripts/sky_thresholds/`. Le reste du code relève
+de l'autonomie de développement définie plus haut.
 
-### Architecture
-
-```
-Navigateur                          Serveur (Python, sans état)
-──────────                          ──────────────────────────
-géocodage      → Open-Meteo
-données passé  → Open-Meteo
-données futur  → Open-Meteo
-        │
-        └── POST données brutes ──→ validation des entrées
-                                    correction de nébulosité (grille)
-                                    bloc de transformation
-                                    classe de ciel
-        ←── JSON journalier ────────┘
-```
-
-Le serveur n'expose qu'un seul endpoint utile. Sans état et sans base de données, il monte en charge horizontalement sans effort particulier. Le frontend étant statique, il se diffuse par CDN.
-
-### Organisation du code
-
-```
-src/weather_simulator/
-    sources/       requêtes, lecture des payloads, assemblage des trois segments
-    domain/        enregistrement journalier, seuils, classe de ciel
-    transform/     bloc de transformation, neutre par défaut
-    api/           endpoint, validation des entrées
-    calibration/   table de coefficients et interpolation
-web/
-    static/js/     fetch.js (transport seul), render.js, i18n.js
-    templates/     accueil, résultats
-```
-
-La séparation entre `domain` et `transform` est délibérée. `domain` porte les règles arrêtées en section 3 et n'a pas vocation à bouger. `transform` est le point de maîtrise sur les données météorologiques : appelé entre la correction et l'affichage, il ne transforme rien par défaut.
-
-### Affichage
-
-Une bande journalière, une carte par jour, défilant horizontalement lorsqu'elle excède la largeur de l'écran.
-
-La plage est bornée à **90 jours**, soit une saison. La contrainte est appliquée à la fois dans l'interface et dans l'API : jamais dans le seul navigateur.
-
-Chaque journée porte les températures minimale et maximale, le cumul de précipitations, les vitesses de vent moyenne et maximale, et un **pictogramme de la classe de ciel** :
-
-| Classe | Contrat JSON | Pictogramme |
-|---|---|---|
-| Dégagé | `clear` | ☀️ |
-| Nuageux | `cloudy` | ⛅ |
-| Couvert | `overcast` | ☁️ |
-| Pluie | `rain` | 🌧️ |
-| Neige | `snow` | 🌨️ |
-
-Une sixième valeur circule : **l'absence de classe**. Une journée dont il manque une variable nécessaire ne reçoit pas de classe, et le contrat porte alors `null` plutôt qu'une valeur inventée. L'interface doit prévoir cette carte-là.
-
-Les émojis conviennent à une première version : disponibles partout, sans ressource à charger, immédiatement lisibles. Deux points en découlent.
-
-Le contrat JSON transporte **la classe, jamais le pictogramme**. Le passage à un jeu d'icônes dessinées, qui corrigerait les variations d'apparence d'une plateforme à l'autre, ne touchera donc que l'affichage.
-
-Chaque pictogramme s'accompagne d'un équivalent textuel, l'émoji seul n'étant pas accessible aux lecteurs d'écran.
-
-**Le vent maximal ne doit pas être libellé « rafale ».** `wind_speed_10m_max` est le plus fort vent *établi* de la journée, moyenné sur l'intervalle du modèle. Une rafale est autre chose, et vaut couramment deux fois plus : mesuré à Pontarlier sur juin 2024, 36,8 km/h de rafale contre 14,4 km/h de vent maximal sous ERA5. Les libellés retenus sont « vent moyen » et « vent maximal ».
-
-La rafale existe pourtant comme variable propre, `wind_gusts_10m_max`, et les trois segments la servent — ERA5, ECMWF IFS et `MRI_AGCM3_2_S`. Elle n'est pas retenue pour l'instant, et son adoption relèverait du régime de validation scientifique : une rafale est par nature un phénomène sous-maille, que la limite 6 de la section 2 place hors de portée d'un modèle à 20 km. La servir donnerait un chiffre juste de forme et faiblement fondé.
-
-Enfin, conformément à la section 1, tout écran affichant une date future porte un avertissement explicite et visible.
-
-### Grille de correction
-
-La correction de nébulosité est **précalculée hors ligne** et embarquée comme ressource serveur. À la requête, l'application repère les quatre nœuds entourant le point, interpole et applique — sans aucun appel externe.
-
-**Ce n'est pas une table de coefficients**, comme une version antérieure de ce document l'annonçait, et c'est la conséquence directe de la méthode retenue : une correction quantile par quantile ne se résume pas à un nombre par mois. Chaque nœud porte, pour chacun des douze mois, **trois vecteurs de quantiles** — la réanalyse sur la période de calibration, le modèle sur cette même période, le modèle sur la projection. Le premier écart est le biais, le second la tendance à préserver. Trente-neuf niveaux par vecteur, arrondis au dixième de point, ce qui reste plus fin que tout ce qui les lit ensuite.
-
-La grille est définie sur un **réseau mondial fixe** au pas de 0,5°, aux multiples exacts depuis −180° et −90°. Ce point n'est pas négociable : caler l'origine sur la France imposerait de tout recalculer lors du premier élargissement.
-
-**Le pas de 0,5° est confirmé par la mesure, contre 1° qui aurait coûté quatre fois moins.** Le biais a été relevé tous les 0,25° le long de trois transects traversant la côte — atlantique, méditerranéen, Manche — puis on a calculé l'erreur qu'une interpolation linéaire commettrait entre nœuds espacés d'un degré, puis d'un demi.
-
-| Transect | Erreur à 0,5° (moy / max) | à 1,0° (moy / max) |
-|---|---|---|
-| Atlantique (Landes) | 0,17 / 0,30 | 0,20 / 0,50 |
-| Méditerranée (Languedoc) | 0,32 / 0,73 | 0,39 / 1,02 |
-| Manche (Normandie) | 0,21 / 0,56 | 0,41 / 0,90 |
-
-L'écart moyen entre les deux pas est faible parce que la France est majoritairement plate ; il se concentre là où le sol monte, c'est-à-dire là où le modèle est déjà le moins fiable. C'est ce qui a fait retenir 0,5°.
-
-**Deux constats de cette mesure méritent d'être isolés.** La côte n'y est pour rien : le franchissement terre-mer ne produit aucune rupture du biais — à −1,25° de longitude sur l'Atlantique, il vaut −10,59 des deux côtés. C'est le **relief** qui commande, et fortement : 5,52 points sur un seul degré à la montée vers les Cévennes, de 87 m à 1 147 m. Le script 15 concluait « champ de biais lisse, ≤ 1,6 point pour 3 500 m de dénivelé » sur un transect jurassien ; ce constat n'est pas faux mais il n'est pas général, et le versant méditerranéen le contredit.
-
-**L'interpolation porte donc une erreur propre, à déclarer avec les autres** : 0,3 point de nébulosité en moyenne, 0,7 au maximum sur relief, même à 0,5°.
-
-Le remplissage est progressif et ordonné par densité de population décroissante — la France d'abord, puis l'Europe, puis les régions les plus peuplées. La collecte est ainsi interruptible et reprenable, et couvre l'essentiel des recherches réelles dès ses premières heures.
-
-**Cet ordre n'est pas un confort, c'est ce qui rend la collecte supportable.** Une première tentative collectait par latitude croissante et a passé ses premières heures sur le plateau ibérique, qu'aucune recherche ne touchera jamais. L'ordre est désormais donné par la population desservie, estimée en sommant les aires d'attraction françaises pondérées par l'inverse du carré de la distance. Il n'a besoin d'être qu'approximativement juste : il décide de ce qu'on collecte en premier, pas de ce qu'on calcule.
-
-**Volume de la grille française**, établi par une sonde d'altitude d'un jour sur chaque nœud de la boîte englobante — ERA5 renvoyant zéro en mer, l'altitude sépare la terre de l'eau pour un coût négligeable :
-
-| | |
-|---|---|
-| Nœuds dans la boîte (41,0-51,5 N, −5,5-10,0 E) | 704 |
-| Terrestres | 475 |
-| À collecter : terre + couronne côtière | **594** |
-
-La couronne de nœuds marins touchant la terre est conservée délibérément : une ville littorale a des nœuds en mer parmi les quatre qui l'entourent, et les omettre laisserait l'interpolation manchote là précisément où les gens habitent.
-
-**Le coût de la collecte est la contrainte dominante.** Deux requêtes par nœud — la réanalyse sur la période de calibration, le modèle sur 1985-2050 d'un seul tenant, cette requête portant à la fois son passé et son futur. Le réseau ne représente qu'une heure ; c'est le débit autorisé par Open-Meteo qui commande, de l'ordre de **trente nœuds par heure**, soit une quinzaine à une vingtaine d'heures pour la France entière. La documentation d'Open-Meteo annonce des limites qui impliqueraient quatre nœuds par jour, deux cents fois moins que ce qu'on observe ; l'API n'expose aucun en-tête de quota. Le débit ne se prédit donc pas, il se mesure. À prévoir avant l'élargissement mondial de l'étape 7, où le facteur d'échelle est sans commune mesure.
-
-Hors de la zone couverte, l'application **refuse la recherche avec un message explicite**. Afficher des données non corrigées reviendrait à montrer un futur artificiellement ensoleillé, ce qui n'est pas neutre ; se rabattre sur le nœud le plus proche serait silencieux et trompeur.
-
-Ce refus ne vaut toutefois que si la plage demandée **comporte un segment futur**. Une requête entièrement passée n'appelle aucun coefficient : la correction ne s'applique qu'aux projections. La refuser serait gratuit, et priverait sans motif un utilisateur de Santiago de l'histoire météorologique de sa ville.
-
-La table porte ses propres métadonnées : modèle corrigé, maille, périodes de calibration et de projection, date de génération, nombre de nœuds. Une table lue sans savoir cela est une source d'erreur silencieuse, et la grille est précisément la pièce dont un successeur héritera sans avoir vu comment elle a été faite.
-
-**Une table provisoire existe, et elle se dénonce.** La collecte se comptant en heures de quota, une table à correction identité couvre toute la boîte française pour que le reste de la chaîne s'écrive sans l'attendre. Elle ne doit jamais être servie : une correction nulle affiche un futur artificiellement ensoleillé de 8 à 11 points, et trois des cinq classes de ciel en dépendent. Quatre verrous plutôt qu'un — un drapeau `placeholder` dans les métadonnées, dont un test vérifie qu'il survit à l'écriture-relecture ; une propriété exposée à l'appelant ; un nom de fichier distinct ; et une exclusion du dépôt.
-
-### Montée en charge
-
-Le poste coûteux — l'interrogation des API météorologiques — est reporté sur les clients, ce qui répartit la charge et contourne la limitation par adresse IP.
-
-Il ne reste côté serveur qu'un calcul sans état portant sur 90 lignes au plus, et une lecture de table en mémoire. Aucune base de données n'est nécessaire. La montée en charge se fait donc par simple multiplication des instances, derrière un frontend statique servi par CDN.
-
-### Préparé sans être construit
-
-**L'internationalisation** : tous les textes visibles sont extraits dans un dictionnaire dès le départ. L'opération est triviale maintenant et coûteuse plus tard.
-
-**Le contrat JSON de sortie** : un tableau d'objets journaliers, stable et documenté. Un graphique de températures, un cumul de précipitations ou une carte s'y brancheront sans toucher au pipeline.
-
-**Les pages explicatives** : statiques, elles ne demandent aucune infrastructure particulière.
-
-### Envisagé : la comparaison à l'ancien climat
-
-**Non retenu pour la première version.** Consigné ici parce que le dispositif s'y prête déjà et que quelques constats de mesure risquent sinon d'être perdus.
-
-L'application affiche « 14 juillet 2046 : 21 °C / 39 °C ». C'est plus parlant qu'une anomalie globale, mais 39 °C ne dit quelque chose qu'à qui sait ce qu'était un 14 juillet auparavant — or c'est précisément ce que le lecteur vient chercher. La pédagogie est dans l'écart, pas dans la valeur.
-
-Le principe envisagé : sur la page de résultats, **dès que la plage comporte un segment futur**, un bouton « comparer avec l'ancien climat » affiche sous la bande initiale les **mêmes dates du calendrier** d'une année ancienne, présentée dans le même format. La règle de déclenchement est celle qui gouverne déjà le refus hors grille, pour n'en avoir qu'une à retenir.
-
-**L'année de référence est codée en dur, par grande région.** Une région de la taille de la France ou d'un État américain, avec sa propre année. Aucun calcul à la requête, aucun appel supplémentaire hors la récupération de la météo de cette année-là : une table figée, lue en mémoire, comme celle des coefficients de nébulosité.
-
-Le découpage par grande région n'est pas une commodité. Une année ne peut pas être ordinaire partout : 1980 fut le plus froid des trente étés en France et le vingt-deuxième sur trente à Reykjavik. Le point serait la maille idéale, mais le choisir supposerait de rapatrier trente ans de données pour élire une année, ce que le report de la charge sur le navigateur interdit.
-
-**Trois constats de mesure conditionnent le choix de l'année** (`scripts/model_selection/reference_year.py`, cinq sites français, écarts en écarts-types de la période) :
-
-- **Une année choisie d'intuition se trompe lourdement.** 1980 est à −2,00 en été et −2,14 sur l'année : le plus froid des trente à Marseille, Strasbourg, Pontarlier et Chamonix, le deuxième à Brest. La comparaison y ajouterait un écart artificiel d'environ 2 °C, soit l'ordre de grandeur du réchauffement qu'elle prétend montrer. Symétriquement, 2003 est à +3,25 en été.
-- **L'année doit être ordinaire sur plusieurs saisons à la fois.** Une moyenne annuelle centrée peut recouvrir un été chaud compensé par un hiver doux. Sur 1979-1994, la plus ordinaire est **1991** (+0,49 en été, −0,46 en hiver, +0,03 sur l'année) ; sur 1979-2008, **2004** (+0,08 / −0,06 / −0,03).
-- **Une référence tardive dépense le signal avant de commencer.** Entre 1979-1988 et 1999-2008, les sites français se réchauffent de **+0,92 °C**. Une année de référence prise dans les années 2000 escamote près d'un degré de ce qu'il s'agit de montrer.
-
-À privilégier, donc : la plus ordinaire de la période la plus ancienne exploitable — ERA5 avant 1979 étant l'extension arrière préliminaire, de qualité moindre.
-
-**Deux exigences d'honnêteté** accompagnent la fonctionnalité, faute de quoi elle induit en erreur :
-
-Le libellé doit dire que l'année a été **choisie pour être ordinaire** — « 1991, une année sans particularité » et non « 1991 ». Le tirage futur, lui, n'est pas sélectionné : il peut porter une canicule. Comparer un tirage libre à un tirage choisi pour sa sagesse laisserait croire que le passé n'avait pas d'extrêmes, alors que c'est la sélection qui les a écartés.
-
-Et la sélection portant sur la seule température, la pluie de l'année retenue est quelconque. Mieux vaut l'assumer que le découvrir.
-
-Enfin, deux bandes de quatre-vingt-dix cartes ne se comparent pas à l'œil. Une ligne de synthèse au-dessus — nombre de journées à 30 °C ou plus de part et d'autre, par exemple — porte ce que les bandes ne peuvent pas porter.
-
-### Choix techniques
-
-FastAPI plutôt que Flask : validation des entrées par Pydantic, documentation OpenAPI automatique, meilleur ajustement à une API JSON sans état.
-
-JavaScript natif en modules ES, sans cadriciel. Deux pages ne le justifient pas, et l'absence de chaîne de compilation garde le projet abordable. Les frontières de modules sont posées de sorte qu'une migration reste possible si le site s'étoffe.
+**Environnement** : `./venv/bin/python`. Les tests tournent hors réseau, l'accès
+aux API étant injecté.

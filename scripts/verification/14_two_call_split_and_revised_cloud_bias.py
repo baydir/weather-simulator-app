@@ -13,7 +13,7 @@ SITES = {"Pontarlier": (46.90, 6.35), "Brest": (48.39, -4.49),
          "Marseille": (43.30, 5.37), "Reykjavik": (64.15, -21.94),
          "Bamako": (12.65, -8.00), "Singapour": (1.35, 103.82)}
 
-# figures currently written into section 2, taken from the default endpoint
+# figures currently written into docs/science.md, taken from the default endpoint
 OLD = {"Pontarlier": -4.55, "Brest": -8.28, "Marseille": -8.59,
        "Reykjavik": -5.67, "Bamako": -19.69, "Singapour": -28.19}
 

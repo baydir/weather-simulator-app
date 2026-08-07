@@ -16,8 +16,8 @@ watched it being built.
 **A placeholder table is marked as such and shouts about it.** Development needs
 the pipeline to run before the collection ends, so a neutral table — one whose
 correction returns its input untouched — exists for that. But an uncorrected
-future is an artificially sunny future, which is the very thing section 3 exists
-to prevent, so the flag travels with the data and the loader refuses to let it
+future is an artificially sunny future, which is the very thing docs/regles.md
+exists to prevent, so the flag travels with the data and the loader refuses to let it
 pass unnoticed.
 """
 

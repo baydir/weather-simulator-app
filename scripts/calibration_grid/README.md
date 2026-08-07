@@ -1,7 +1,8 @@
 # Grille de correction de nébulosité — étape 4
 
 Ces scripts produisent la table embarquée comme ressource serveur. Ils
-établissent les chiffres de la section *Grille de correction* de `CLAUDE.md`.
+établissent les chiffres de la section *La grille de correction* de
+`docs/application.md`.
 
 | Module | Rôle |
 |---|---|

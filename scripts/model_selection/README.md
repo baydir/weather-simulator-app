@@ -1,7 +1,7 @@
 # Choix du modèle climatique — étape 2
 
-Ces scripts établissent les chiffres de la section *Comment les cinq ont été
-départagés* de `CLAUDE.md`, et le choix de `MRI_AGCM3_2_S`.
+Ces scripts établissent les chiffres de la section *Comment ils ont été
+départagés* de `docs/science.md`, et le choix de `MRI_AGCM3_2_S`.
 
 Ils diffèrent de `scripts/verification/` sur deux points. Ils s'appuient sur le
 paquet `weather_simulator` — construire les requêtes et détecter les valeurs
@@ -19,7 +19,7 @@ retouche d'une mesure.
 | `load.py` | Relecture du cache, retrait de la climatologie du jour de l'année |
 | `measures.py` | Les 15 mesures et leur mode de comparaison |
 | `analyse.py` | Couverture, tables par mesure, classement moyen |
-| `reference_year.py` | Quelle année ancienne tenir comme « ordinaire » (section 4) |
+| `reference_year.py` | Quelle année ancienne tenir comme « ordinaire » (`docs/idees.md`) |
 
 ## Usage
 
@@ -60,5 +60,5 @@ de réserve : la fenêtre porte sur cinquante ans et couvre tout le recouvrement
 disponible. C'est la raison pour laquelle aucune moyenne n'est comparée — voir
 `measures.py`, dont l'en-tête porte le raisonnement.
 
-Dix sites restent un échantillon mince, et `CLAUDE.md` le signale de ses propres
-mesures. Ils établissent des motifs, non des amplitudes valables en tout point.
+Dix sites restent un échantillon mince, et `docs/journal.md` le signale de ses
+propres mesures. Ils établissent des motifs, non des amplitudes valables en tout point.

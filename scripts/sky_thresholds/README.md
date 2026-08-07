@@ -1,7 +1,8 @@
 # Seuils de la classe de ciel — étape 3
 
-Un seul script, `calibrate.py`. Il établit les chiffres de la section *Ce que
-reçoit chaque classe* de `CLAUDE.md`, et confirme les seuils de 30 % et 70 %.
+Un seul script, `calibrate.py`. Il établit les chiffres de la section *Les
+seuils de nébulosité* de `docs/regles.md`, et confirme les seuils de 30 % et
+70 %.
 
 ```bash
 python scripts/sky_thresholds/calibrate.py
@@ -41,4 +42,4 @@ nébulosité.
 
 L'étalon est le rayonnement d'ERA5, dont les cumuls annuels concordent avec les
 valeurs publiées. Il reste une réanalyse, avec ses erreurs propres, invisibles à
-cette comparaison — la réserve habituelle de la section 2.
+cette comparaison — la réserve habituelle de `docs/science.md`.

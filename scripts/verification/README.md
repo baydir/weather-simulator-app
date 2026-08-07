@@ -1,9 +1,9 @@
 # Scripts de vérification
 
-Ces scripts établissent les faits chiffrés inscrits dans `CLAUDE.md`. Ils ont
-été écrits pendant la phase de conception, avant tout code applicatif, pour que
-les décisions des sections 2, 3 et 4 reposent sur des mesures et non sur des
-suppositions.
+Ces scripts établissent les faits chiffrés inscrits dans `docs/`. Ils ont été
+écrits pendant la phase de conception, avant tout code applicatif, pour que les
+décisions de `science.md`, `donnees.md`, `regles.md` et `application.md`
+reposent sur des mesures et non sur des suppositions.
 
 Ils n'ont aucune dépendance : bibliothèque standard Python seule, `urllib`
 suffit. Chacun s'exécute isolément.
@@ -58,7 +58,7 @@ la limite de débit sur ses derniers sites ; le script 07 en reprend la mesure
 avec un espacement suffisant.
 
 Les mesures portent sur un nombre restreint de sites et de périodes, ce que
-`CLAUDE.md` signale explicitement. Elles établissent des motifs, non des
+`docs/science.md` signale explicitement. Elles établissent des motifs, non des
 amplitudes valables en tout point.
 
 **Le script 15 en est l'illustration.** Il conclut que le champ de biais de

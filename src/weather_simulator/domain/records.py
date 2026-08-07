@@ -2,8 +2,8 @@
 
 One record is one day, whatever its origin. Past and future differ by the
 ``origin`` field alone — never by which fields carry a value, never by how a
-value was computed. That is the whole point of section 3 of the design
-document: a quantity available on one side only would produce a step at the
+value was computed. That is the whole point of the homogeneity rule in
+CLAUDE.md: a quantity available on one side only would produce a step at the
 seam, so it is dropped rather than exploited.
 
 Units follow Open-Meteo and are *not* normalised here:
@@ -50,7 +50,7 @@ class DailyRecord:
     # Which dataset actually served the day. ``origin`` is what the interface
     # needs — a simulated day must be flagged as such. This is for diagnosis:
     # without it the handover from the reanalyses to IFS is invisible, and
-    # section 3 requires that seam to be inspectable.
+    # docs/regles.md requires that seam to be inspectable.
     source: str | None = None
     temperature_min: float | None = None
     temperature_max: float | None = None

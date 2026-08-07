@@ -2,7 +2,8 @@
 
     python scripts/sky_thresholds/calibrate.py
 
-Establishes the figures of the *Classe de ciel* section of CLAUDE.md. Fetches
+Establishes the figures of the *seuils de nébulosité* section of
+docs/regles.md. Fetches
 once into ``data/sky_thresholds/`` and never again; the analysis re-runs offline.
 
 The question this answers is narrow, because it is the only one measurement can

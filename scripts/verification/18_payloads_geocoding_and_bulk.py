@@ -1,4 +1,4 @@
-"""Facts underpinning section 4 (site specification):
+"""Facts underpinning docs/application.md (site specification):
 
   (A) payload sizes — a 90-day range is ~4 KB, so client-side fetching is
       not about bandwidth; it is about Open-Meteo's per-IP rate limit;

@@ -1,5 +1,5 @@
 """Does the archive DEFAULT silently switch reanalysis over time?
-If so, the "past" series is itself inhomogeneous - fatal for section 3."""
+If so, the "past" series is itself inhomogeneous - fatal for docs/donnees.md."""
 import json, urllib.parse, urllib.request, urllib.error, statistics as st, time
 
 A = "https://archive-api.open-meteo.com/v1/archive"
