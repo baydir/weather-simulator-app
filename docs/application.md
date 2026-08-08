@@ -96,8 +96,10 @@ src/weather_simulator/
     api/           endpoints, validation, plan de requêtes, contrat JSON
     calibration/   table de coefficients et interpolation
 web/
-    static/js/     fetch.js (transport seul), render.js, i18n.js
-    templates/     accueil, résultats
+    pages/         home.html, results.html — HTML statique, aucun gabarit
+    static/css/    style.css, une feuille bâtie sur des variables
+    static/js/     fetch.js, i18n.js, present.js, bounds.js, band.js, dom.js,
+                   home.js, results.js
 ```
 
 Dans `api/`, `plan.py` porte **à la fois la façon de demander chaque segment et
@@ -110,6 +112,19 @@ règles arrêtées et n'a pas vocation à bouger, `transform` est le point de
 maîtrise sur les données, appelé entre la correction et l'affichage, et ne
 transforme rien par défaut.
 
+`pages/` et non `templates/` : le second mot annonce un gabarit exécuté par le
+serveur, quand ce document réclame par ailleurs un frontend statique servi par
+CDN. Un CDN n'exécute pas de gabarit ; les pages sont donc des fichiers, et l'API
+les sert par un montage **conditionnel** — `web/` absent, elle démarre quand même.
+
+**La frontière entre modules ne s'est pas posée là où on l'attendait.** Elle ne
+sépare pas le rendu du reste, comme le laissait entendre un `render.js`, mais
+**ce qui se vérifie sans navigateur de ce qui n'existe que dans la page** :
+`present.js` (formatage et arrondis), `bounds.js` (les refus du formulaire) et
+`band.js` (la construction de la bande) tournent sous `node --test` ; `home.js`
+et `results.js` ne portent que le câblage. C'est la même frontière qui garde une
+migration possible.
+
 ---
 
 ## Affichage
@@ -119,12 +134,37 @@ excède la largeur de l'écran. **Plage bornée à 90 jours**, soit une saison �
 contrainte appliquée à la fois dans l'interface et dans l'API, jamais dans le
 seul navigateur.
 
-Chaque journée porte les températures minimale et maximale, le cumul de
-précipitations, les vitesses de vent moyenne et maximale, et un pictogramme.
-**Les cinq mesures sont de même rang** : aucune n'est reléguée en ligne
-secondaire, le vent pas plus que les autres. La question s'est posée — le
-document ci-présent porte les deux vents, [`projet.md`](projet.md) décrit la
-carte sans eux — et elle est tranchée ici, dans le sens de la carte complète.
+Chaque journée porte un pictogramme, les températures minimale et maximale, le
+cumul de précipitations et la vitesse de vent maximale.
+
+**Deux choses sont mises en avant : l'allure du ciel et les deux
+températures.** Le pictogramme d'abord, les degrés dessous, en corps supérieur
+au reste. C'est ce qu'on vient chercher sur un bulletin, et une carte lue d'un
+coup d'œil, parcourue par dizaines, a besoin d'un point d'entrée pour le regard.
+
+Les précipitations et le vent suivent, **à poids égal entre eux** : aucun des
+deux n'est relégué par rapport à l'autre, et le vent en particulier garde la
+taille et la graisse des précipitations.
+
+La règle antérieure voulait les quatre mesures de même rang. La bande construite
+l'a démentie à l'usage : à poids égal, rien ne se détache et la carte se lit
+comme un tableau.
+
+**La minimale à gauche, la maximale à droite**, dans l'ordre où
+[`projet.md`](projet.md) et le README écrivent déjà la paire : « 21 °C / 39 °C ».
+
+**Les températures ne portent pas de libellé.** Deux nombres près d'un signe
+degré n'en demandent pas. Ce que la carte doit dire, en revanche, c'est laquelle
+est la maximale — et à l'écran c'est la couleur et la position qui l'indiquent,
+ce qui n'est une information ni pour un lecteur d'écran, ni pour qui ne sépare
+pas les deux teintes. Chacune est donc nommée pour qui ne la voit pas.
+
+**Le vent moyen n'est pas affiché.** La question s'est posée deux fois. Le
+présent document portait d'abord les deux vents, [`projet.md`](projet.md) la
+carte sans aucun ; la première bande construite a tranché à l'usage : cinq
+mesures sur une carte destinée à être lue d'un coup d'œil, et parcourue par
+dizaines, sont plus qu'elle n'en porte. La grandeur reste dans le contrat JSON,
+où rien ne coûte de la garder.
 
 | Classe | Contrat JSON | Pictogramme |
 |---|---|---|
@@ -146,8 +186,10 @@ textuel, l'émoji seul n'étant pas accessible aux lecteurs d'écran.
 
 **Le vent maximal ne doit pas être libellé « rafale ».** `wind_speed_10m_max`
 est le plus fort vent *établi* de la journée. Une rafale est autre chose et vaut
-couramment le double : 36,8 km/h contre 14,4 km/h à Pontarlier en juin 2024. Les
-libellés retenus sont « vent moyen » et « vent maximal ».
+couramment le double : 36,8 km/h contre 14,4 km/h à Pontarlier en juin 2024. Le
+libellé retenu est « vent maximal ». **Ni « vent » seul**, désormais que c'est le
+seul affiché : la carte se lirait comme une moyenne, et le chiffre serait faux
+d'un tiers.
 
 ### Les arrondis d'affichage
 

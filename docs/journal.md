@@ -8,8 +8,9 @@ se met à jour.
 
 ## Où on en est
 
-Les étapes 0 à 3 et la 5 sont faites, la 4 est engagée. **L'interface n'est pas
-commencée.**
+Les étapes 0 à 3, la 5 et la 6 sont faites, la 4 est engagée. **Le site
+fonctionne** ; la collecte de l'étape 4 étant inachevée, il ne sert le futur
+qu'autour de Paris, le passé partout.
 
 L'ordre effectif s'écarte de l'ordre annoncé : l'étape 5 a été menée avant que la
 collecte de l'étape 4 soit finie. Elle le pouvait sans la table provisoire, la
@@ -24,7 +25,7 @@ chaîne complète sur une correction authentique.
 | 3 | Calage des seuils de nébulosité et classe de ciel | 1 | **fait** |
 | 4 | Grille de calibration France et correction de nébulosité | 2 | *en cours, 23 nœuds sur 594* |
 | 5 | API, validation des entrées et bloc de transformation | 3, 4 | **fait** |
-| 6 | Interface : accueil, résultats, bande journalière | 5 | à faire |
+| 6 | Interface : accueil, résultats, bande journalière | 5 | **fait** |
 | 7 | Élargissement mondial de la grille | 4 | à faire |
 
 L'ordre est imposé par les dépendances, non par le contenu : celui-ci se décide
@@ -153,6 +154,41 @@ les données.
 Rien de scientifique n'a bougé. Le chiffre à retenir est un coût : la correction
 d'une requête de 90 jours prend **1,2 ms**, et la table complète tiendra en
 **29 Mo** résidents.
+
+→ [`application.md`](application.md)
+
+---
+
+## Étape 6 — Interface
+
+Deux pages HTML statiques, JavaScript natif en modules ES, sans cadriciel ni
+chaîne de compilation. L'accueil porte le formulaire et le choix de la commune,
+les résultats la bande journalière, la couture, l'avertissement et la provenance
+de la table.
+
+Éprouvée sur données réelles : 18 journées à cheval sur aujourd'hui, la couture
+au bon jour, les repères de mois aux seuls changements. Interface et API refusent
+les mêmes plages sur dix cas limites, dont le 90ᵉ jour contre le 91ᵉ, et une
+plage à cheval sur le passage à l'heure d'été.
+
+**Ce qu'elle a corrigé.** La carte portait **cinq mesures**, elle en porte
+**quatre**. [`application.md`](application.md) avait tranché sur le papier dans
+le sens de la carte complète ; la première bande construite a tranché dans
+l'autre, à l'usage — cinq nombres sur une carte destinée à être lue d'un coup
+d'œil, et parcourue par dizaines, sont plus qu'elle n'en porte. Le vent moyen
+reste servi par le contrat JSON, il n'est plus affiché.
+
+Second écart, de forme : le même document annonçait un répertoire de gabarits là
+où il exigeait un frontend statique servi par CDN. Les deux ne tiennent pas
+ensemble, et c'est le gabarit qui saute.
+
+**Et une confirmation, la première du genre.** La règle 3 avait été reformulée
+juste avant l'étape, autour du **double exemplaire** plutôt que de la difficulté.
+L'étape l'a mise à l'épreuve : le navigateur dérive trois choses — le repère de
+mois, la marque de couture, le refus des bornes avant tout appel — et aucune
+n'est un second exemplaire. Le serveur ne détient pas de version des deux
+premières ; quant au troisième, ce sont les **nombres** qui divergeraient, et ils
+viennent de `/api/config`. La reformulation tient.
 
 → [`application.md`](application.md)
 

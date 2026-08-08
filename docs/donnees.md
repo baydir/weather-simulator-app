@@ -90,7 +90,7 @@ décide de quelle requête sert quoi dans le passé ancien.
 | `snowfall_sum` | `snowfall` | **cm** | cumul journalier de neige, en hauteur tombée | **récupéré, non lu** — *optionnel* |
 | `cloud_cover_mean` | `cloud_cover` | % | nébulosité totale, moyenne des 24 heures | classe de ciel |
 | `wind_speed_10m_max` | `wind_speed_max` | km/h | vent **établi** le plus fort — pas la rafale | affiché |
-| `wind_speed_10m_mean` | `wind_speed_mean` | km/h | vent moyen sur la journée à 10 m | affiché |
+| `wind_speed_10m_mean` | `wind_speed_mean` | km/h | vent moyen sur la journée à 10 m | **servi, non affiché** → [`application.md`](application.md) |
 
 **Les segments récent (`ecmwf_ifs`) et futur (`MRI_AGCM3_2_S`) demandent les
 huit d'un coup**, en une requête chacun : les deux sources les servent toutes.

@@ -119,10 +119,12 @@ qui se rejoue hors réseau depuis `data/`.
 
 ## Où on en est
 
-Étapes 0 à 3 et **étape 5 faites**. **Étape 4 en cours** : la méthode de
-correction, la table et son interpolation sont écrites, la collecte des 594
-nœuds reste à mener (23 faits, dont trois mailles refermées autour de Paris —
-assez pour éprouver la chaîne). **L'interface n'est pas commencée.**
+Étapes 0 à 3, **5 et 6 faites**. **Étape 4 en cours** : la méthode de correction,
+la table et son interpolation sont écrites, la collecte des 594 nœuds reste à
+mener (23 faits, dont trois mailles refermées autour de Paris — assez pour
+éprouver la chaîne). **Le site fonctionne, et ne sert le futur qu'autour de
+Paris** tant que la collecte n'a pas avancé ; le passé est servi partout dans le
+monde.
 
 Le détail, et ce que chaque étape a corrigé de ce que la précédente supposait →
 [`docs/journal.md`](docs/journal.md).
@@ -146,3 +148,8 @@ de l'autonomie de développement définie plus haut.
 
 **Environnement** : `./venv/bin/python`. Les tests tournent hors réseau, l'accès
 aux API étant injecté.
+
+**Node sert de lanceur aux tests de l'interface**, et à rien d'autre : ni
+construction, ni service des pages, ni `package.json`, ni dépendance à installer.
+`pytest` appelle `node --test` par sous-processus ; Node absent, ces tests se
+déclarent ignorés et le reste tourne.
