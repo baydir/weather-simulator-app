@@ -38,11 +38,24 @@ disponible d'un seul côté produirait une rupture à la couture — l'artefact 
 tout le dispositif vise à empêcher. La série comportant **deux coutures** et non
 une, le principe vaut à chacune.
 
-### 3. La classe de ciel est servie par une fonction unique, appelée trois fois
+### 3. Ce qui est calculé une fois l'est au même endroit
 
-Toute duplication de cette logique — entre segments, ou entre Python et
-JavaScript comme dans le prototype initial — rouvre la divergence que la règle 2
-interdit. **Le navigateur ne dérive rien** : il récupère, transmet, affiche.
+Une grandeur affichée, ou une règle dont dépend une grandeur affichée, se calcule
+côté serveur, par une fonction unique. **La classe de ciel en est le cas type :
+une fonction, appelée trois fois.** Toute duplication de cette logique — entre
+segments, ou entre Python et JavaScript comme dans le prototype initial — rouvre
+la divergence que la règle 2 interdit.
+
+**Le navigateur dérive ce dont le serveur ne détient pas de version** : mise en
+forme, repères de lecture, ordonnancement, cache. Le critère n'est pas la
+difficulté de la tâche, c'est le **double exemplaire**. La classe de ciel du
+prototype tenait en cinq comparaisons de seuils, et elle a divergé quand même :
+une règle triviale tenue à deux endroits diverge aussi sûrement qu'une règle
+savante, et moins visiblement — personne ne relit cinq lignes évidentes.
+
+Une constante partagée est **servie, jamais recopiée** ; un contrôle, lui, peut
+s'exercer des deux côtés — la borne de 90 jours vient de `/api/config` et se
+vérifie dans l'interface comme dans l'API.
 
 ### 4. Gouvernance : la science se valide, le développement s'autonomise
 

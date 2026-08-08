@@ -12,9 +12,11 @@ the emoji lives on the display side alone, so that moving to a drawn icon set
 touches nothing but the rendering.
 
 **It carries ``origin`` on every day, and ``has_simulated`` on the response.**
-The interface must warn on any future date, and it derives nothing — so the
-question "is a warning due here" is answered on the server and shipped as a
-boolean rather than left to be worked out from the days.
+The interface must warn on any future date. The server already answers that
+question for itself — it is what sends it looking for a cloud-cover correction —
+so the answer is shipped as a boolean rather than worked out a second time from
+the days. It is also the fact CLAUDE.md rule 1 hangs on, and rule 1 outranks
+everything else here.
 
 **It carries the grid's own metadata.** A corrected series read without knowing
 which model was corrected, over which calibration period, and when the table was

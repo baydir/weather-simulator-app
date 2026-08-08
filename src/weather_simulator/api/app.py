@@ -6,12 +6,14 @@ runs them; ``/api/days`` takes the answers back and returns the classified
 series. ``/api/config`` serves, once per page, the handful of constants the
 interface needs to refuse an impossible search before asking anything.
 
-Two endpoints rather than the single one docs/application.md describes, and the
-reason is that document's own other requirement: the browser must fetch, because
-Open-Meteo limits per IP, *and* it must derive nothing. Choosing what to fetch is
-a derivation, so it comes back to the server, and that takes a call of its own.
-Both are stateless, so the property the single endpoint stood for — scaling by
-multiplying instances — is untouched.
+Two endpoints rather than the single one docs/application.md describes. The
+browser has to fetch, because Open-Meteo limits per IP; but choosing *what* to
+fetch stays here, and for two reasons. The server holds a live version of that
+choice — ``/api/days`` replays the plan to check the payloads against the search
+— so building it in the browser too would be the one duplication CLAUDE.md rule 3
+is about. And the range is cut at today taken from this machine's clock, where a
+browser's is the visitor's own. Both endpoints are stateless, so the property the
+single one stood for — scaling by multiplying instances — is untouched.
 
 **The correction table is read once, at start-up, and a placeholder stops the
 boot.** The four locks docs/application.md lists are all things a caller has to

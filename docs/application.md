@@ -29,10 +29,13 @@ pendant les travaux préparatoires.
 Le géocodage passe par l'API dédiée d'Open-Meteo, non par Nominatim, dont les
 conditions d'usage proscrivent les usages intensifs.
 
-**Le navigateur ne dérive rien.** Il récupère, il transmet, il affiche. Toute
-donnée calculée l'est en Python, côté serveur — la classe de ciel doit être
-produite par une fonction unique, et le prototype initial montre ce qu'entraîne
-sa duplication entre JavaScript et Python.
+**Le navigateur dérive ce dont le serveur ne détient pas de version** : mise en
+forme, repères de lecture, ordonnancement, cache. Toute grandeur affichée, et
+toute règle dont dépend une grandeur affichée, est calculée en Python, côté
+serveur — la classe de ciel doit être produite par une fonction unique, et le
+prototype initial montre ce qu'entraîne sa duplication entre JavaScript et
+Python. Le critère n'est pas la difficulté de la tâche, c'est le double
+exemplaire → [`CLAUDE.md`](../CLAUDE.md), règle 3.
 
 Le navigateur poste les données brutes ; le serveur valide les entrées, applique
 la correction de nébulosité, le bloc de transformation et la classe de ciel, et
@@ -42,12 +45,17 @@ CDN.
 
 ### Une recherche se fait en deux appels
 
-**Décider quoi demander est une dérivation** : il faut découper la plage à
-aujourd'hui, choisir les modèles, savoir que le passé ancien coûte deux requêtes
-parce que la source se choisit par variable. Le navigateur ne peut donc pas le
-faire. Le serveur décide et lui remet des **URL déjà construites**, requête
-encodée comprise ; le navigateur appelle `fetch` sur chacune et n'a aucune
-décision à prendre.
+**Décider quoi demander, le serveur en détient une version** — et pas une version
+décorative : `/api/days` rejoue le plan pour vérifier que les payloads reçus
+correspondent bien à la recherche. Le refaire dans le navigateur serait donc un
+second exemplaire de ce découpage, avec ce qu'il faut pour diverger : couper la
+plage à aujourd'hui, choisir les modèles, savoir que le passé ancien coûte deux
+requêtes parce que la source se choisit par variable. **S'y ajoute une raison de
+correction** : la coupure se fait à la date du jour prise sur l'horloge du
+serveur, quand celle du navigateur est celle du visiteur.
+
+Le serveur décide donc et remet des **URL déjà construites**, requête encodée
+comprise ; le navigateur appelle `fetch` sur chacune.
 
 | Appel | Entrée | Sortie |
 |---|---|---|
@@ -156,9 +164,12 @@ témoin mais servie d'un seul côté de la couture ; ni le pictogramme, ni aucun
 gradation d'intensité.
 
 La réponse porte en outre **`has_simulated`** et les métadonnées de la grille.
-Le premier dit si l'avertissement est dû : l'interface ne dérivant rien, la
-question se tranche au serveur. Les secondes sont nulles quand rien n'a été
-corrigé, ce qui est la réponse honnête pour une plage entièrement passée.
+Le premier dit si l'avertissement est dû. Il est servi plutôt que recalculé sur
+les journées, parce que le serveur en détient une version : c'est le même
+constat qui lui fait aller chercher la correction de nébulosité. Et c'est la
+donnée dont dépend la règle 1, celle qui prime sur toutes les autres. Les
+secondes sont nulles quand rien n'a été corrigé, ce qui est la réponse honnête
+pour une plage entièrement passée.
 
 **La nébulosité est arrondie au dixième à la sortie, et à la sortie seulement.**
 L'interpolation des quatre nœuds laisse dix-sept décimales, qui revendiquent une

@@ -221,7 +221,7 @@ def test_the_contract_carries_the_class_and_not_the_pictogram() -> None:
 
 
 def test_the_warning_flag_is_shipped_rather_than_derived() -> None:
-    """The browser derives nothing, including whether a warning is due."""
+    """Whether a warning is due is answered here, not a second time downstream."""
     records = [
         _record(date(2020, 6, 1), Origin.OBSERVED),
         _record(date(2046, 6, 1), Origin.SIMULATED),

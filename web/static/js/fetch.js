@@ -3,14 +3,17 @@
  *
  * The browser fetches the data because Open-Meteo limits per IP address: a
  * server doing it would funnel every visitor through one address and reach the
- * ceiling immediately. So the calls happen here — and every decision about them
- * happens on the server.
+ * ceiling immediately. So the calls happen here — and what to call is decided
+ * there.
  *
  * **Nothing in this file reads a value.** No date is cut, no model is chosen, no
  * threshold is compared, no average is taken. The server hands over finished
- * URLs; this calls fetch on each and posts the answers back untouched. The
+ * URLs; this calls fetch on each and posts the answers back untouched. Not
+ * because a browser may derive nothing — CLAUDE.md rule 3 asks something
+ * narrower, that a rule the server already holds not be kept a second time here
+ * — but because a transport module that reads its cargo stops being one. The
  * earlier prototype held the sky-class logic twice, once here and once in
- * Python, and the two drifted — which is why the rule exists.
+ * Python, and the two drifted, on five lines of threshold comparisons.
  *
  * The one thing worth knowing about the exchange: /api/plan and /api/days are
  * two halves of the same search, and `today` travels from the first to the

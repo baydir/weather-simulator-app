@@ -2,14 +2,16 @@
 
 The browser fetches the data because Open-Meteo limits per IP address — a server
 doing it would funnel every visitor through one address and hit the ceiling at
-once, which happened from a single machine during the preparatory work. But the
-browser derives nothing, and *choosing* what to ask for is a derivation: it means
-cutting the range at tonight, picking the models, knowing that the old past takes
-two requests because the source is chosen per variable.
+once, which happened from a single machine during the preparatory work. But
+*choosing* what to ask for stays here: :func:`build` is called again from
+``/api/days`` to check the payloads against the search, so a copy of it in
+JavaScript would be a second live version of the same rule — cutting the range at
+tonight, picking the models, knowing that the old past takes two requests because
+the source is chosen per variable.
 
 So the server does the choosing and hands over finished URLs. The browser calls
-``fetch`` on each and posts the answers back. It has no decision to take, and
-``openmeteo.py`` stays the only place that knows this API exists.
+``fetch`` on each and posts the answers back, and ``openmeteo.py`` stays the only
+place that knows this API exists.
 
 **Each segment carries both how to ask and how to read.** They sit in one object
 on purpose: a plan and a parser that disagree about which variables a request
