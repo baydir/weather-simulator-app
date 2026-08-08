@@ -120,7 +120,11 @@ contrainte appliquée à la fois dans l'interface et dans l'API, jamais dans le
 seul navigateur.
 
 Chaque journée porte les températures minimale et maximale, le cumul de
-précipitations, les vitesses de vent moyenne et maximale, et un pictogramme :
+précipitations, les vitesses de vent moyenne et maximale, et un pictogramme.
+**Les cinq mesures sont de même rang** : aucune n'est reléguée en ligne
+secondaire, le vent pas plus que les autres. La question s'est posée — le
+document ci-présent porte les deux vents, [`projet.md`](projet.md) décrit la
+carte sans eux — et elle est tranchée ici, dans le sens de la carte complète.
 
 | Classe | Contrat JSON | Pictogramme |
 |---|---|---|
@@ -144,6 +148,38 @@ textuel, l'émoji seul n'étant pas accessible aux lecteurs d'écran.
 est le plus fort vent *établi* de la journée. Une rafale est autre chose et vaut
 couramment le double : 36,8 km/h contre 14,4 km/h à Pontarlier en juin 2024. Les
 libellés retenus sont « vent moyen » et « vent maximal ».
+
+### Les arrondis d'affichage
+
+Arrondir à l'écran est une décision de traitement de données, que
+[`CLAUDE.md`](../CLAUDE.md) range sous validation obligatoire — au même titre
+qu'une agrégation. Elle est prise, et la voici :
+
+| Grandeur | Affiché |
+|---|---|
+| Températures | entier — `21 °C` |
+| Vents | entier — `8 km/h` |
+| Précipitations | **une décimale** — `0,4 mm` |
+| Nébulosité | non affichée |
+
+**Le dixième sur les millimètres est le seul qui ne soit pas cosmétique.** La
+porte à 1 mm sépare les journées sèches des humides et commande deux des cinq
+classes de ciel → [`regles.md`](regles.md). Afficher « 0 mm » sur une journée
+portant le pictogramme de la pluie serait une contradiction visible à l'écran,
+là où « 0,4 » et « 1,2 » se distinguent. Sur les degrés et les kilomètres par
+heure, rien ne dépend du dixième et il n'ajoute rien à la lecture — la forme
+retenue est celle qu'emploie déjà [`projet.md`](projet.md) : « 21 °C / 39 °C,
+ciel dégagé, 0 mm ».
+
+### Ce que l'interface ne calcule pas
+
+Aucune moyenne de période, aucun comptage de journées de pluie, aucun cumul,
+aucun extrême de la plage. Ce sont des agrégations, et une agrégation faite à
+l'affichage relève de la même validation que l'arrondi ci-dessus. **La bande
+montre les journées, et rien au-dessus d'elles.**
+
+Une ligne de synthèse est envisagée dans [`idees.md`](idees.md), mais adossée à
+la comparaison au climat ancien, non retenue pour la première version.
 
 **Tout écran affichant une date future porte un avertissement explicite et
 visible** → [`projet.md`](projet.md).
