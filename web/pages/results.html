@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Weather Simulator — résultats</title>
+    <link rel="icon" href="/static/icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/static/css/style.css" />
+    <script type="module" src="/static/js/results.js"></script>
+  </head>
+  <body>
+    <a class="skip" href="#days" data-text="site.skipToDays"></a>
+
+    <header class="banner">
+      <h1 id="place"></h1>
+      <!-- The separator lives in the stylesheet, so a refusal — which never
+           sets a count — does not leave a dangling "·" after the dates. -->
+      <p class="tagline"><span id="range"></span><span id="count"></span></p>
+      <p><a href="/" data-text="results.back"></a></p>
+    </header>
+
+    <main>
+      <!--
+        Shown only when the range reaches the future. Two lines: CLAUDE.md
+        rule 1, and the emissions scenario docs/science.md requires stated.
+      -->
+      <aside id="warning" class="warning" hidden>
+        <p data-text="warning.notAForecast"></p>
+        <p data-text="warning.scenario"></p>
+      </aside>
+
+      <p id="wait" class="status" aria-live="polite" data-text="results.loading"></p>
+      <p id="failure" class="failure" role="alert" hidden></p>
+
+      <!--
+        tabindex makes the strip focusable, which is what lets the arrow keys
+        scroll it: ninety cards are otherwise out of reach without a mouse.
+      -->
+      <ol
+        id="days"
+        class="band"
+        tabindex="0"
+        role="group"
+        data-attr-aria-label="results.bandLabel"
+      ></ol>
+
+      <details id="provenance" class="provenance" hidden>
+        <summary data-text="provenance.summary"></summary>
+        <dl id="provenance-grid" class="pairs"></dl>
+        <p data-text="provenance.observed"></p>
+      </details>
+    </main>
+  </body>
+</html>

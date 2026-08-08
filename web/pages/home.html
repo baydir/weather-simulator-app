@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Weather Simulator</title>
+    <link rel="icon" href="/static/icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/static/css/style.css" />
+    <script type="module" src="/static/js/home.js"></script>
+  </head>
+  <body>
+    <a class="skip" href="#search" data-text="site.skip"></a>
+
+    <header class="banner">
+      <h1 data-text="site.name"></h1>
+      <p class="tagline" data-text="site.tagline"></p>
+    </header>
+
+    <main>
+      <!--
+        A real GET form: the navigation to /resultats costs no script, the
+        resulting URL is shareable, and the back button works on its own.
+        Script fills lat/lon only, because the API asks for coordinates and a
+        name is not one.
+      -->
+      <form id="search" method="get" action="/resultats" class="search">
+        <div class="field">
+          <label for="lieu" data-text="form.place"></label>
+          <input
+            type="text"
+            id="lieu"
+            name="lieu"
+            autocomplete="off"
+            role="combobox"
+            aria-expanded="false"
+            aria-controls="candidates"
+            data-attr-placeholder="form.placeHint"
+          />
+          <ul id="candidates" class="candidates" role="listbox" hidden></ul>
+          <p id="chosen" class="chosen" hidden>
+            <span id="chosen-name"></span>
+            <button type="button" id="change" class="link" data-text="form.change"></button>
+          </p>
+        </div>
+
+        <!--
+          What is happening to the place field, said next to the place field.
+          The count of candidates goes to the second one, which is read aloud
+          and not shown: the list itself is the visible answer, and the open
+          list would sit over this line anyway.
+        -->
+        <p id="place-status" class="status"></p>
+        <p id="found" class="sr-only" aria-live="polite"></p>
+
+        <input type="hidden" id="lat" name="lat" />
+        <input type="hidden" id="lon" name="lon" />
+
+        <div class="dates">
+          <p class="field">
+            <label for="debut" data-text="form.from"></label>
+            <input type="date" id="debut" name="debut" required />
+          </p>
+          <p class="field">
+            <label for="fin" data-text="form.to"></label>
+            <input type="date" id="fin" name="fin" required />
+          </p>
+        </div>
+
+        <p><button type="submit" data-text="form.submit"></button></p>
+
+        <p id="status" class="status" aria-live="polite"></p>
+      </form>
+    </main>
+
+    <footer class="banner">
+      <p class="tagline" data-text="warning.notAForecast"></p>
+    </footer>
+  </body>
+</html>

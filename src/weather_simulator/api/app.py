@@ -32,7 +32,8 @@ from typing import Annotated
 from fastapi import Depends, FastAPI, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from weather_simulator.api import errors, pipeline, validation
@@ -47,6 +48,8 @@ from weather_simulator.sources.series import today_in_reference_zone
 TABLE_PATH = (
     Path(__file__).resolve().parent.parent / "calibration" / "data" / "cloud_correction.json"
 )
+
+WEB = Path(__file__).resolve().parents[3] / "web"
 
 
 def load_grid(path: Path = TABLE_PATH) -> CorrectionGrid:
@@ -174,6 +177,42 @@ def days(fetched: validation.Fetched, grid: Grid) -> Series:
         correction=correction,
         metadata=grid.table.metadata if simulated else None,
     )
+
+
+# --- the two pages, and the files they load ----------------------------------
+#
+# Mounted only when ``web/`` sits next to the package. docs/application.md plans
+# for a static frontend served by a CDN, so the API has to start without it —
+# and an installed wheel carries the package alone. Nothing here is dynamic: the
+# two pages are files, and everything they show is fetched by the browser.
+
+
+def mount_web(target: FastAPI, directory: Path = WEB) -> bool:
+    """Serve the two pages and their files, when there are any to serve.
+
+    Says whether it mounted anything, so the absent case is a thing a test can
+    assert rather than a silent branch.
+    """
+    if not directory.is_dir():
+        return False
+
+    target.mount("/static", StaticFiles(directory=directory / "static"), name="static")
+
+    @target.get("/", include_in_schema=False)
+    def home() -> FileResponse:
+        """The form: a place, two dates."""
+        return FileResponse(directory / "pages" / "home.html")
+
+    @target.get("/resultats", include_in_schema=False)
+    def results() -> FileResponse:
+        """The band of days. The search travels in the query string, so the URL
+        can be shared and the back button works without a line of script."""
+        return FileResponse(directory / "pages" / "results.html")
+
+    return True
+
+
+mount_web(app)
 
 
 # --- how a refusal reaches the visitor ---------------------------------------
