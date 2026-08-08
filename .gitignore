@@ -16,6 +16,16 @@ dist/
 .mypy_cache/
 .ipynb_checkpoints/
 
+# Chromium, downloaded by scripts/screenshots.py and kept inside the project
+# rather than in the user cache. Anchored, like /data/ below: nothing named
+# .playwright should be swept up at another depth. ~150 MB, reinstalled by one
+# command, and never tracked.
+/.playwright/
+
+# What scripts/screenshots.py produces. Regenerated in one command, and a PNG
+# in git is a PNG that goes stale silently.
+/shots/
+
 # Raw payloads cached by the collection scripts. Reproducible from
 # scripts/*/collect.py, and far too bulky to track.
 #

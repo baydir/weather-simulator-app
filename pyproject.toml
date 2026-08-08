@@ -28,6 +28,12 @@ dev = [
     "pytest",
     "ruff",
 ]
+# Photographing the interface, scripts/screenshots.py. Kept out of dev on
+# purpose: it pulls a browser of some hundreds of megabytes, and nothing in the
+# test suite needs one. Install it only to look at the pages.
+screenshots = [
+    "playwright",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]
