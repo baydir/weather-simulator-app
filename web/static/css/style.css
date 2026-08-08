@@ -1,0 +1,670 @@
+/*
+ * One sheet, built on custom properties.
+ *
+ * Every rule below reads a token and none holds a raw value, so a reskin moves
+ * numbers at the top rather than hunting through the file.
+ *
+ * Three things carry the look. **One centred column**: the boxes sit on the
+ * page's axis, and only the strip of days runs the full width beneath them.
+ * **A serif for the titles** against a sans for everything else — two fonts of
+ * the project's own, never a third party's. And **the card is a tile with a
+ * tinted head**, the date band being what the eye tracks when scanning ninety
+ * of them; it darkens on the simulated side of the seam.
+ */
+
+/*
+ * Two variable fonts, served from this project — never from a third party. One
+ * file each carries the whole weight range, so no synthetic bolding and one
+ * request apiece. `swap` shows the fallback until they land rather than holding
+ * the text back. Licences and how to replace them: web/static/fonts/LICENCE.md.
+ */
+@font-face {
+  font-family: "Inter";
+  src: url("/static/fonts/inter.woff2") format("woff2");
+  font-weight: 400 700;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Source Serif 4";
+  src: url("/static/fonts/source-serif.woff2") format("woff2");
+  font-weight: 400 700;
+  font-display: swap;
+}
+
+:root {
+  /* Light theme. The paper is visibly grey so that a white card reads as an
+     object sitting on it, rather than as a rectangle drawn on white. */
+  --paper: #f4f5f7;
+  --panel: #ffffff;
+  --ink: #1a1d23;
+  --ink-soft: #5d6572;
+  --rule: #dde0e6;
+  --accent: #23457f;
+  --accent-soft: #eef1f8;
+  /* What goes *on* the accent. It flips with the theme: the accent is dark on
+     a light ground and light on a dark one, so a fixed white would fail one of
+     the two — it measured 2.2:1 in dark mode before this token existed. */
+  --on-accent: #ffffff;
+  /* One warm, one cool. Both are doubled by a spoken label — colour alone
+     never says which number is the maximum. */
+  --warm: #9c3d0c;
+  --cool: #185079;
+
+  --head: color-mix(in srgb, var(--ink) 6%, var(--panel));
+  --head-simulated: color-mix(in srgb, var(--accent) 15%, var(--panel));
+  --card-simulated: color-mix(in srgb, var(--accent) 4%, var(--panel));
+  --shadow: 0 1px 2px rgb(16 20 30 / 7%), 0 2px 6px rgb(16 20 30 / 4%);
+
+  --space: 4px;
+  --radius: 10px;
+  --radius-small: 6px;
+  --width: 1100px;
+  --measure: 66ch;
+  /* Wide enough for the longest row, "Précipitations" against "0,0 mm", with
+     room to spare — the labels are single words and cannot wrap. */
+  --card: 13rem;
+
+  /* The fallbacks are the system stack: if a font file never arrives, the page
+     reads exactly as it did before, only plainer. */
+  --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Source Serif 4", Georgia, "Times New Roman", serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #101215;
+    --panel: #1b1e24;
+    --ink: #e9ebf0;
+    --ink-soft: #a3aab8;
+    --rule: #2f343d;
+    --accent: #90b2ea;
+    --accent-soft: #232936;
+    --on-accent: #10131a;
+    --warm: #eda471;
+    --cool: #85b9de;
+
+    --head: color-mix(in srgb, var(--ink) 8%, var(--panel));
+    --head-simulated: color-mix(in srgb, var(--accent) 20%, var(--panel));
+    --card-simulated: color-mix(in srgb, var(--accent) 6%, var(--panel));
+    /* Shadows do not read on a dark ground; the border carries the edge. */
+    --shadow: none;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/*
+ * `hidden` wins over any layout this sheet sets.
+ *
+ * The browser's own `[hidden] { display: none }` has the same weight as a class
+ * selector, and an author sheet outranks it — so `.chosen { display: flex }`
+ * quietly un-hid the element. The "changer" button was on screen from the first
+ * paint, offering to change a place nobody had chosen yet. One rule closes the
+ * whole family of that bug rather than the one instance of it.
+ */
+[hidden] {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+  padding: calc(var(--space) * 8) calc(var(--space) * 6) calc(var(--space) * 12);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 1rem;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* One column, one left edge — the header, the text and the strip all sit on it. */
+.banner,
+main {
+  width: 100%;
+  max-width: var(--width);
+  margin-inline: auto;
+}
+
+/*
+ * Prose is bounded inside that column: a line of 1100 px is unreadable. The
+ * bound is on the *box*, not on the text inside it — a panel stretched to
+ * 1100 px around forty characters is a large empty rectangle.
+ *
+ * And the boxes are centred in the column. The strip of days keeps the full
+ * width, so the page reads as one centred axis with the days running across it.
+ */
+.tagline,
+.warning,
+.provenance,
+.failure,
+.search {
+  max-width: var(--measure);
+  margin-inline: auto;
+}
+
+.banner {
+  text-align: center;
+}
+
+/* Sentences stay left-aligned inside their box: centred prose is read line by
+   line with the eye hunting for each new start. */
+.warning,
+.failure {
+  text-align: left;
+}
+
+h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 2.25rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.tagline {
+  /* Same trap as `.warning`: the shorthand would zero the inline margins and
+     leave the line centred inside a box that is not itself centred. */
+  margin-top: calc(var(--space) * 2);
+  color: var(--ink-soft);
+}
+
+.banner p + p {
+  margin-top: calc(var(--space) * 2);
+}
+
+#count:not(:empty)::before {
+  content: " · ";
+}
+
+a {
+  color: var(--accent);
+  text-underline-offset: 2px;
+}
+
+footer.banner {
+  margin-top: calc(var(--space) * 14);
+  padding-top: calc(var(--space) * 4);
+  border-top: 1px solid var(--rule);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-small);
+}
+
+/* Out of the way until it is tabbed to, which is the one moment it is useful. */
+.skip {
+  position: absolute;
+  left: calc(var(--space) * 3);
+  top: calc(var(--space) * 3);
+  padding: calc(var(--space) * 2) calc(var(--space) * 4);
+  border-radius: var(--radius-small);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  transform: translateY(-250%);
+}
+
+.skip:focus {
+  transform: none;
+}
+
+/* --- the form ------------------------------------------------------------- */
+
+.search {
+  max-width: 34rem;
+  margin-top: calc(var(--space) * 8);
+  padding: calc(var(--space) * 7);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.field {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--space) * 1.5);
+  margin: 0 0 calc(var(--space) * 5);
+}
+
+.field label,
+.card-measures dt {
+  font-size: 0.8125rem;
+  color: var(--ink-soft);
+}
+
+input {
+  width: 100%;
+  padding: calc(var(--space) * 2.5) calc(var(--space) * 3);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-small);
+  background: var(--panel);
+  color: inherit;
+  font: inherit;
+}
+
+input:hover {
+  border-color: color-mix(in srgb, var(--ink) 25%, var(--rule));
+}
+
+.dates {
+  display: flex;
+  gap: calc(var(--space) * 4);
+  flex-wrap: wrap;
+}
+
+.dates .field {
+  flex: 1 1 12ch;
+}
+
+button[type="submit"] {
+  width: 100%;
+  padding: calc(var(--space) * 3) calc(var(--space) * 5);
+  border: 0;
+  border-radius: var(--radius-small);
+  background: var(--accent);
+  color: var(--on-accent);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+button[type="submit"]:hover {
+  background: color-mix(in srgb, var(--ink) 14%, var(--accent));
+}
+
+.search p:last-of-type {
+  margin-bottom: 0;
+}
+
+/* --- picking the place ---------------------------------------------------- */
+
+/*
+ * In the flow, pushing the dates down, rather than laid over them.
+ *
+ * The overlay was tried and reverted: five candidates are tall enough to cover
+ * the date fields *and* the submit button, and since both the list and the
+ * panel behind it are white, the form simply looked like it had lost its
+ * bottom half. A form that briefly grows is better than one that appears
+ * truncated.
+ */
+.candidates {
+  margin: calc(var(--space) * 1) 0 0;
+  padding: calc(var(--space) * 1);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-small);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  list-style: none;
+}
+
+.candidate {
+  display: block;
+  width: 100%;
+  padding: calc(var(--space) * 2) calc(var(--space) * 3);
+  border: 0;
+  border-radius: var(--radius-small);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.candidate:hover,
+.candidate:focus-visible {
+  background: var(--accent-soft);
+}
+
+.chosen {
+  display: flex;
+  align-items: baseline;
+  gap: calc(var(--space) * 2);
+  margin: 0;
+}
+
+.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 0.875rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* --- what the pages say back ---------------------------------------------- */
+
+/*
+ * A line of room is kept for a message, so that its arrival does not shove the
+ * page — but only while there is one. The form carries two of these regions and
+ * both are empty at rest; reserving for both left some fifty pixels of dead
+ * space under the button on every load.
+ */
+.status {
+  min-height: 1.55em;
+  margin: calc(var(--space) * 2) 0 0;
+  font-size: 0.875rem;
+  color: var(--ink-soft);
+}
+
+.status:empty {
+  min-height: 0;
+  margin: 0;
+}
+
+.failure {
+  margin-top: calc(var(--space) * 6);
+  padding: calc(var(--space) * 5);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--warm);
+  border-radius: var(--radius-small);
+  background: var(--panel);
+}
+
+.warning {
+  /* `margin-top`, not the `margin` shorthand: the shorthand sets the inline
+     margins to 0 and quietly undoes the `margin-inline: auto` that centres it. */
+  margin-top: calc(var(--space) * 6);
+  padding: calc(var(--space) * 4) calc(var(--space) * 5);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius-small) var(--radius-small) 0;
+  background: var(--accent-soft);
+  font-size: 0.9375rem;
+}
+
+.warning p {
+  margin: 0;
+}
+
+.warning p + p {
+  margin-top: calc(var(--space) * 1);
+  color: var(--ink-soft);
+}
+
+/* --- the strip of days ----------------------------------------------------- */
+
+.band {
+  display: flex;
+  gap: calc(var(--space) * 3);
+  margin: calc(var(--space) * 7) 0 0;
+  padding: calc(var(--space) * 1) 0 calc(var(--space) * 4);
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--ink) 25%, transparent) transparent;
+}
+
+/*
+ * A scrollbar that stays put. macOS hides its overlay bars until something
+ * moves, so the strip showed a card cut off at the right edge and nothing to
+ * say it could be scrolled — the clip read as a bug rather than as an
+ * invitation. Styling the track forces it to remain.
+ */
+.band::-webkit-scrollbar {
+  height: 10px;
+}
+
+.band::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.band::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-color: color-mix(in srgb, var(--ink) 25%, transparent);
+  background-clip: content-box;
+}
+
+.band::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in srgb, var(--ink) 40%, transparent);
+}
+
+.card {
+  flex: 0 0 auto;
+  width: var(--card);
+  scroll-snap-align: start;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  /* So the tinted head takes the corner radius with it. */
+  overflow: hidden;
+}
+
+/* The tint says the same thing as the seam card, and never says it alone. */
+.card--simulated {
+  background: var(--card-simulated);
+}
+
+.card p {
+  margin: 0;
+}
+
+.card-head {
+  padding: calc(var(--space) * 2.5) calc(var(--space) * 3.5);
+  border-bottom: 1px solid var(--rule);
+  background: var(--head);
+}
+
+.card--simulated .card-head {
+  background: var(--head-simulated);
+}
+
+/*
+ * A fixed line box, not a minimum. With `min-height` the empty months came out
+ * 3 px shorter than the named ones, because an empty box takes the minimum and
+ * a filled one takes its line-height — so the date below it sat lower on every
+ * card that opened a month. Three pixels, on every fifth card, is exactly the
+ * kind of thing that reads as sloppiness without being nameable.
+ */
+.card-month {
+  height: 1.15rem;
+  line-height: 1.15rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.card-day {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.card-body {
+  padding: calc(var(--space) * 3) calc(var(--space) * 3.5) calc(var(--space) * 3.5);
+  text-align: center;
+}
+
+.card-emoji {
+  min-height: 1.6em;
+  font-size: 2rem;
+  line-height: 1.4;
+}
+
+/* The headline of the card, and the only measure that carries no word. */
+.card-temperatures {
+  margin-top: calc(var(--space) * 1);
+  font-size: 1.375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+.card-sky {
+  margin-bottom: calc(var(--space) * 3);
+  font-size: 0.875rem;
+  color: var(--ink-soft);
+}
+
+/*
+ * The two remaining measures, at one size and one weight. The temperatures now
+ * sit above as the card's headline — the project owner's call, on seeing the
+ * first strip: labelling a pair of numbers beside a degree sign "Températures"
+ * spends a line saying what everyone already knows.
+ */
+.card-measures {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: calc(var(--space) * 1.5) calc(var(--space) * 1.5);
+  margin: 0;
+  padding-top: calc(var(--space) * 3);
+  border-top: 1px solid var(--rule);
+  font-size: 0.8125rem;
+  text-align: left;
+}
+
+.card-measures dd {
+  margin: 0;
+  text-align: right;
+  white-space: nowrap;
+  /* Digits of one width, so the columns do not shiver from card to card. */
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+.high {
+  color: var(--warm);
+  font-weight: 600;
+}
+
+.low {
+  color: var(--cool);
+  font-weight: 600;
+}
+
+.sep,
+.unit {
+  color: var(--ink-soft);
+  font-weight: 400;
+}
+
+.sep {
+  /* "37·18" ran together; the two temperatures need air between them. */
+  margin-inline: 0.45ch;
+}
+
+.unit {
+  margin-left: 0.45ch;
+  font-size: 0.8125rem;
+}
+
+/*
+ * The seam, as a card of its own. Vertical because it has to be narrow, and
+ * written because colour must never be what carries the information.
+ */
+.seam {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--space) * 7);
+  border-left: 2px solid var(--accent);
+  border-radius: 2px;
+  background: var(--accent-soft);
+}
+
+.seam span {
+  writing-mode: vertical-rl;
+  padding: calc(var(--space) * 2) 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* --- where the days come from ---------------------------------------------- */
+
+.provenance {
+  margin-top: calc(var(--space) * 8);
+  padding: calc(var(--space) * 4) calc(var(--space) * 5);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--ink-soft);
+  font-size: 0.875rem;
+}
+
+.provenance summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.provenance p {
+  margin: calc(var(--space) * 3) 0 0;
+}
+
+.pairs {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: calc(var(--space) * 1.5) calc(var(--space) * 5);
+  margin: calc(var(--space) * 4) 0 0;
+}
+
+.pairs dd {
+  margin: 0;
+  color: var(--ink);
+}
+
+/* --- read but not shown ---------------------------------------------------- */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+    transition: none !important;
+  }
+  /* Snapping drags the strip under the reader's hand; the scrolling stays. */
+  .band {
+    scroll-snap-type: none;
+  }
+}
+
+/* --- narrow screens -------------------------------------------------------- */
+
+@media (max-width: 40rem) {
+  body {
+    padding: calc(var(--space) * 6) calc(var(--space) * 4) calc(var(--space) * 10);
+  }
+
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  .search {
+    padding: calc(var(--space) * 5);
+  }
+
+  /* The strip keeps scrolling horizontally at every width, as the document
+     asks — only the card gives a little. */
+  :root {
+    --card: 12rem;
+  }
+}
