@@ -20,7 +20,12 @@
  * second so that both agree on where the observed stops and the simulated
  * starts. It is echoed back verbatim, never recomputed here — a browser clock
  * is the visitor's, and the seam is not.
+ *
+ * It does not write, either: the sentences it hands to the visitor come from
+ * i18n.js, where docs/application.md asks that every visible string live.
  */
+
+import { texts } from "./i18n.js";
 
 /** A refusal from the API, carrying the sentence meant for the visitor. */
 export class SearchError extends Error {
@@ -40,7 +45,7 @@ async function postJson(url, body) {
   const payload = await response.json().catch(() => null);
   if (!response.ok) {
     throw new SearchError(
-      payload?.message ?? "La recherche n'a pas abouti.",
+      payload?.message ?? texts.transport.searchFailed,
       response.status,
     );
   }
@@ -62,12 +67,8 @@ async function getJson(url, message) {
 }
 
 // Two sentences, because the two failures are not the visitor's to confuse.
-// Open-Meteo answering badly is the common one — the rate limit is counted
-// against their own address, so it is the one they can act on by waiting.
-const UPSTREAM_FAILED =
-  "Les données météo n'ont pas pu être récupérées. " +
-  "Le service Open-Meteo limite le nombre de recherches ; réessayez dans un moment.";
-const SERVICE_FAILED = "L'application est momentanément indisponible.";
+// Why they read the way they do is explained where they are written, in i18n.js.
+const { upstreamFailed: UPSTREAM_FAILED, serviceFailed: SERVICE_FAILED } = texts.transport;
 
 /**
  * The constants the API enforces, so the form can refuse the same things it

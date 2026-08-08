@@ -1,0 +1,127 @@
+/**
+ * Every sentence the visitor reads, in one place.
+ *
+ * docs/application.md asks for this from the first line rather than later:
+ * extracting the strings once the pages exist costs a sweep through every file,
+ * and one always survives. There is one language today; the shape is what
+ * matters.
+ *
+ * **The warning keys are named, and the naming is load-bearing.** CLAUDE.md
+ * rule 1 forbids the vocabulary of forecasting on a future date, and a test
+ * walks this object to enforce it — every string is checked, except the two
+ * under `warning`, which exist precisely to deny the thing. Adding a third
+ * exception means widening that list, which is the moment to notice.
+ */
+
+export const texts = {
+  site: {
+    name: "Weather Simulator",
+    tagline: "La météo d'un jour quelconque, de 1950 à 2050.",
+    skip: "Aller au formulaire",
+    skipToDays: "Aller aux journées",
+  },
+
+  form: {
+    place: "Lieu",
+    placeHint: "Une commune, une ville",
+    from: "Du",
+    to: "Au",
+    submit: "Afficher la météo",
+    searching: "Recherche du lieu…",
+    candidates: (n) =>
+      n === 1 ? "1 lieu trouvé, à choisir" : `${n} lieux trouvés, à choisir`,
+    chosen: (label) => `Lieu : ${label}`,
+    change: "changer",
+    notFound: "Aucun lieu ne correspond à ce nom.",
+    placeRequired: "Choisissez un lieu dans la liste.",
+
+    // Caught while the form is being filled in, so they are worded as
+    // corrections rather than as refusals of a search that was really made.
+    datesRequired: "Indiquez les deux dates.",
+    rangeInverted: "La date de fin précède la date de début.",
+    rangeOutsideCoverage: (first, last) => `Les dates vont de ${first} à ${last}.`,
+    rangeTooLong: (max, asked) =>
+      `${asked} jours demandés. Une recherche en porte ${max} au plus, soit une saison.`,
+  },
+
+  results: {
+    range: (from, to) => `du ${from} au ${to}`,
+    count: (n) => (n === 1 ? "1 journée" : `${n} journées`),
+    loading: "Récupération des données…",
+    progress: (done, total) => `Récupération des données : ${done} sur ${total}`,
+    back: "Nouvelle recherche",
+    bandLabel: "Les journées, dans l'ordre. Défilement horizontal.",
+    seam: "À partir d'ici, simulation",
+  },
+
+  // Folded, but there. A corrected series read without knowing which model was
+  // corrected, over which period, and when the table was built is a silent
+  // source of error — docs/application.md says so, and this is the answer.
+  provenance: {
+    summary: "D'où viennent ces journées",
+    model: "Modèle climatique",
+    calibration: "Période de calibration",
+    projection: "Période de projection",
+    step: "Pas de la grille",
+    generated: "Table de correction générée le",
+    span: (from, to) => `${from} – ${to}`,
+    degrees: (value) => `${value}°`,
+    observed:
+      "Les journées passées viennent de réanalyses météorologiques, non d'un modèle.",
+    noGrid: "Aucune journée simulée : cette recherche n'a demandé aucune correction.",
+  },
+
+  // The two obligations, kept to two lines. The first is CLAUDE.md rule 1; the
+  // second is docs/science.md, which requires the emissions scenario to be
+  // stated as a high hypothesis rather than an expected trajectory.
+  warning: {
+    notAForecast:
+      "Simulation, pas une prévision. La date situe la journée dans une saison, " +
+      "elle n'engage rien sur ce jour-là.",
+    scenario: "Scénario d'émissions haut.",
+  },
+
+  sky: {
+    clear: "Dégagé",
+    cloudy: "Nuageux",
+    overcast: "Couvert",
+    rain: "Pluie",
+    snow: "Neige",
+    unknown: "Ciel indéterminé",
+  },
+
+  measure: {
+    // Read aloud, not shown: the card carries "39 · 21", and warm against cool
+    // is what says which is which — which is nothing at all to a screen reader,
+    // or to anyone who does not separate the two colours. There is no
+    // "Températures" label any more: the pair needs no word on screen.
+    high: "Maximale",
+    low: "Minimale",
+    precipitation: "Précipitations",
+    // The only wind on the card, and the label has to carry that: never
+    // "rafale", because wind_speed_10m_max is the strongest *sustained* wind of
+    // the day and a gust commonly runs to twice it — and never plain "Vent"
+    // either, which would read as an average.
+    windMax: "Vent maximal",
+    missing: "—",
+    missingLabel: "donnée manquante",
+  },
+
+  units: {
+    celsius: "°C",
+    millimetres: "mm",
+    kilometresPerHour: "km/h",
+  },
+
+  // Handed to fetch.js, which transports and does not write. Two sentences
+  // because the two failures are not the visitor's to confuse: Open-Meteo
+  // answering badly is the common one, and its rate limit counts against their
+  // own address, so waiting is something they can actually do.
+  transport: {
+    upstreamFailed:
+      "Les données météo n'ont pas pu être récupérées. " +
+      "Le service Open-Meteo limite le nombre de recherches ; réessayez dans un moment.",
+    serviceFailed: "L'application est momentanément indisponible.",
+    searchFailed: "La recherche n'a pas abouti.",
+  },
+};
