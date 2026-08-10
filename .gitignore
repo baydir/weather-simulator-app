@@ -26,6 +26,11 @@ dist/
 # in git is a PNG that goes stale silently.
 /shots/
 
+# Visual references dropped here to talk about. Excluded by default because
+# they are usually somebody else's screenshots, and this repository is public.
+# A reference we actually own and want to keep can be force-added.
+/design/
+
 # Raw payloads cached by the collection scripts. Reproducible from
 # scripts/*/collect.py, and far too bulky to track.
 #
