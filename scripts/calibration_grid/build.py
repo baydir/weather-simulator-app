@@ -67,6 +67,24 @@ def _by_month(payload: dict, first: date, last: date) -> dict[int, list[float]]:
     return grouped
 
 
+def _requested(path: Path) -> tuple[float, float]:
+    """The lattice node a cache file was fetched for, read from its name.
+
+    The name is ``Node.key`` — ``+049.5_-000.5`` — so it carries the coordinate
+    that was *asked for*, which is by construction an exact multiple of the
+    step. That is the only coordinate the lattice is defined on.
+
+    It is not the one the payload carries. Open-Meteo answers with the centre of
+    its own cell, sometimes a quarter of a degree away, and rounding that back
+    lost five nodes out of 219: ``round(49.25 * 2) / 2`` is 49.0, not 49.5,
+    because Python rounds a half to the even side. The node asked for at 49.5
+    vanished, and the one at 49.0 was silently overwritten with a correction
+    measured twenty-eight kilometres further north.
+    """
+    latitude, longitude = path.stem.split("_")
+    return float(latitude), float(longitude)
+
+
 def from_cache() -> CorrectionTable:
     """Build the table from whatever nodes have been collected so far."""
     nodes: dict[tuple[float, float], CloudCorrection] = {}
@@ -76,8 +94,7 @@ def from_cache() -> CorrectionTable:
         if path.name == "elevations.json":
             continue
         raw = json.loads(path.read_text(encoding="utf-8"))
-        latitude = float(raw["reference"]["latitude"])
-        longitude = float(raw["reference"]["longitude"])
+        latitude, longitude = _requested(path)
 
         reference = _by_month(raw["reference"], CALIBRATION_START, CALIBRATION_END)
         past = _by_month(raw["model"], CALIBRATION_START, CALIBRATION_END)
@@ -86,10 +103,9 @@ def from_cache() -> CorrectionTable:
         correction = build(reference, past, future)
         if len(correction.months) < 12:
             thin.append(f"{latitude:.1f},{longitude:.1f} ({len(correction.months)} mois)")
-        # Snapped to the lattice: Open-Meteo answers with the cell centre, which
-        # is not the coordinate that was asked for.
-        key = (round(latitude * 2) / 2, round(longitude * 2) / 2)
-        nodes[key] = correction
+        # One file, one lattice node. A collision here would mean two files
+        # fetched for the same node, which the cache's own naming forbids.
+        nodes[(latitude, longitude)] = correction
 
     if thin:
         print(f"  {len(thin)} noeuds incomplets : {', '.join(thin[:5])}")
