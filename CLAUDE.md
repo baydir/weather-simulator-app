@@ -107,6 +107,7 @@ Les chiffres restent attachés au script qui les mesure : chaque `README.md` de
 | `scripts/sky_thresholds/` | le calage des seuils de ciel, étape 3 |
 | `scripts/calibration_grid/` | la grille de correction, étape 4 |
 | `scripts/inspect_seam.py` | lecture des coutures sur requête réelle |
+| `scripts/screenshots.py` | photographie l'interface, huit vues en une commande |
 
 Les trois premiers ne se ressemblent pas, et c'est délibéré. `verification/` date
 de la conception : aucune dépendance, `urllib` seul, chaque script isolé. Les
@@ -120,11 +121,16 @@ qui se rejoue hors réseau depuis `data/`.
 ## Où on en est
 
 Étapes 0 à 3, **5 et 6 faites**. **Étape 4 en cours** : la méthode de correction,
-la table et son interpolation sont écrites, la collecte des 594 nœuds reste à
-mener (23 faits, dont trois mailles refermées autour de Paris — assez pour
-éprouver la chaîne). **Le site fonctionne, et ne sert le futur qu'autour de
-Paris** tant que la collecte n'a pas avancé ; le passé est servi partout dans le
-monde.
+la table et son interpolation sont écrites, la collecte avance — **219 nœuds sur
+594, 148 mailles refermées**. Le site sert donc le futur sur une vingtaine des
+plus grandes villes ; la Bretagne, l'Alsace et le Jura ne sont pas encore
+atteints. Le passé est servi partout dans le monde.
+
+**Le débit est plafonné par jour, non par heure.** Open-Meteo le dit lui-même —
+`HTTP 429 : Daily API request limit exceeded` — et laisse passer entre cinquante
+et cent trente nœuds par jour, quelle que soit la façon dont on s'y prend. La
+collecte se relance donc autant de fois que nécessaire ; elle mange le même quota
+que le navigateur, et se coupe avant d'essayer le site.
 
 Le détail, et ce que chaque étape a corrigé de ce que la précédente supposait →
 [`docs/journal.md`](docs/journal.md).
