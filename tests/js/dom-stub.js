@@ -1,13 +1,18 @@
 /**
- * Just enough `document` for band.js to build its nodes outside a browser.
+ * Just enough `document` for the display modules to build their nodes outside a
+ * browser.
  *
- * Four methods, because that is all dom.js touches. Not a DOM implementation
- * and not trying to be one: the point is to check what the strip *says* — the
- * seam falling on the right day, the month named only where it turns, a gap
- * showing a dash — none of which needs layout, styling or events.
+ * Only what they actually touch. Not a DOM implementation and not trying to be
+ * one: the point is to check what a page *says* — the seam falling on the right
+ * day, the month named only where it turns, a gap showing a dash, one question
+ * exposed out of ten — none of which needs layout, styling or events.
  *
- * It has to be installed before band.js is imported, since `el` reaches for the
- * global on its first call.
+ * `classList` and `removeAttribute` arrived with prompt.js, whose whole
+ * accessibility guarantee is which node carries `aria-hidden` at a given moment.
+ * That is a claim about the tree, so it is checkable here.
+ *
+ * It has to be installed before the module under test is imported, since `el`
+ * reaches for the global on its first call.
  */
 
 class StubNode {
@@ -17,10 +22,23 @@ class StubNode {
     this.textContent = "";
     this.attrs = {};
     this.children = [];
+    this.classList = {
+      toggle: (name, on) => {
+        const classes = new Set(this.className.split(" ").filter(Boolean));
+        if (on) classes.add(name);
+        else classes.delete(name);
+        this.className = [...classes].join(" ");
+      },
+      contains: (name) => this.className.split(" ").includes(name),
+    };
   }
 
   setAttribute(name, value) {
     this.attrs[name] = String(value);
+  }
+
+  removeAttribute(name) {
+    delete this.attrs[name];
   }
 
   append(...nodes) {

@@ -15,10 +15,37 @@
 
 export const texts = {
   site: {
-    name: "Weather Simulator",
-    tagline: "La météo d'un jour quelconque, de 1950 à 2050.",
     skip: "Aller au formulaire",
     skipToDays: "Aller aux journées",
+  },
+
+  // The banner asks before it explains. A site name at the top said what the
+  // thing is called and nothing about what it is for; a question says both at
+  // once, and the promise underneath settles it.
+  //
+  // The name is not lost — it stays in <title>, so in the tab and in a search
+  // result, which is where a name is actually read.
+  home: {
+    // **Provisoire — à réécrire par le porteur du projet.** Un seul endroit.
+    //
+    // Deux contraintes. Une question porte un lieu et un horizon, sans quoi
+    // elle n'évoque pas ce que le site sait faire. Et le vocabulaire de la
+    // prévision reste proscrit : `present.test.js` parcourt ce tableau et
+    // signalera la fautive sous `home.questions.<rang>`.
+    //
+    // Le test cherche la chaîne « il fera ». Il ne rattrapera donc pas « Quel
+    // temps fera-t-il à Nice en 2050 ? », qui viole pourtant la règle 1 — ce
+    // qu'aucune formulation ne doit faire, c'est promettre la journée.
+    questions: [
+      "Vaudra-t-il mieux se marier en Provence en mars plutôt qu'en juin ?",
+      "Faut-il faire ses vieux jours à Lille ou à Nice ?",
+      "Pourrais-je faire pousser des tomates à Montpellier en 2050 ?",
+    ],
+    // The verb is what keeps this within rule 1: "simulez" is one of the three
+    // terms it names as kept, and the sentence promises an exercise rather than
+    // an outcome. It carries none of the forbidden words, and present.test.js
+    // walks it like the rest.
+    promise: "Simulez la météo du futur. N'importe où. N'importe quand.",
   },
 
   form: {

@@ -17,6 +17,7 @@ import { geocode, loadConfig, SearchError } from "./fetch.js";
 import { refuse } from "./bounds.js";
 import { applyTexts, el } from "./dom.js";
 import { texts } from "./i18n.js";
+import { rotate } from "./prompt.js";
 
 const form = document.getElementById("search");
 const place = document.getElementById("lieu");
@@ -33,6 +34,9 @@ const placeStatus = document.getElementById("place-status");
 const found = document.getElementById("found");
 
 applyTexts();
+// After applyTexts, which fills every other slot: the heading is the one place
+// the dictionary is read as a list rather than as a single string.
+rotate(document.getElementById("prompt"), texts.home.questions);
 fillDefaultDates();
 
 let config = null;

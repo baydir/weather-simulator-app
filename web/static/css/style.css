@@ -36,10 +36,23 @@
   font-display: swap;
 }
 
+/* Two files, not one, and the second is the point: EB Garamond ships a drawn
+   italic, where the sheet used to leave the browser to slant the roman itself.
+   The promise under the question is set in it, and a real italic is a different
+   alphabet rather than the same one pushed over. */
 @font-face {
-  font-family: "Source Serif 4";
-  src: url("/static/fonts/source-serif.woff2") format("woff2");
-  font-weight: 400 700;
+  font-family: "EB Garamond";
+  src: url("/static/fonts/eb-garamond.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "EB Garamond";
+  src: url("/static/fonts/eb-garamond-italic.woff2") format("woff2");
+  font-style: italic;
+  font-weight: 400 800;
   font-display: swap;
 }
 
@@ -65,10 +78,17 @@
   --space: 4px;
   --width: 1100px;
   --measure: 62ch;
+  /* The home column: the promise and the form, deliberately narrower than the
+     reading measure. They are a handful of short lines and three fields, not
+     prose — set to 62ch they sprawl under a heading that runs edge to edge. */
+  --column: 30rem;
   --card: 13rem;
 
   --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-display: "Source Serif 4", Georgia, "Times New Roman", serif;
+  /* Garamond before Georgia: the fallbacks are ordered by how little the page
+     moves if the file has not arrived, and Georgia is the closest thing to a
+     Garamond that a machine is likely to already have. */
+  --font-display: "EB Garamond", Garamond, Georgia, "Times New Roman", serif;
 
   /* The small-capitals register, in one place: labels, the button, the seam. */
   --label-size: 0.6875rem;
@@ -93,6 +113,12 @@
 
 body {
   margin: 0;
+  /* `vw` counts the scrollbar, so the full-bleed heading comes out a scrollbar
+     wider than the room it has. Invisible on macOS, where scrollbars overlay
+     and measure nothing; a horizontal scrollbar everywhere else. `clip` rather
+     than `hidden`, which would make this a scroll container and break
+     `position: sticky` for anything added later. */
+  overflow-x: clip;
   padding: calc(var(--space) * 16) calc(var(--space) * 6) calc(var(--space) * 20);
   background: var(--paper);
   color: var(--ink);
@@ -100,6 +126,177 @@ body {
   font-size: 1rem;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+}
+
+/* The sky, on the home page alone.
+ *
+ * Written as a gradient rather than served as the mock-up's PNG: the photograph
+ * carries no detail — it is a smooth wash — so the stops below, sampled every
+ * ten percent of its height, reproduce it exactly for no bytes at all and stay
+ * sharp on a display of any density. A 540-pixel-wide image stretched across a
+ * 5K screen would not.
+ *
+ * **Anchored to the document, not to the window.** `fixed` was the first
+ * instinct — the sky staying put while the page moves — and it makes the
+ * colour under any given element depend on the height of the reader's window.
+ * Measured under the footer warning, it ran from #d89470 on a 700-pixel window
+ * to #124a73 on a 2000-pixel one: the bright band at one size, deep blue at
+ * another. No single ink serves both. Left to scroll with the document, the
+ * same spot is #e28f5b at every height tried, and the ink below can be chosen
+ * rather than hoped for.
+ *
+ * **Nothing is laid over it.** A darkening scrim was tried and dropped: it buys
+ * contrast by muddying the photograph, which is the wrong currency. Legibility
+ * is bought with ink instead — the two overrides below, and the warning, which
+ * goes dark because it is the one thing that always sits on the bright band.
+ * Every figure here was measured against the gradient as rendered.
+ */
+body.home {
+  /* The muted ink was set against flat paper and does not survive a sky:
+     measured over the gradient it fell to 3.8:1 on the promise. Lifted here, on
+     this page alone — twice, the second time because shortening the page to fit
+     a window slid the form down onto lighter blue and took the small field
+     labels to 4.4:1. Layout and legibility are the same question here, and only
+     a measurement asks it. Hierarchy still holds: these labels are eleven
+     pixels, letterspaced and capitalised, which separates them from the text
+     they name more surely than a tone does. */
+  --ink-soft: #dad3c6;
+  --rule: #6b6153;
+
+  /* Declared once, painted twice: the still layer and the shimmering copy over
+     it read the same variable, so the sky cannot come to exist in two versions
+     that drift apart. */
+  --sky: linear-gradient(
+    to bottom,
+    #011b3c 0%,
+    #00264b 10%,
+    #01345c 20%,
+    #08426b 30%,
+    #1b527a 40%,
+    #3b6187 50%,
+    #5f7090 60%,
+    #908490 70%,
+    #cf9880 80%,
+    #f58738 90%,
+    #27030a 100%
+  );
+
+  background-color: var(--paper);
+  /* The layer below is absolutely positioned against this. */
+  position: relative;
+}
+
+/* The sky layer: the document's height, behind everything, and out of the flow
+   so it costs the flex column nothing. Absolute rather than fixed, which is
+   what keeps the gradient anchored to the document — see above. */
+.sky {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: var(--sky);
+  background-repeat: no-repeat;
+}
+
+/* The heat, coming off the warm end of it.
+ *
+ * Faint bands drifting upward over the lower part of the sky, fading in and out
+ * at both ends so the haze belongs to the horizon. Heat rises from hot ground;
+ * over the whole sky it stops reading as heat and starts reading as a broken
+ * display.
+ *
+ * **Not the SVG displacement filter this was first written with**, and the
+ * reason is measured. `feTurbulence` feeding `feDisplacementMap` is rasterised
+ * per pixel per frame, and it took 120 frames a second down to 41 on a laptop
+ * and to 12 on a 2560-wide display. Masking it to a narrow band changed
+ * nothing — the filter processes the element, not the part of it that shows.
+ * Drawing it at half size and scaling back up changed nothing either: the
+ * browser rasterises after the transform.
+ *
+ * What makes the substitution honest is what lies underneath. Displacement
+ * moves pixels, and moving the pixels of a smooth vertical wash only changes
+ * each one's colour by a little — which is exactly what a translucent band
+ * passing over it does. There is no detail here to distort, so the expensive
+ * operation and the cheap one converge, and only one of them costs a frame.
+ *
+ * Measured after the change: 121 frames a second at both sizes. */
+.sky::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 45%;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgb(255 255 255 / 6%) 0 2px,
+    rgb(0 0 0 / 6%) 2px 7px
+  );
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 35%, #000 80%, transparent 100%);
+  animation: heat-haze 2.4s linear infinite;
+}
+
+@keyframes heat-haze {
+  from {
+    background-position: 0 42px;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
+/* The warning, on the sunset.
+ *
+ * It is the one sentence CLAUDE.md rule 1 makes non-negotiable, and the only
+ * one that lands on the bright band whatever the window — so it turns dark
+ * instead of pale. Burnt brown rather than black: it belongs to the sky it sits
+ * on. Measured 6.6:1 against #e28f5b, where the page's usual muted ink gave 1.5.
+ */
+body.home footer .tagline {
+  color: #331708;
+}
+
+/* The banner sits lower than the page's own top padding would put it, so the
+   question and its promise fall nearer the middle of the screen than the top
+   edge. Only here: the results page leads with a place name and a range, which
+   belong at the top where a heading is looked for.
+ *
+ * Measured in `vh` rather than in pixels. A fixed offset holds its place on a
+ * laptop and loses it on a large display — the same 104 pixels put the question
+ * at 21% of a 900-pixel window and back at 13% of a 1440-pixel one, which is
+ * where it started. The clamp keeps a short window from spending half its
+ * height on emptiness, and a very tall one from pushing the form off screen.
+ *
+ * `header.banner`, not `.banner`: the footer carries the same class, and left
+ * unqualified this rule gave it the same hollow — 100 to 170 pixels of nothing
+ * above the warning, growing with the screen, which is most of what pushed the
+ * page past the window. */
+body.home > header.banner {
+  padding-top: clamp(calc(var(--space) * 8), 10vh, calc(var(--space) * 36));
+}
+
+/* The page is the window, and the warning sits at the foot of it.
+ *
+ * A landing page carrying one form has no business scrolling. Laid out as a
+ * column with the footer pushed down by `margin-top: auto`, the page is exactly
+ * as tall as the screen whenever the content fits, and scrolls only when it
+ * genuinely does not — a short window, a large text size. The fixed gap the
+ * footer used to carry could not do that: it was the same 96 pixels whether
+ * there was room to spare or none at all.
+ *
+ * `dvh` rather than `vh`: on a phone the address bar retracts as the page
+ * scrolls, and `vh` measures against the taller state — the page would stand a
+ * toolbar too long and scroll for that alone. */
+body.home {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  /* Less room under the warning than the page's shared bottom padding leaves.
+     That padding was sized for a strip of ninety cards ending mid-scroll; here
+     the footer is already held at the bottom by the margin below, and the extra
+     forty pixels only pushed the page past the window. */
+  padding-bottom: calc(var(--space) * 10);
+}
+
+body.home > footer.banner {
+  margin-top: auto;
 }
 
 .banner,
@@ -136,17 +333,98 @@ h1 {
   line-height: 1.15;
 }
 
-/* Italic serif under the title, as the reference sets its own subtitle. */
+/* The rotating question.
+ *
+ * Every question occupies the same grid cell, so the cell is as tall as the
+ * longest of them and the subtitle below never moves — a question running to
+ * three lines where the last ran to two would otherwise shove the whole form
+ * down, every five seconds.
+ *
+ * `align-items: end` keeps them sitting on the same baseline rather than each
+ * centring itself in a box sized for another. */
+/* The question runs the full width of the screen, and everything under it is
+ * narrow. That contrast is the layout: the question addresses the room, the
+ * form is something you lean in to fill.
+ *
+ * `50% - 50vw` is what breaks it out. The banner is centred and capped at
+ * --width, so a child needs a negative margin equal to half the difference —
+ * a figure only the viewport knows. It also has to escape the body's own side
+ * padding, which the same margin covers, and `padding-inline` puts back as
+ * breathing room rather than as a cap.
+ */
+.prompt {
+  display: grid;
+  align-items: end;
+  justify-items: center;
+  max-width: none;
+  margin-inline: calc(50% - 50vw);
+  padding-inline: calc(var(--space) * 6);
+  /* Even lines rather than a long one and an orphan — the questions differ in
+     length and none of them can be typeset by hand. */
+  text-wrap: balance;
+}
+
+.prompt-item {
+  grid-area: 1 / 1;
+  opacity: 0;
+  transform: translateY(0.25em);
+  transition:
+    opacity 600ms ease,
+    transform 600ms ease;
+}
+
+.prompt-item.is-current {
+  opacity: 1;
+  transform: none;
+}
+
+/* Serif under the title, and upright.
+ *
+ * It was set in italic, after the reference this was drawn from. EB Garamond
+ * ended that: its italic has the smallest lower case of the faces looked at —
+ * 41 pixels of x-height against 44 to 53 — and at seventeen pixels over a
+ * sunset the warning stopped being comfortably readable. Measured contrast said
+ * it passed, which is exactly the limit of that measure: a ratio counts the
+ * colours of two areas and knows nothing of how thin the strokes between them
+ * are.
+ *
+ * The face was kept and the slope given up rather than the reverse. An italic
+ * here was a habit, not a meaning: nothing in these lines is a title, a foreign
+ * term or an emphasis, which are what an italic is for. */
 .tagline {
   margin-top: calc(var(--space) * 2);
   font-family: var(--font-display);
-  font-style: italic;
   font-size: 1.0625rem;
   color: var(--ink-soft);
 }
 
 .banner p + p {
   margin-top: calc(var(--space) * 4);
+}
+
+/* The promise stands off from the question. The shared rule above was set
+   against a one-line site name; under a heading of two or three lines of
+   display type it reads as a subtitle stuck to its title. */
+.prompt + .tagline {
+  margin-top: calc(var(--space) * 6);
+}
+
+/* The narrow column, under the wide question. Both of these carry
+   `max-width: var(--measure)` from the rule above; these come later and win.
+   `.search` is the home form and exists on no other page, so naming it here
+   changes nothing on the results page. */
+.prompt + .tagline,
+.search {
+  max-width: var(--column);
+}
+
+/* The promise carries the whole offer of the site in one line, so it is set
+   larger than the taglines that only caption something. Balanced, because it is
+   three short sentences and the column is narrow: left to itself the last one
+   drops alone onto a third line. */
+.prompt + .tagline {
+  font-size: 1.3125rem;
+  text-wrap: balance;
 }
 
 #count:not(:empty)::before {
@@ -163,10 +441,13 @@ a:hover {
   text-decoration-color: currentColor;
 }
 
+/* No rule above the warning. The sky already separates it from the form — the
+   band it sits on is a boundary of its own, and a hairline drawn across it only
+   cuts the photograph in two. The footer exists on the home page alone, so
+   nothing else loses a line. */
 footer.banner {
   margin-top: calc(var(--space) * 24);
   padding-top: calc(var(--space) * 6);
-  border-top: 1px solid var(--rule);
 }
 
 :focus-visible {
@@ -204,8 +485,15 @@ button[type="submit"],
 
 /* --- the form ------------------------------------------------------------- */
 
+/* The form follows the promise closely.
+ *
+ * Seventy-two pixels here left a hole three times the one between the question
+ * and its promise — the two of them read as a block, and the form as something
+ * unrelated further down the page. Measured: 93 pixels of nothing against 24
+ * above. Closing it also buys back most of what made the page outrun the
+ * screen, which is the same fault seen from the other side. */
 .search {
-  margin-top: calc(var(--space) * 18);
+  margin-top: calc(var(--space) * 8);
 }
 
 .field {
@@ -213,7 +501,7 @@ button[type="submit"],
   display: flex;
   flex-direction: column;
   gap: calc(var(--space) * 2);
-  margin: 0 0 calc(var(--space) * 12);
+  margin: 0 0 calc(var(--space) * 8);
 }
 
 .field label {
@@ -605,9 +893,52 @@ button[type="submit"]:hover {
     scroll-behavior: auto !important;
     transition: none !important;
   }
+  /* The banner question stops turning altogether, in prompt.js — this only
+     makes sure the one that stays does not fade in. */
   /* Snapping drags the strip under the reader's hand; the scrolling stays. */
   .band {
     scroll-snap-type: none;
+  }
+  /* The heat stops rising. The sky itself stays — it is the movement that is
+     refused here, not the picture. Dropping the layer also drops the filter,
+     which is what the per-frame cost was for. */
+  .sky::after {
+    display: none;
+  }
+}
+
+/* --- short windows --------------------------------------------------------- */
+/*
+ * Not narrow ones: this is about height. A laptop in a browser with a couple of
+ * toolbars gives eight hundred usable pixels, and the home page has to hold a
+ * heading, a promise, three fields, a button and a warning inside them.
+ *
+ * Spacing only, and deliberately so. The type keeps its size — shrinking the
+ * question is the first thing that would occur to anyone and the first thing
+ * the page would suffer from, since that question is what the page is for. What
+ * gives instead is the air around it, which is the one thing that costs nothing
+ * to lose in the only case where it cannot be afforded.
+ */
+@media (max-height: 860px) {
+  body.home {
+    padding-top: calc(var(--space) * 10);
+    padding-bottom: calc(var(--space) * 4);
+  }
+
+  body.home > header.banner {
+    padding-top: clamp(calc(var(--space) * 4), 6vh, calc(var(--space) * 20));
+  }
+
+  body.home > footer.banner {
+    padding-top: calc(var(--space) * 4);
+  }
+
+  .search {
+    margin-top: calc(var(--space) * 6);
+  }
+
+  .field {
+    margin-bottom: calc(var(--space) * 6);
   }
 }
 

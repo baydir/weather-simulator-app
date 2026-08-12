@@ -8,12 +8,34 @@
     <link rel="stylesheet" href="/static/css/style.css" />
     <script type="module" src="/static/js/home.js"></script>
   </head>
-  <body>
+  <!-- The sky belongs to this page. The results page is a strip of cards and a
+       sunset behind them would fight them for attention. -->
+  <body class="home">
     <a class="skip" href="#search" data-text="site.skip"></a>
 
+    <!--
+      The sky, and the heat coming off it.
+
+      A layer of its own rather than the body's background, because the shimmer
+      is an SVG filter and a filter applies to an element whole: put on the body
+      it would ripple the heading, the form and the warning along with the
+      gradient, and a wobbling date field is not a design. Here it reaches the
+      sky and nothing else.
+
+      Decorative through and through — `aria-hidden`, and nothing inside it.
+    -->
+    <div class="sky" aria-hidden="true"></div>
+
+
+    <!--
+      The heading is filled by script, as every sentence on this site is — it
+      is empty here for the same reason the form's labels are. What is new is
+      that it keeps changing, so prompt.js stacks the questions inside it and
+      exposes one at a time to the accessibility tree.
+    -->
     <header class="banner">
-      <h1 data-text="site.name"></h1>
-      <p class="tagline" data-text="site.tagline"></p>
+      <h1 id="prompt" class="prompt"></h1>
+      <p class="tagline" data-text="home.promise"></p>
     </header>
 
     <main>
