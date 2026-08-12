@@ -12,7 +12,10 @@ the emoji lives on the display side alone, so that moving to a drawn icon set
 touches nothing but the rendering.
 
 **It carries ``origin`` on every day, and ``has_simulated`` on the response.**
-The interface must warn on any future date. The server already answers that
+The interface must warn wherever the series stops being weather and becomes a
+trajectory. ``origin`` has three values and the warning turns on one of them:
+a forecast day is ahead of today without being a projection, so warning on it
+would be as wrong as staying silent on 2046. The server already answers that
 question for itself — it is what sends it looking for a cloud-cover correction —
 so the answer is shipped as a boolean rather than worked out a second time from
 the days. It is also the fact CLAUDE.md rule 1 hangs on, and rule 1 outranks
@@ -61,7 +64,10 @@ class Day(BaseModel):
 
     date: date
     origin: Origin = Field(
-        description="observed for a reanalysis day, simulated for a projected one"
+        description=(
+            "observed for a day that happened, forecast for one ECMWF IFS reaches "
+            "ahead of today, simulated for one the climate model produced"
+        )
     )
     source: str = Field(description="Which dataset served the day. For diagnosing the seams.")
 
@@ -151,8 +157,10 @@ class Series(BaseModel):
     end: date
     has_simulated: bool = Field(
         description=(
-            "True when at least one day is a projection. The interface must then "
-            "show the warning of docs/projet.md. Shipped rather than derived."
+            "True when at least one day comes from the climate model. The interface "
+            "must then show the warning of docs/projet.md. False for a range that "
+            "reaches no further than the forecast, which carries no projection to "
+            "warn about. Shipped rather than derived."
         )
     )
     grid: Grid | None = Field(

@@ -123,11 +123,41 @@ describe("the seam", () => {
     assert.equal(past.filter((node) => node.className === "seam").length, 0);
   });
 
-  it("nor on a range lying wholly in the future", () => {
-    // No observed day to leave: a marker on the very first card would announce
-    // a passage that never happens. The warning at the top covers that case.
+  it("nor on a range lying wholly in the model", () => {
+    // No bank to leave: a marker on the very first card would announce a
+    // passage that never happens. The warning at the top covers that case.
     const future = strip([day("2046-07-01", "simulated"), day("2046-07-02", "simulated")]);
     assert.equal(future.filter((node) => node.className === "seam").length, 0);
+  });
+
+  it("falls at the end of the forecast, not at tonight", () => {
+    // The whole point of the IFS segment: tomorrow is weather, and the crossing
+    // belongs where forecasting stops rather than where the calendar turns.
+    const nodes = strip([
+      day("2026-08-11", "observed"),
+      day("2026-08-12", "forecast"),
+      day("2026-08-13", "forecast"),
+      day("2026-08-14", "simulated"),
+    ]);
+    const seams = nodes.filter((node) => node.className === "seam");
+    assert.equal(seams.length, 1);
+    assert.equal(nodes.indexOf(seams[0]), 3);
+  });
+
+  it("is still marked on a range that starts tomorrow", () => {
+    // Forecast then simulated, never observed. Reading "observed" alone to
+    // decide there was a bank to leave would let this crossing go unmarked.
+    const nodes = strip([
+      day("2026-08-12", "forecast"),
+      day("2026-08-13", "forecast"),
+      day("2026-08-14", "simulated"),
+    ]);
+    assert.equal(nodes.filter((node) => node.className === "seam").length, 1);
+  });
+
+  it("does not appear on a range that never leaves the forecast", () => {
+    const ahead = strip([day("2026-08-12", "forecast"), day("2026-08-13", "forecast")]);
+    assert.equal(ahead.filter((node) => node.className === "seam").length, 0);
   });
 });
 

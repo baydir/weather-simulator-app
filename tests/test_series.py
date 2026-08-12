@@ -15,6 +15,7 @@ from weather_simulator.sources.series import fetch_series, resume_after, split_r
 
 TODAY = date(2026, 8, 2)
 LAG = 6  # the reanalyses stop here, at 2026-07-27
+HORIZON = TODAY + timedelta(days=openmeteo.FORECAST_DAYS)  # 2026-08-16
 POINT = (43.30, 5.37)  # Marseille
 
 
@@ -29,26 +30,47 @@ def span(calls, model):
 
 class TestSplitRange:
     def test_a_range_entirely_behind_today_is_all_observed(self):
-        observed, simulated = split_range(date(1978, 2, 12), date(1978, 4, 15), TODAY)
+        observed, forecast, simulated = split_range(date(1978, 2, 12), date(1978, 4, 15), TODAY)
         assert observed == (date(1978, 2, 12), date(1978, 4, 15))
+        assert forecast is None
         assert simulated is None
 
-    def test_a_range_entirely_ahead_is_all_simulated(self):
-        observed, simulated = split_range(date(2047, 9, 1), date(2047, 11, 29), TODAY)
+    def test_a_range_beyond_the_horizon_never_reaches_the_forecast(self):
+        """The trap: 2047 clears ``end > today`` while starting after the fortnight.
+
+        Read as three separate conditions rather than an intersection, this
+        yields a forecast request ending twenty years before it starts.
+        """
+        observed, forecast, simulated = split_range(date(2047, 9, 1), date(2047, 11, 29), TODAY)
         assert observed is None
+        assert forecast is None
         assert simulated == (date(2047, 9, 1), date(2047, 11, 29))
 
-    def test_today_is_observed_and_the_model_starts_tomorrow(self):
+    def test_today_is_observed_and_the_forecast_starts_tomorrow(self):
         """IFS serves today with no latency, so observation runs to tonight."""
-        observed, simulated = split_range(
+        observed, forecast, simulated = split_range(
             TODAY - timedelta(days=2), TODAY + timedelta(days=2), TODAY
         )
         assert observed == (TODAY - timedelta(days=2), TODAY)
-        assert simulated == (TODAY + timedelta(days=1), TODAY + timedelta(days=2))
+        assert forecast == (TODAY + timedelta(days=1), TODAY + timedelta(days=2))
+        assert simulated is None
 
-    def test_the_cut_leaves_neither_gap_nor_overlap(self):
-        observed, simulated = split_range(date(2026, 6, 15), date(2026, 8, 14), TODAY)
-        assert observed[1] + timedelta(days=1) == simulated[0]
+    def test_a_range_inside_the_fortnight_is_forecast_alone(self):
+        """No simulated day, and therefore no correction table required."""
+        observed, forecast, simulated = split_range(TODAY + timedelta(days=1), HORIZON, TODAY)
+        assert observed is None
+        assert forecast == (TODAY + timedelta(days=1), HORIZON)
+        assert simulated is None
+
+    def test_the_model_takes_over_the_day_after_the_horizon(self):
+        _, forecast, simulated = split_range(TODAY, date(2026, 9, 30), TODAY)
+        assert forecast == (TODAY + timedelta(days=1), HORIZON)
+        assert simulated == (HORIZON + timedelta(days=1), date(2026, 9, 30))
+
+    def test_the_cuts_leave_neither_gap_nor_overlap(self):
+        observed, forecast, simulated = split_range(date(2026, 6, 15), date(2026, 9, 14), TODAY)
+        assert observed[1] + timedelta(days=1) == forecast[0]
+        assert forecast[1] + timedelta(days=1) == simulated[0]
 
     @pytest.mark.parametrize(
         "start, end",
@@ -63,52 +85,64 @@ class TestSplitRange:
             split_range(start, end, TODAY)
 
 
-class TestThreeSegments:
-    """Marseille, 15 June to 14 August 2026 — the range that meets all three."""
+class TestFourSegments:
+    """Marseille, 15 June to 14 September 2026 — the range that meets them all."""
+
+    LAST = date(2026, 9, 14)
 
     def setup_method(self):
         self.fetch, self.calls = fake_openmeteo(today=TODAY, lag=LAG)
         self.series = fetch_series(
-            *POINT, date(2026, 6, 15), date(2026, 8, 14), today=TODAY, fetch=self.fetch
+            *POINT, date(2026, 6, 15), self.LAST, today=TODAY, fetch=self.fetch
         )
 
-    def test_four_requests_in_order(self):
+    def test_five_requests_in_order(self):
         assert models_called(self.calls) == [
             openmeteo.TEMPERATURE_MODEL,
             openmeteo.SURFACE_MODEL,
             openmeteo.RECENT_MODEL,
+            openmeteo.FORECAST_MODEL,
             openmeteo.DEFAULT_MODEL,
         ]
 
     def test_ifs_resumes_the_day_the_reanalyses_stop(self):
         first, last = span(self.calls, openmeteo.RECENT_MODEL)
         assert first == TODAY - timedelta(days=LAG - 1)  # 2026-07-28
-        assert last == TODAY  # IFS carries through to tonight
+        assert last == TODAY  # the archive side carries through to tonight
 
-    def test_the_model_starts_the_day_after_today(self):
-        first, last = span(self.calls, openmeteo.DEFAULT_MODEL)
-        assert first == TODAY + timedelta(days=1)
-        assert last == date(2026, 8, 14)
+    def test_the_forecast_runs_from_tomorrow_to_the_horizon(self):
+        assert span(self.calls, openmeteo.FORECAST_MODEL) == (TODAY + timedelta(days=1), HORIZON)
+
+    def test_the_model_is_asked_from_tomorrow_and_trimmed_on_return(self):
+        """Asked in overlap, because where IFS stops is not knowable in advance."""
+        assert span(self.calls, openmeteo.DEFAULT_MODEL) == (TODAY + timedelta(days=1), self.LAST)
+        by_date = {record.date: record.source for record in self.series}
+        assert by_date[HORIZON] == openmeteo.FORECAST_MODEL
+        assert by_date[HORIZON + timedelta(days=1)] == openmeteo.DEFAULT_MODEL
 
     def test_the_series_is_contiguous_across_both_seams(self):
         dates = [record.date for record in self.series]
         assert dates == sorted(dates)
-        assert len(dates) == len(set(dates)) == 61
+        assert len(dates) == len(set(dates)) == 92
         assert dates[0] == date(2026, 6, 15)
-        assert dates[-1] == date(2026, 8, 14)
-        assert dates[-1] - dates[0] == timedelta(days=60)
+        assert dates[-1] == self.LAST
+        assert dates[-1] - dates[0] == timedelta(days=91)
 
-    def test_today_and_before_are_observed_after_is_simulated(self):
+    def test_tonight_is_not_a_seam(self):
+        """IFS runs straight through it — that is what the segment is for."""
         by_date = {record.date: record.origin for record in self.series}
         assert by_date[TODAY] is Origin.OBSERVED
-        assert by_date[TODAY + timedelta(days=1)] is Origin.SIMULATED
+        assert by_date[TODAY + timedelta(days=1)] is Origin.FORECAST
+        assert by_date[HORIZON] is Origin.FORECAST
+        assert by_date[HORIZON + timedelta(days=1)] is Origin.SIMULATED
 
     def test_each_day_records_which_dataset_served_it(self):
         by_date = {record.date: record.source for record in self.series}
         assert by_date[TODAY - timedelta(days=LAG)] == "reanalysis"
         assert by_date[TODAY - timedelta(days=LAG - 1)] == openmeteo.RECENT_MODEL
         assert by_date[TODAY] == openmeteo.RECENT_MODEL
-        assert by_date[TODAY + timedelta(days=1)] == openmeteo.DEFAULT_MODEL
+        assert by_date[TODAY + timedelta(days=1)] == openmeteo.FORECAST_MODEL
+        assert by_date[HORIZON + timedelta(days=1)] == openmeteo.DEFAULT_MODEL
 
     def test_every_day_carries_the_same_fields_whichever_source_served_it(self):
         expected = set(openmeteo.ALL_VARIABLES.values())
@@ -134,6 +168,26 @@ class TestSeamPlacement:
         fetch_series(*POINT, TODAY - timedelta(days=30), TODAY, today=TODAY, fetch=fetch)
         assert span(calls, openmeteo.RECENT_MODEL)[0] == TODAY - timedelta(days=lag - 1)
 
+    @pytest.mark.parametrize("served", [5, 10, 14])
+    def test_the_model_takes_over_where_the_forecast_actually_stopped(self, served):
+        """A forecast cut short moves the seam; it must not leave a hole.
+
+        This is what asking the climate model from tomorrow buys: the request is
+        planned before IFS has answered, so the handover cannot be computed then.
+        """
+        fetch, _ = fake_openmeteo(today=TODAY, lag=LAG, forecast_days=served)
+        series = fetch_series(*POINT, TODAY, date(2026, 9, 30), today=TODAY, fetch=fetch)
+
+        by_date = {record.date: record.origin for record in series}
+        last_forecast = TODAY + timedelta(days=served)
+        assert by_date[last_forecast] is Origin.FORECAST
+        assert by_date[last_forecast + timedelta(days=1)] is Origin.SIMULATED
+
+        dates = [record.date for record in series]
+        assert len(dates) == len(set(dates))  # the overlap left no duplicate
+        assert dates == sorted(dates)
+        assert dates[-1] - dates[0] == timedelta(days=len(dates) - 1)  # nor any hole
+
     def test_a_range_within_the_latency_falls_entirely_to_ifs(self):
         fetch, calls = fake_openmeteo(today=TODAY, lag=LAG)
         series = fetch_series(*POINT, TODAY - timedelta(days=3), TODAY, today=TODAY, fetch=fetch)
@@ -153,14 +207,22 @@ class TestSingleSegment:
         assert len(series) == 63
         assert {record.origin for record in series} == {Origin.OBSERVED}
 
-    def test_a_future_range_takes_one_request(self):
-        """Tokyo, September to November 2047 — the model alone."""
+    def test_a_far_future_range_takes_one_request(self):
+        """Tokyo, September to November 2047 — the model alone, no forecast."""
         fetch, calls = fake_openmeteo(today=TODAY, lag=LAG)
         series = fetch_series(
             *POINT, date(2047, 9, 1), date(2047, 11, 29), today=TODAY, fetch=fetch
         )
         assert models_called(calls) == [openmeteo.DEFAULT_MODEL]
         assert {record.origin for record in series} == {Origin.SIMULATED}
+
+    def test_a_range_inside_the_fortnight_takes_the_forecast_alone(self):
+        """No simulated day, so no climate request and no correction needed."""
+        fetch, calls = fake_openmeteo(today=TODAY, lag=LAG)
+        series = fetch_series(*POINT, TODAY + timedelta(days=1), HORIZON, today=TODAY, fetch=fetch)
+        assert models_called(calls) == [openmeteo.FORECAST_MODEL]
+        assert {record.origin for record in series} == {Origin.FORECAST}
+        assert len(series) == openmeteo.FORECAST_DAYS
 
 
 class TestRequestShape:

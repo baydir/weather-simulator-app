@@ -42,7 +42,11 @@ export function strip(days) {
       seamDrawn = true;
       nodes.push(el("li", { className: "seam" }, [el("span", { text: texts.results.seam })]));
     }
-    observedSeen ||= day.origin === "observed";
+    // Anything that is not simulated counts as a bank to leave, forecast days
+    // included. Reading "observed" alone would miss the crossing on a range
+    // that starts tomorrow: it runs forecast then simulated, never observed,
+    // and the one seam it does have would go unmarked.
+    observedSeen ||= day.origin !== "simulated";
 
     const turned = present.monthKey(day.date) !== month;
     month = present.monthKey(day.date);

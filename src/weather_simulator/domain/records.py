@@ -1,10 +1,11 @@
 """The daily record: the single vocabulary shared by every layer.
 
-One record is one day, whatever its origin. Past and future differ by the
+One record is one day, whatever its origin. The three origins differ by the
 ``origin`` field alone — never by which fields carry a value, never by how a
 value was computed. That is the whole point of the homogeneity rule in
 CLAUDE.md: a quantity available on one side only would produce a step at the
-seam, so it is dropped rather than exploited.
+seam, so it is dropped rather than exploited. All four sources serve the same
+eight variables, which is what makes a single record type possible at all.
 
 Units follow Open-Meteo and are *not* normalised here:
 
@@ -25,13 +26,23 @@ from enum import StrEnum
 
 
 class Origin(StrEnum):
-    """Where a day comes from — reanalysis or climate model.
+    """Where a day comes from — what happened, what is forecast, what is modelled.
 
-    Carried through to the JSON contract: the interface must warn on any
-    simulated day, and cannot do so without knowing which days those are.
+    Three origins, still two seams. ``FORECAST`` is not a third kind of series
+    sitting between the other two: it is the tail of the same ECMWF IFS run that
+    serves the recent past, carried forward as far as it reaches. What separates
+    it from ``OBSERVED`` is not the instrument but the tense — those days have
+    not happened yet.
+
+    The distinction is not cosmetic, and both consumers turn on it. The
+    correction of step 4 applies to ``SIMULATED`` alone: IFS needs no debiasing,
+    being an observation carried forward rather than a climate run. And the
+    interface must warn on simulated days without warning on forecast ones,
+    which it cannot do without being told which is which.
     """
 
     OBSERVED = "observed"
+    FORECAST = "forecast"
     SIMULATED = "simulated"
 
 

@@ -1,16 +1,20 @@
 """Look at the seams: the days either side of each changeover, and the levels.
 
 A window spanning today meets both — the reanalyses handing over to IFS five or
-six days back, then IFS handing over to the climate model tonight. Their
-positions are not assumed here either: they are read off the assembled series,
-wherever the source name changes from one day to the next.
+six days back, then IFS handing over to the climate model a fortnight ahead.
+Their positions are not assumed here either: they are read off the assembled
+series, wherever the source name changes from one day to the next.
+
+Note what is *not* a seam: tonight. IFS runs straight through it, on the archive
+side until today and on the forecast side after, so the changeover the reader
+would most easily catch out is the one place the series does not break.
 
 Section 3 asks for two checks — no step in level, no step in variance. This
 prints both, on a real request, for a point given on the command line.
 
     python3 scripts/inspect_seam.py --site Pontarlier --window 60
 
-It hits the live APIs (up to four requests), so it is slow and subject to the
+It hits the live APIs (up to five requests), so it is slow and subject to the
 rate limit. It is a reading tool, not a test: what counts as a step is a
 judgement for the project owner to make.
 """
@@ -77,9 +81,18 @@ def main() -> int:
     series = fetch_series(
         latitude, longitude, start, end, model=args.model, timezone=args.timezone, today=today
     )
-    observed = [r for r in series if r.origin is Origin.OBSERVED]
-    simulated = [r for r in series if r.origin is Origin.SIMULATED]
-    print(f"{len(series)} jours : {len(observed)} observés, {len(simulated)} simulés")
+    groups = {origin: [r for r in series if r.origin is origin] for origin in Origin}
+    print(
+        f"{len(series)} jours : "
+        + ", ".join(
+            f"{len(records)} {label}"
+            for records, label in (
+                (groups[Origin.OBSERVED], "observés"),
+                (groups[Origin.FORECAST], "prévus"),
+                (groups[Origin.SIMULATED], "simulés"),
+            )
+        )
+    )
 
     # Wherever the source name changes from one day to the next, there is a seam.
     seams = [
@@ -111,26 +124,22 @@ def main() -> int:
             row += f"{'—':>9}" if value is None else f"{value:>9.1f}"
         print(row)
 
-    print("\n(2) Niveaux et dispersions de part et d'autre\n")
-    print(f"    {'variable':<16}{'observé':>20}{'simulé':>20}{'écart moy.':>13}")
-    print("    " + "-" * 65)
+    print("\n(2) Niveaux et dispersions par origine\n")
+    print(f"    {'variable':<16}{'observé':>20}{'prévu':>20}{'simulé':>20}")
+    print("    " + "-" * 76)
     for field, label, unit in FIELDS:
-        before_mean, before_sd, n_before = summarise(observed, field)
-        after_mean, after_sd, n_after = summarise(simulated, field)
-        if n_before == 0 or n_after == 0:
-            print(f"    {label:<16}{'donnée absente':>20}")
-            continue
-        print(
-            f"    {label + ' (' + unit + ')':<16}"
-            f"{before_mean:>13.2f} ±{before_sd:<6.2f}"
-            f"{after_mean:>13.2f} ±{after_sd:<6.2f}"
-            f"{after_mean - before_mean:>+13.2f}"
-        )
+        cells = ""
+        for origin in (Origin.OBSERVED, Origin.FORECAST, Origin.SIMULATED):
+            mean, spread, count = summarise(groups[origin], field)
+            cells += f"{'—':>20}" if count == 0 else f"{mean:>13.2f} ±{spread:<6.2f}"
+        print(f"    {label + ' (' + unit + ')':<16}{cells}")
 
     print(
-        "\n    Un écart n'est pas en soi un défaut : les deux fenêtres ne couvrent"
-        "\n    pas la même saison et la seconde est une simulation. Ce qui se lit"
-        "\n    ici, c'est un saut brutal — pas une différence."
+        "\n    Un écart n'est pas en soi un défaut : les trois fenêtres ne couvrent"
+        "\n    pas la même saison, ni la même durée, et la dernière est une"
+        "\n    simulation. Ce qui se lit ici, c'est un saut brutal — pas une"
+        "\n    différence. La colonne « prévu » est courte par construction : une"
+        "\n    quinzaine contre deux fenêtres de la largeur demandée."
     )
     return 0
 

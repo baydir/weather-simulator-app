@@ -37,9 +37,7 @@ def _correction(months: range = range(1, 13)) -> CloudCorrection:
     reference = quantiles(SAMPLE)
     return CloudCorrection(
         {
-            month: MonthlyCorrection(
-                reference=reference, model_past=biased, model_future=biased
-            )
+            month: MonthlyCorrection(reference=reference, model_past=biased, model_future=biased)
             for month in months
         }
     )

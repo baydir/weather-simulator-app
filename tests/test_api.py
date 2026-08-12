@@ -90,8 +90,12 @@ def _search(start: date, end: date, point: tuple[float, float] = PARIS) -> dict[
     }
 
 
-def _fetch(url: str, *, lag: int = DEFAULT_LAG) -> dict[str, Any]:
-    """Play the browser: answer a planned URL the way Open-Meteo would."""
+def _fetch(url: str, *, lag: int = DEFAULT_LAG, forecast_days: int | None = None) -> dict[str, Any]:
+    """Play the browser: answer a planned URL the way Open-Meteo would.
+
+    ``forecast_days`` cuts IFS short of the fortnight it was asked for, which is
+    the case the climate model's overlap exists to absorb.
+    """
     from urllib.parse import parse_qs, urlsplit
 
     query = parse_qs(urlsplit(url).query)
@@ -101,11 +105,16 @@ def _fetch(url: str, *, lag: int = DEFAULT_LAG) -> dict[str, Any]:
         "daily": query["daily"],
         "models": query["models"],
     }
-    lagging = params["models"][0] in {openmeteo.TEMPERATURE_MODEL, openmeteo.SURFACE_MODEL}
-    return payload(params, served_until=TODAY - timedelta(days=lag) if lagging else None)
+    model = params["models"][0]
+    served_until = None
+    if model in {openmeteo.TEMPERATURE_MODEL, openmeteo.SURFACE_MODEL}:
+        served_until = TODAY - timedelta(days=lag)
+    elif model == openmeteo.FORECAST_MODEL and forecast_days is not None:
+        served_until = TODAY + timedelta(days=forecast_days)
+    return payload(params, served_until=served_until)
 
 
-def _run(client: TestClient, search: dict[str, Any]) -> Any:
+def _run(client: TestClient, search: dict[str, Any], **answers: Any) -> Any:
     """A whole search: plan, fetch, days."""
     planned = client.post("/api/plan", json=search)
     assert planned.status_code == 200, planned.json()
@@ -115,7 +124,7 @@ def _run(client: TestClient, search: dict[str, Any]) -> Any:
         json={
             **search,
             "today": body["today"],
-            "payloads": {r["id"]: _fetch(r["url"]) for r in body["requests"]},
+            "payloads": {r["id"]: _fetch(r["url"], **answers) for r in body["requests"]},
         },
     )
 
@@ -143,7 +152,7 @@ def test_a_future_range_gets_the_climate_request_alone(client, frozen_today) -> 
     assert [r["id"] for r in body["requests"]] == [planning.PROJECTION]
 
 
-def test_a_range_straddling_today_meets_all_three_segments(client, frozen_today) -> None:
+def test_a_range_straddling_today_meets_every_segment(client, frozen_today) -> None:
     body = client.post(
         "/api/plan", json=_search(TODAY - timedelta(days=30), TODAY + timedelta(days=30))
     ).json()
@@ -151,9 +160,19 @@ def test_a_range_straddling_today_meets_all_three_segments(client, frozen_today)
         planning.TEMPERATURE,
         planning.SURFACE,
         planning.RECENT,
+        planning.FORECAST,
         planning.PROJECTION,
     ]
     assert body["today"] == TODAY.isoformat()
+
+
+def test_a_range_inside_the_fortnight_needs_no_climate_request(client, frozen_today) -> None:
+    """And therefore no correction table — the near future works everywhere."""
+    body = client.post(
+        "/api/plan",
+        json=_search(TODAY + timedelta(days=1), TODAY + timedelta(days=openmeteo.FORECAST_DAYS)),
+    ).json()
+    assert [r["id"] for r in body["requests"]] == [planning.FORECAST]
 
 
 def test_the_planned_urls_carry_the_forced_model_and_the_timezone(client, frozen_today) -> None:
@@ -214,18 +233,14 @@ def test_a_malformed_body_is_refused_in_french_too(client, frozen_today, body: d
 
 def test_a_place_outside_the_grid_is_refused_for_the_future(client, frozen_today) -> None:
     """An uncorrected future would be an artificially sunny one. Not shown."""
-    response = client.post(
-        "/api/plan", json=_search(date(2046, 7, 1), date(2046, 7, 31), SANTIAGO)
-    )
+    response = client.post("/api/plan", json=_search(date(2046, 7, 1), date(2046, 7, 31), SANTIAGO))
     assert response.status_code == 400
     assert "pas encore couvert" in response.json()["message"]
 
 
 def test_the_same_place_is_served_for_the_past(client, frozen_today) -> None:
     """A past range calls for no coefficient. Refusing it would be gratuitous."""
-    response = client.post(
-        "/api/plan", json=_search(date(2020, 6, 1), date(2020, 6, 30), SANTIAGO)
-    )
+    response = client.post("/api/plan", json=_search(date(2020, 6, 1), date(2020, 6, 30), SANTIAGO))
     assert response.status_code == 200
 
 
@@ -297,6 +312,47 @@ def test_the_reanalyses_keep_the_days_they_served(client, frozen_today) -> None:
     assert sources[handover] == "reanalysis"
     assert sources[handover + timedelta(days=1)] == openmeteo.RECENT_MODEL
     assert sources[TODAY] == openmeteo.RECENT_MODEL
+
+
+def test_the_forecast_keeps_the_days_it_served(client, frozen_today) -> None:
+    """The second seam, settled the same way as the first: IFS wins where it served."""
+    response = _run(client, _search(TODAY, TODAY + timedelta(days=40)), forecast_days=9)
+    days = response.json()["days"]
+    origins = {date.fromisoformat(day["date"]): day["origin"] for day in days}
+
+    handover = TODAY + timedelta(days=9)
+    assert origins[handover] == "forecast"
+    assert origins[handover + timedelta(days=1)] == "simulated"
+
+    dates = [date.fromisoformat(day["date"]) for day in days]
+    assert len(dates) == len(set(dates)) == 41  # the overlap left no duplicate, no hole
+
+
+def test_a_near_future_search_needs_no_correction_table(client, frozen_today) -> None:
+    """The fortnight ahead is IFS, which needs no debiasing — so it works anywhere.
+
+    ``has_simulated`` is false, so no warning is raised and no grid is reported:
+    the answer carries a forecast, not a trajectory.
+    """
+    response = _run(
+        client,
+        _search(TODAY + timedelta(days=1), TODAY + timedelta(days=openmeteo.FORECAST_DAYS)),
+    )
+    assert response.status_code == 200, response.json()
+    body = response.json()
+
+    assert body["has_simulated"] is False
+    assert body["grid"] is None
+    assert {day["origin"] for day in body["days"]} == {"forecast"}
+
+
+def test_a_forecast_day_is_never_corrected(client, frozen_today) -> None:
+    """Only the climate model is short of cloud; correcting IFS would invent a bias."""
+    response = _run(client, _search(TODAY + timedelta(days=1), TODAY + timedelta(days=40)))
+    days = {d["origin"]: d for d in reversed(response.json()["days"])}
+    # conftest serves cloud_cover as the 6th requested variable, so 6.0 raw.
+    assert days["forecast"]["cloud_cover"] == pytest.approx(6.0)
+    assert days["simulated"]["cloud_cover"] == pytest.approx(6.0 + SHIFT)
 
 
 def test_today_belongs_to_the_observed_half(client, frozen_today) -> None:

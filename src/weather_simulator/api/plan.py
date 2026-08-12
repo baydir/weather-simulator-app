@@ -17,13 +17,19 @@ place that knows this API exists.
 on purpose: a plan and a parser that disagree about which variables a request
 carried would fail in the least visible way possible — a column silently absent.
 
-**The IFS segment is asked for in overlap.** The boundary between the two pasts
-is read from the reanalyses' own answer, so it cannot be known while the plan is
-being built. Rather than a second round trip, or a hard-coded latency that
-docs/donnees.md forbids, IFS is asked for the whole post-2017 stretch of the
-range and :func:`sources.series.resume_after` settles the overlap on the way
-back, the reanalyses winning wherever they served. Same series, one extra
-request of at most ninety days.
+**Two segments are asked for in overlap, for the same reason.** Neither seam's
+position is knowable while the plan is being built, and the browser executes the
+plan in one go — there is no second round trip to be had. So both boundaries are
+settled on the way back, by :func:`sources.series.resume_after`, and the earlier
+source wins wherever it served.
+
+- IFS is asked for the whole post-2017 stretch of the range, rather than a
+  hard-coded latency that docs/donnees.md forbids. The reanalyses win.
+- The climate model is asked from tomorrow, rather than from the end of the
+  fortnight the forecast was asked for: IFS may return fewer days than that, and
+  the seam belongs where it actually stopped. The forecast wins.
+
+Same series either way, and the overlap costs nothing — one request covers it.
 """
 
 from __future__ import annotations
@@ -35,11 +41,17 @@ from typing import Any
 from weather_simulator.domain.records import DailyRecord, Origin
 from weather_simulator.sources import openmeteo
 from weather_simulator.sources.parse import DailyColumns, merge_columns, parse_daily
-from weather_simulator.sources.series import build_series, resume_after, split_range
+from weather_simulator.sources.series import (
+    build_series,
+    forecast_overlap,
+    resume_after,
+    split_range,
+)
 
 TEMPERATURE = "reanalysis_temperature"
 SURFACE = "reanalysis_surface"
 RECENT = "recent"
+FORECAST = "forecast"
 PROJECTION = "projection"
 
 
@@ -78,13 +90,13 @@ def build(
     model: str = openmeteo.DEFAULT_MODEL,
     timezone: str = openmeteo.DEFAULT_TIMEZONE,
 ) -> Plan:
-    """The requests covering ``[start, end]`` at one point — one to four of them.
+    """The requests covering ``[start, end]`` at one point — one to five of them.
 
     Only the segments the range actually meets are planned. A range lying wholly
-    before 2017 gets no IFS request; one lying wholly in the future gets nothing
-    but the climate model.
+    before 2017 gets no IFS request; one lying wholly inside the fortnight ahead
+    gets nothing but the forecast, and therefore needs no correction table.
     """
-    observed, simulated = split_range(start, end, today)
+    observed, ahead, simulated = split_range(start, end, today)
     segments: list[Segment] = []
 
     if observed is not None:
@@ -140,8 +152,28 @@ def build(
                 )
             )
 
-    if simulated is not None:
-        first, last = simulated
+    if ahead is not None:
+        first, last = ahead
+        segments.append(
+            Segment(
+                id=FORECAST,
+                url=openmeteo.encode(
+                    *openmeteo.forecast_request(latitude, longitude, first, last, timezone)
+                ),
+                variables=openmeteo.ALL_VARIABLES,
+                model=openmeteo.FORECAST_MODEL,
+                origin=Origin.FORECAST,
+                # A forecast cut short of the fortnight is the seam moving, not
+                # a gap: the climate model resumes from wherever it stopped.
+                allow_trailing_gap=True,
+            )
+        )
+
+    # Asked for from tomorrow, not from the end of the forecast: where IFS
+    # actually stops is not knowable here.
+    overlap = forecast_overlap(start, end, today, simulated)
+    if overlap is not None:
+        first, last = overlap
         segments.append(
             Segment(
                 id=PROJECTION,
@@ -162,7 +194,8 @@ def assemble(plan: Plan, payloads: dict[str, dict[str, Any]]) -> list[DailyRecor
 
     The same assembly the offline path performs, reached from the other side:
     the two reanalyses joined on the date, IFS trimmed to what they did not
-    reach, the projection appended.
+    reach, the forecast appended, the projection trimmed to what the forecast
+    did not reach.
     """
     parsed: dict[str, DailyColumns] = {
         segment.id: parse_daily(
@@ -184,8 +217,14 @@ def assemble(plan: Plan, payloads: dict[str, dict[str, Any]]) -> list[DailyRecor
     if recent is not None and reanalysed is not None and reanalysed.dates:
         recent = resume_after(recent, reanalysed.dates[-1])
 
+    forecast = parsed.get(FORECAST)
+    projected = parsed.get(PROJECTION)
+    if projected is not None and forecast is not None and forecast.dates:
+        projected = resume_after(projected, forecast.dates[-1])
+
     return build_series(
         (reanalysed, Origin.OBSERVED, "reanalysis"),
         (recent, Origin.OBSERVED, openmeteo.RECENT_MODEL),
-        (parsed.get(PROJECTION), Origin.SIMULATED, plan.model),
+        (forecast, Origin.FORECAST, openmeteo.FORECAST_MODEL),
+        (projected, Origin.SIMULATED, plan.model),
     )

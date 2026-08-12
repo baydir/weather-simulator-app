@@ -95,6 +95,12 @@ export const texts = {
     degrees: (value) => `${value}°`,
     observed:
       "Les journées passées viennent de réanalyses météorologiques, non d'un modèle.",
+    // No number here, deliberately: how far the forecast reaches is a server
+    // constant, and CLAUDE.md rule 3 has it served rather than copied. Each
+    // card already carries the dataset that answered for it.
+    forecast:
+      "Les premiers jours à venir viennent d'une prévision météorologique ; " +
+      "au-delà commence la simulation climatique.",
     noGrid: "Aucune journée simulée : cette recherche n'a demandé aucune correction.",
   },
 

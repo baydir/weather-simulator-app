@@ -67,14 +67,19 @@ class OutOfGrid(ApiError):
     The wording says the place is not covered *yet*, which is true — step 7
     widens the grid to the world — and it does not offer to show the future
     uncorrected, because there is no honest version of that.
+
+    **It no longer says the past alone remains available.** Only the simulated
+    days need the grid, so the fortnight ahead is served here as anywhere: it is
+    ECMWF IFS, which needs no debiasing. Naming no number, per rule 3 — how far
+    the forecast reaches is the server's to know.
     """
 
     def __init__(self, latitude: float, longitude: float) -> None:
         super().__init__(
             f"{latitude:.4f}, {longitude:.4f} is not covered by the correction grid",
-            "Ce lieu n'est pas encore couvert pour les dates futures. "
+            "Ce lieu n'est pas encore couvert pour les dates lointaines. "
             "La simulation y serait faussée, elle n'est donc pas proposée. "
-            "Les dates passées restent consultables.",
+            "Les dates passées et les jours à venir restent consultables.",
         )
         self.latitude = latitude
         self.longitude = longitude

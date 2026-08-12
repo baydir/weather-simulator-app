@@ -57,21 +57,32 @@ def fake_openmeteo(
     today: date | None = None,
     lag: int = DEFAULT_LAG,
     null_variables: tuple[str, ...] = (),
+    forecast_days: int | None = None,
 ) -> tuple[Any, list[tuple[str, dict[str, Any]]]]:
     """A fetcher recording every call, alongside the list of those calls.
 
-    Only the reanalyses lag: IFS and the climate model answer in full.
+    The reanalyses lag behind today; the forecast stops short of it. Both are
+    parameters rather than constants, because the point of both seams is that
+    their position is read from the answer rather than assumed.
+
+    ``forecast_days`` cuts the forecast short of the fortnight it was asked for,
+    counting from tomorrow. Left unset, IFS answers in full.
     """
     calls: list[tuple[str, dict[str, Any]]] = []
-    horizon = today - timedelta(days=lag) if today else None
+    lagging_until = today - timedelta(days=lag) if today else None
+    forecast_until = (
+        today + timedelta(days=forecast_days) if today and forecast_days is not None else None
+    )
 
     def fetch(url: str, params: dict[str, Any]) -> dict[str, Any]:
         calls.append((url, params))
         model = params["models"][0]
-        return payload(
-            params,
-            null_variables=null_variables,
-            served_until=horizon if model in LAGGING_MODELS else None,
-        )
+        if model in LAGGING_MODELS:
+            served_until = lagging_until
+        elif model == openmeteo.FORECAST_MODEL:
+            served_until = forecast_until
+        else:
+            served_until = None
+        return payload(params, null_variables=null_variables, served_until=served_until)
 
     return fetch, calls

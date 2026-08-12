@@ -132,9 +132,20 @@ describe("the dates", () => {
 describe("the vocabulary, rule 1", () => {
   const FORBIDDEN = ["prévision", "prévisions", "il fera"];
 
-  // The two sentences whose whole job is to deny the thing. Widening this list
-  // is the moment to stop and think, which is why it is written out.
-  const ALLOWED = ["warning.notAForecast", "warning.scenario"];
+  // The sentences whose whole job is to place the word correctly. Widening this
+  // list is the moment to stop and think, which is why it is written out.
+  //
+  // `provenance.forecast` is the third, and it was added on the day the series
+  // stopped handing tomorrow to the climate model. The ban exists so that a
+  // trajectory is never sold as a forecast; it was never meant to stop the
+  // interface naming a forecast that is genuinely one. Calling the fortnight
+  // ahead a simulation would now be the lie the rule was written against, in
+  // the other direction.
+  //
+  // What the ban still covers, untouched: every string describing a simulated
+  // day, and "il fera" everywhere — a forecast states a likelihood, not what
+  // the day will be.
+  const ALLOWED = ["warning.notAForecast", "warning.scenario", "provenance.forecast"];
 
   /** Every string in the dictionary, including those a function returns. */
   function* strings(node, path = "") {

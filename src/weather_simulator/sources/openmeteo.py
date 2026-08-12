@@ -1,9 +1,16 @@
 """What to ask Open-Meteo, and under which name each answer comes back.
 
-Three requests, never fewer. The past needs two because the source is chosen
-*per variable*: ERA5-Land serves temperature and nothing else — every other
-variable comes back null — while ERA5 serves the rest at a coarser 25 km. The
-future needs one, all variables from a single model.
+Five ways to ask, and a range meets at most all of them. The old past needs two
+because the source is chosen *per variable*: ERA5-Land serves temperature and
+nothing else — every other variable comes back null — while ERA5 serves the rest
+at a coarser 25 km. The recent past, the fortnight ahead and the far future need
+one each, all variables from a single model.
+
+The middle three are worth reading together: ECMWF IFS serves the days the
+reanalyses have not caught up with *and* the days that have not happened yet.
+Same system on both sides of today, which is why the series does not gain a seam
+there — it gains one at the end of the forecast instead, where the climate model
+takes over.
 
 Forcing ``models`` explicitly is never optional. Left to itself the archive
 endpoint picks its own source per variable and switches to ECMWF IFS in 2017,
@@ -18,6 +25,7 @@ import urllib.parse
 from datetime import date
 
 ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive"
+FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 CLIMATE_URL = "https://climate-api.open-meteo.com/v1/climate"
 GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
 
@@ -108,6 +116,32 @@ SURFACE_MODEL = "era5"  # ~25 km, everything else
 RECENT_MODEL = "ecmwf_ifs"  # ~9 km, 2017 -> today, no latency
 RECENT_START = date(2017, 1, 1)
 
+# The same forecasting system carried past today, which is the only reason this
+# segment exists at all: a climate model is not initialised on the state of the
+# atmosphere, so its first simulated day is as unrelated to tomorrow's weather as
+# its last one is to 2050. Fourteen days of IFS put real weather where a reader
+# can still check it, and move the seam to where they cannot.
+#
+# 0.25 degrees here against ~9 km on the archive, because that is the finest
+# resolution ECMWF distributes in forecast mode — the archive's is an analysis,
+# which is a different product. That step is the price of the segment, and it is
+# small: measured at Toulouse over ten common days, the two sides sit 0.53 °C and
+# 3.4 points of cloud apart on average. The undocumented archive seam that
+# forcing ``models`` exists to prevent is worth -1.8 to +0.9 °C, and the climate
+# model's cloud deficit, which justifies the whole correction grid, 8 to 11
+# points. This is the smallest junction in the series.
+FORECAST_MODEL = "ecmwf_ifs025"  # ~25 km, today -> today + FORECAST_DAYS
+
+# How far past today the forecast is asked for. A policy choice, not a property
+# of the data: skill decays continuously and nothing in the payload announces
+# where it stops being worth serving. Fourteen days is where the project owner
+# put the line, beyond which reliability is poor whatever one does.
+#
+# It bounds the *request*. Where the seam actually lands is read from the days
+# IFS returned, never from this number — see plan.py, which asks the climate
+# model in overlap and lets series.resume_after settle it.
+FORECAST_DAYS = 14
+
 
 def encode(url: str, params: dict[str, object]) -> str:
     """The request as it goes on the wire, query included.
@@ -185,6 +219,25 @@ def archive_recent_request(
     """
     return ARCHIVE_URL, _params(
         latitude, longitude, start, end, ALL_VARIABLES, RECENT_MODEL, timezone
+    )
+
+
+def forecast_request(
+    latitude: float,
+    longitude: float,
+    start: date,
+    end: date,
+    timezone: str = DEFAULT_TIMEZONE,
+) -> tuple[str, dict[str, object]]:
+    """The days ahead, from the same forecasting system that served the last ones.
+
+    One request for all eight variables, like IFS on the archive side. The
+    endpoint accepts ``start_date``/``end_date`` as the other two do, so this
+    builds on the same :func:`_params` — one spelling of a request for the whole
+    project, and no place for a fourth to drift.
+    """
+    return FORECAST_URL, _params(
+        latitude, longitude, start, end, ALL_VARIABLES, FORECAST_MODEL, timezone
     )
 
 
