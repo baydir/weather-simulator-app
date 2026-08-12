@@ -35,6 +35,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from starlette.responses import Response
 
 from weather_simulator.api import errors, pipeline, validation
 from weather_simulator.api import plan as planning
@@ -187,6 +188,36 @@ def days(fetched: validation.Fetched, grid: Grid) -> Series:
 # two pages are files, and everything they show is fetched by the browser.
 
 
+# Ask before reusing. Not "do not store" — the copy is kept, and a file that has
+# not moved comes back as a 304 of a few bytes.
+#
+# It is the right setting as long as the URLs carry no version: without it
+# Starlette sends an ETag and a Last-Modified but no instruction, so the browser
+# falls back on a heuristic of its own and may reuse a module without ever
+# asking. That is invisible in production, where nothing changes between two
+# visits, and maddening while working on the interface — an edited stylesheet
+# that simply does not arrive.
+#
+# The day docs/application.md puts these files behind a CDN, the answer changes
+# shape rather than value: fingerprinted URLs get a year of immutable caching,
+# and the two pages pointing at them keep this.
+REVALIDATE = {"cache-control": "no-cache"}
+
+
+class RevalidatedStatic(StaticFiles):
+    """``StaticFiles``, minus the guessing.
+
+    ``file_response`` is overridden through ``*args`` rather than by repeating
+    its parameters: it is Starlette's internal seam, its signature has moved
+    between versions, and this needs none of it.
+    """
+
+    def file_response(self, *args: object, **kwargs: object) -> Response:
+        response = super().file_response(*args, **kwargs)
+        response.headers.update(REVALIDATE)
+        return response
+
+
 def mount_web(target: FastAPI, directory: Path = WEB) -> bool:
     """Serve the two pages and their files, when there are any to serve.
 
@@ -196,18 +227,18 @@ def mount_web(target: FastAPI, directory: Path = WEB) -> bool:
     if not directory.is_dir():
         return False
 
-    target.mount("/static", StaticFiles(directory=directory / "static"), name="static")
+    target.mount("/static", RevalidatedStatic(directory=directory / "static"), name="static")
 
     @target.get("/", include_in_schema=False)
     def home() -> FileResponse:
         """The form: a place, two dates."""
-        return FileResponse(directory / "pages" / "home.html")
+        return FileResponse(directory / "pages" / "home.html", headers=REVALIDATE)
 
     @target.get("/resultats", include_in_schema=False)
     def results() -> FileResponse:
         """The band of days. The search travels in the query string, so the URL
         can be shared and the back button works without a line of script."""
-        return FileResponse(directory / "pages" / "results.html")
+        return FileResponse(directory / "pages" / "results.html", headers=REVALIDATE)
 
     return True
 
