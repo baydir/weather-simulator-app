@@ -86,6 +86,23 @@ export const texts = {
     seam: "À partir d'ici, simulation",
   },
 
+  // The chart says the same days as the strip, in the other reading. Its one
+  // sentence points at the strip rather than repeating the numbers: every value
+  // it draws is written out up there, which is what makes a drawing acceptable
+  // to a reader who gets nothing from a drawing.
+  chart: {
+    label:
+      "Températures et précipitations de la période, jour par jour. " +
+      "Les valeurs sont écrites dans la bande de journées ci-dessus.",
+
+    // What each panel plots, over it. The second says the same word as
+    // `measure.precipitation` and is written twice on purpose: that one names a
+    // number on a card, this one names a panel, and the day one of them is
+    // reworded the other has no reason to follow.
+    temperatures: "Températures",
+    precipitation: "Précipitations",
+  },
+
   // Folded, but there. A corrected series read without knowing which model was
   // corrected, over which period, and when the table was built is a silent
   // source of error — docs/application.md says so, and this is the answer.

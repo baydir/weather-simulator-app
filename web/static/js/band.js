@@ -19,6 +19,7 @@
 import { el } from "./dom.js";
 import { texts } from "./i18n.js";
 import * as present from "./present.js";
+import { seamIndex } from "./series.js";
 
 /**
  * The days in order, with the seam marked where the simulated begins.
@@ -26,28 +27,19 @@ import * as present from "./present.js";
  * The seam gets a card of its own rather than a colour: the tint on what
  * follows says the same thing, but colour alone must never be what carries it.
  *
- * It is only drawn where there is a crossing to draw. A range lying wholly in
- * the future has no observed day to leave, and a marker on the very first card
- * would announce a passage that never happens — the warning at the top of the
- * page is what covers that case.
+ * *Where* it falls is series.js, shared with the chart under the strip, which
+ * has to mark the same crossing at the same day. What is left here is what that
+ * mark looks like in a strip of cards.
  */
 export function strip(days) {
   const nodes = [];
+  const seam = seamIndex(days);
   let month = null;
-  let observedSeen = false;
-  let seamDrawn = false;
 
-  for (const day of days) {
-    if (day.origin === "simulated" && observedSeen && !seamDrawn) {
-      seamDrawn = true;
+  for (const [index, day] of days.entries()) {
+    if (index === seam) {
       nodes.push(el("li", { className: "seam" }, [el("span", { text: texts.results.seam })]));
     }
-    // Anything that is not simulated counts as a bank to leave, forecast days
-    // included. Reading "observed" alone would miss the crossing on a range
-    // that starts tomorrow: it runs forecast then simulated, never observed,
-    // and the one seam it does have would go unmarked.
-    observedSeen ||= day.origin !== "simulated";
-
     const turned = present.monthKey(day.date) !== month;
     month = present.monthKey(day.date);
     nodes.push(card(day, turned));
