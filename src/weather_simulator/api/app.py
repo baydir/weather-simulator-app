@@ -42,6 +42,7 @@ from weather_simulator.api import plan as planning
 from weather_simulator.api.contract import Series
 from weather_simulator.calibration.grid import CorrectionGrid
 from weather_simulator.calibration.table import CorrectionTable, OutsideCoverage
+from weather_simulator.domain import thresholds
 from weather_simulator.sources import openmeteo
 from weather_simulator.sources.errors import SourceError
 from weather_simulator.sources.series import today_in_reference_zone
@@ -101,17 +102,29 @@ class Config(BaseModel):
     coverage_start: str
     coverage_end: str
     max_days: int
+    temperature_band_edges: list[float]
+    temperature_band_step: float
 
 
 @app.get("/api/config", response_model=Config)
 def config() -> Config:
     """The bounds and the geocoding address, so the browser holds no Open-Meteo
-    knowledge of its own and applies the same limits the API does."""
+    knowledge of its own and applies the same limits the API does.
+
+    The band boundaries are here for the same reason the ninety-day limit is: a
+    chart drawn in the browser has to graduate its temperature axis on them, and
+    a ladder written out a second time in JavaScript is the duplication rule 3 is
+    about. What travels is the scale, not the colours — those stay in the
+    stylesheet, exactly as the pictogram does, so repainting the ramp still
+    touches one file.
+    """
     return Config(
         geocoding_url=openmeteo.GEOCODING_URL,
         coverage_start=openmeteo.COVERAGE_START.isoformat(),
         coverage_end=openmeteo.COVERAGE_END.isoformat(),
         max_days=validation.MAX_DAYS,
+        temperature_band_edges=list(thresholds.TEMPERATURE_BAND_EDGES),
+        temperature_band_step=thresholds.TEMPERATURE_BAND_STEP_C,
     )
 
 

@@ -18,6 +18,7 @@ from weather_simulator.api import plan as planning
 from weather_simulator.api.app import app, get_grid, load_grid
 from weather_simulator.calibration.grid import CorrectionGrid
 from weather_simulator.calibration.table import CorrectionTable, Metadata
+from weather_simulator.domain import temperature, thresholds
 from weather_simulator.domain.correction import CloudCorrection, MonthlyCorrection, quantiles
 from weather_simulator.sources import openmeteo
 
@@ -414,3 +415,18 @@ def test_the_config_carries_the_bounds_the_api_enforces(client) -> None:
     assert body["coverage_start"] == "1950-01-01"
     assert body["coverage_end"] == "2050-12-31"
     assert body["geocoding_url"] == openmeteo.GEOCODING_URL
+
+
+def test_the_config_serves_the_band_ladder_rather_than_leaving_it_to_be_copied(client) -> None:
+    """The scale a chart graduates its axis on, straight from the domain.
+
+    Compared against ``thresholds`` and not against a list written out here: a
+    literal in this test would be the third copy of the ladder, and it would go
+    on passing the day the boundaries moved.
+    """
+    body = client.get("/api/config").json()
+
+    assert body["temperature_band_edges"] == list(thresholds.TEMPERATURE_BAND_EDGES)
+    assert body["temperature_band_step"] == thresholds.TEMPERATURE_BAND_STEP_C
+    # Eight boundaries cut the line into the nine bands the ramp paints.
+    assert len(body["temperature_band_edges"]) == temperature.BAND_COUNT - 1

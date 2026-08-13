@@ -16,8 +16,11 @@
  */
 
 class StubNode {
-  constructor(tag) {
+  constructor(tag, namespace = null) {
     this.tag = tag;
+    // Kept so that a test can say a mark was built as SVG and not as an HTML
+    // element wearing an SVG name — the one failure that is invisible on screen.
+    this.namespace = namespace;
     this.className = "";
     this.textContent = "";
     this.attrs = {};
@@ -34,6 +37,11 @@ class StubNode {
   }
 
   setAttribute(name, value) {
+    // `class` is where the classes actually live now, `el` having moved off the
+    // property so that the same builder serves SVG. Everything here that reads
+    // a class — `classList`, `byClass`, the tests comparing `className` — goes
+    // on working, which is the point of catching it at the one door.
+    if (name === "class") this.className = String(value);
     this.attrs[name] = String(value);
   }
 
@@ -47,7 +55,10 @@ class StubNode {
 }
 
 export function install() {
-  globalThis.document = { createElement: (tag) => new StubNode(tag) };
+  globalThis.document = {
+    createElement: (tag) => new StubNode(tag),
+    createElementNS: (namespace, tag) => new StubNode(tag, namespace),
+  };
 }
 
 /** Every node in the tree, the root included. */
