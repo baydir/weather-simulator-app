@@ -51,6 +51,14 @@
         data-attr-aria-label="results.bandLabel"
       ></ol>
 
+      <!--
+        The same days again, drawn: the strip says one day at a time and never
+        the shape of the period. Filled by chart.js, and hidden until it is —
+        an empty frame under the cards would announce something that is not
+        coming. A refused search never fills it either.
+      -->
+      <div id="chart-panel" class="chart-panel" hidden></div>
+
       <details id="provenance" class="provenance" hidden>
         <summary data-text="provenance.summary"></summary>
         <dl id="provenance-grid" class="pairs"></dl>

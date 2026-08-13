@@ -80,7 +80,13 @@ savante, et moins visiblement — personne ne relit cinq lignes évidentes.
 
 Une constante partagée est **servie, jamais recopiée** ; un contrôle, lui, peut
 s'exercer des deux côtés — la borne de 90 jours vient de `/api/config` et se
-vérifie dans l'interface comme dans l'API.
+vérifie dans l'interface comme dans l'API. Les bornes de l'échelle de température
+suivent le même chemin depuis que le graphe gradue son axe dessus.
+
+**La règle vaut aussi entre deux modules du navigateur.** Le critère est le
+double exemplaire, pas la frontière franchie : la bande et le graphe doivent
+marquer la même couture au même jour, et cette règle vit dans un module que les
+deux appellent, quoique le serveur n'en détienne aucune version.
 
 ### 4. Gouvernance : la science se valide, le développement s'autonomise
 

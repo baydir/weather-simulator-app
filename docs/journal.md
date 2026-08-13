@@ -266,6 +266,56 @@ qui vérifie J+3 et trouve juste peut reporter cette confiance sur 2046.
 
 ---
 
+## Le graphe de la période
+
+Hors numérotation : une addition à l'étape 6, pas une étape. Sous la bande, les
+mêmes journées dessinées — deux courbes de températures, les précipitations en
+barres, toute la plage d'un seul regard. Deux panneaux partageant un axe de
+dates, jamais deux échelles verticales sur un tracé.
+
+**Ce qu'il a corrigé de ce que l'étape 6 supposait.** Deux phrases de
+[`application.md`](application.md) sont tombées, et aucune des deux n'était
+fausse sur le fond. « La bande montre les journées, et rien au-dessus d'elles »
+disait *la bande* quand elle voulait dire *l'interface* : une courbe est une
+marque par journée et n'agrège rien, ce qu'elle ajoute est une forme que l'œil
+compose. Et « la page est la fenêtre », qui tenait pour un ensemble fixe de blocs,
+ne survit pas à un bloc de 420 px : la page passe de 789 à 1212 px et défile. Le
+choix entre replier le graphe et laisser la page s'allonger a été tranché par le
+porteur du projet, en faveur du second.
+
+**Les deux axes sont les deux seules décisions du graphe**, et les deux ont été
+arbitrées comme des décisions de traitement, non de développement. La température
+se cale sur les bornes de l'échelle de couleur ; les précipitations sur la
+journée la plus arrosée de la période, avec un plancher de 10 mm — sans lequel
+une bruine de 0,3 mm dessinerait la barre d'un orage.
+
+**Ce que le rendu a attrapé et que les tests ne pouvaient pas voir.** L'étiquette
+de l'axe des pluies sortait du cadre par la gauche et affichait « 0,0 mm » là où
+elle devait dire « 10,0 mm » : un chiffre faux, lisible, et parfaitement
+silencieux. Regarder le dessin est une vérification à part entière, et pas un
+excès de zèle — c'est le même constat que la mesure des contrastes avait imposé à
+l'accueil.
+
+**Une confirmation de la règle 3, appliquée cette fois à l'intérieur du
+navigateur.** La bande et le graphe doivent marquer la même couture au même jour.
+Le serveur n'en détient aucune version, donc rien n'y obligeait ; mais une règle
+tenue à deux endroits diverge, que la frontière soit entre deux langages ou entre
+deux modules. Elle est sortie dans `series.js`, que les deux vues appellent.
+
+**Ce qu'il a coûté, et un défaut qu'il a mis au jour.** Les deux tables de
+contrastes ont été remesurées en entier : le dégradé étant ancré au document, une
+page plus haute l'étire et déplace chaque bloc. Tout est monté — plancher à 6,5:1
+contre 4,6:1 auparavant —, ce qui est mécanique et non un progrès de palette. La
+remesure a par ailleurs montré que `ink_contrast.py` mesurait les deux
+températures contre la carte alors qu'elles sont sur leur aplat depuis la rampe :
+il rapportait un blanc sur blanc à 1,0:1 et en faisait le plancher de la page.
+Les deux lignes ont été retirées, la table de la rampe publiant déjà les neuf
+rapports qui comptent.
+
+→ [`application.md`](application.md)
+
+---
+
 ## Ce qui reste calé sur une base mince
 
 Aucune décision scientifique n'est en attente, mais deux points méritent d'être

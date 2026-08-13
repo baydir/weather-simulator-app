@@ -67,16 +67,31 @@ ROWS = [
     ("le scénario", "#warning p:last-of-type"),
     ("le mois", ".card-month"),
     ("le jour", ".card-day"),
-    ("la maximale", ".card-degrees.high .value"),
-    ("la minimale", ".card-degrees.low .value"),
+    # **The two temperatures are not rows here any more**, and taking them out
+    # was a correction rather than a tidy-up. They sit on their band, not on the
+    # card, since the ramp landed; measured against the card this reported a
+    # white number on white paper at 1,0:1 and made it the floor of the page.
+    # The ratio that means something is the ink against its own band, and the
+    # ramp table below publishes all nine of them.
     ("les deux mesures", ".card-measure"),
     ("la couture", ".seam span"),
+    # The chart is drawn on the card's own paper, so these come back the same on
+    # all four seasons — the same reason the ramp does. One row for the
+    # graduation and the months, which are one ink; the seam label is the page's
+    # own, a shade stronger.
+    ("les repères du graphe", ".chart-axis"),
+    ("la couture du graphe", ".chart-seam-label"),
     ("la provenance", ".provenance summary"),
 ]
 
-# What each element sits on. Anything inside a card body is on the card, which is
-# opaque; everything else is on the sky, at its own height.
-ON_THE_CARD = ".card-body"
+# What each element sits on. Anything inside a card body — or on the chart, which
+# is the same paper — is on an opaque ground; everything else is on the sky, at
+# its own height.
+#
+# The chart's own texts are SVG, where the ink is `fill` and not `color`. They
+# are written `fill: currentColor` in the stylesheet precisely so that the probe
+# below, which asks for `color`, reads the ink that is actually painted.
+ON_THE_CARD = ".card-body, .chart"
 
 
 def channel(value: float) -> float:

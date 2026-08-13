@@ -69,7 +69,7 @@ comprise ; le navigateur appelle `fetch` sur chacune.
 |---|---|---|
 | `POST /api/plan` | lieu et plage | `today`, et la liste `{id, url}` des requêtes à exécuter |
 | `POST /api/days` | les mêmes, `today` renvoyé tel quel, les payloads bruts | la série journalière classée |
-| `GET /api/config` | — | gabarit de géocodage, bornes de couverture, plage maximale |
+| `GET /api/config` | — | gabarit de géocodage, bornes de couverture, plage maximale, bornes de l'échelle de température |
 
 `today` circule du premier appel au second pour que les deux moitiés s'accordent
 sur l'endroit où l'observé s'arrête. Il est **vérifié à un jour près** de
@@ -78,7 +78,11 @@ la coupure entre ce qui a eu lieu et ce qui pourrait avoir lieu s'est déplacée
 
 `/api/config` existe pour que la plage maximale soit **servie et non recopiée** :
 la borne de 90 jours s'applique dans l'interface comme dans l'API, et une
-seconde copie divergerait.
+seconde copie divergerait. **Les huit bornes de l'échelle de température y sont
+passées pour le même motif** : le graphe gradue son axe dessus, et l'échelle
+écrite une seconde fois en JavaScript est exactement la duplication que la
+règle 3 vise. Ce qui voyage est l'échelle, jamais les teintes — elles restent
+dans la feuille de style, comme le pictogramme reste hors du contrat.
 
 Les trois appels sont sans état, de sorte que la propriété que défendait la
 règle antérieure d'un endpoint unique — monter en charge en multipliant les
@@ -106,8 +110,8 @@ src/weather_simulator/
 web/
     pages/         home.html, results.html — HTML statique, aucun gabarit
     static/css/    style.css, une feuille bâtie sur des variables
-    static/js/     fetch.js, i18n.js, present.js, bounds.js, band.js, dom.js,
-                   prompt.js, home.js, results.js
+    static/js/     fetch.js, i18n.js, present.js, bounds.js, band.js, chart.js,
+                   series.js, dom.js, prompt.js, home.js, results.js
 ```
 
 Dans `api/`, `plan.py` porte **à la fois la façon de demander chaque segment et
@@ -128,10 +132,17 @@ les sert par un montage **conditionnel** — `web/` absent, elle démarre quand 
 **La frontière entre modules ne s'est pas posée là où on l'attendait.** Elle ne
 sépare pas le rendu du reste, comme le laissait entendre un `render.js`, mais
 **ce qui se vérifie sans navigateur de ce qui n'existe que dans la page** :
-`present.js` (formatage et arrondis), `bounds.js` (les refus du formulaire) et
-`band.js` (la construction de la bande) tournent sous `node --test` ; `home.js`
-et `results.js` ne portent que le câblage. C'est la même frontière qui garde une
-migration possible.
+`present.js` (formatage et arrondis), `bounds.js` (les refus du formulaire),
+`band.js` (la construction de la bande), `chart.js` (la géométrie du graphe) et
+`series.js` tournent sous `node --test` ; `home.js` et `results.js` ne portent
+que le câblage. C'est la même frontière qui garde une migration possible.
+
+**`series.js` ne porte qu'une fonction, et c'est une leçon de la règle 3 appliquée
+à l'intérieur du navigateur.** La bande et le graphe doivent marquer la même
+couture au même jour ; tenue à deux endroits, cette règle diverge comme
+n'importe quelle autre. Le serveur n'en détient aucune version — l'origine de
+chaque journée voyage dans le contrat, et ce qui se dérive ici est seulement
+*lequel* des passages mérite une marque.
 
 **`prompt.js` la montre autrement**, et c'est pourquoi la question qui tourne a
 son module plutôt qu'un coin de `home.js` : ici la frontière ne passe pas entre
@@ -160,6 +171,11 @@ seul navigateur.
 
 Chaque journée porte un pictogramme, les températures minimale et maximale, le
 cumul de précipitations et la vitesse de vent maximale.
+
+**Sous la bande, les mêmes journées dessinées** : deux courbes de températures et
+les précipitations en barres, sur toute la plage d'un seul regard. Ce que ce
+second bloc apporte et ce qu'il n'a pas le droit de calculer →
+[la section qui lui est consacrée](#le-graphe-sous-la-bande).
 
 **Deux choses sont mises en avant : l'allure du ciel et les deux
 températures.** Le pictogramme d'abord, les degrés dessous, en corps supérieur
@@ -262,8 +278,21 @@ ciel dégagé, 0 mm ».
 
 Aucune moyenne de période, aucun comptage de journées de pluie, aucun cumul,
 aucun extrême de la plage. Ce sont des agrégations, et une agrégation faite à
-l'affichage relève de la même validation que l'arrondi ci-dessus. **La bande
+l'affichage relève de la même validation que l'arrondi ci-dessus. **L'interface
 montre les journées, et rien au-dessus d'elles.**
+
+La règle antérieure disait « la bande » ; le graphe l'a élargie sans la changer.
+Une courbe est **une marque par journée** et n'agrège rien : ce qu'elle ajoute
+est la forme de la période, que l'œil compose et que l'interface ne calcule pas.
+La distinction porte, et elle est vérifiée par un test qui refuse par défaut tout
+texte du graphe n'étant ni un titre, ni une graduation, ni un repère de lecture —
+c'est ainsi qu'a été retirée l'étiquette qui écrivait le plafond des
+précipitations, laquelle nommait la journée la plus arrosée, c'est-à-dire un
+extrême de la plage.
+
+**Le cadrage des deux axes est la seule chose que le graphe décide**, et les deux
+relèvent de la validation qu'exige la règle 4 → [la section sur le
+graphe](#le-graphe-sous-la-bande).
 
 Une ligne de synthèse est envisagée dans [`idees.md`](idees.md), mais adossée à
 la comparaison au climat ancien, non retenue pour la première version.
@@ -485,47 +514,75 @@ posent le marqueur de mois et la ligne du scénario. Ce qui sépare ces textes d
 ce qu'ils nomment, c'est leur forme — onze pixels, capitales, interlettrage —,
 exactement comme sur l'accueil quand le ton ne peut plus le porter.
 
-**Les cartes sont le seul blanc du projet.** Sur ce sol, rien de plus discret ne
-tiendrait : une carte est ce sur quoi l'œil se pose. Le rouge `#d40000` et le
-bleu `#0044aa` de la maquette, qui portaient les deux températures, ne servent
-plus que de repli — une journée sans température n'a pas de bande, donc pas de
-couleur d'échelle, et retombe sur eux. **La carte cesse par ailleurs d'être la
-boîte** : la date se pose nue sur le dégradé, et seul le corps en dessous est
-dessiné.
+**Le blanc du projet est celui des cartes**, et le graphe est dessiné sur le même
+papier. Sur ce sol, rien de plus discret ne tiendrait : une carte est ce sur quoi
+l'œil se pose. **La carte cesse par ailleurs d'être la boîte** : la date se pose
+nue sur le dégradé, et seul le corps en dessous est dessiné.
 
-**La page est la fenêtre**, comme l'accueil, et pour deux raisons superposées. Le
-calque du ciel est calé sur le `body` : sans hauteur minimale il s'arrête où
-s'arrête le contenu, et une page de 789 px dans une fenêtre de 960 laissait
-171 px de crème nue sous le dégradé. Et la provenance, qui s'écrit en clair, ne
-le peut que là où le dégradé a viré au noir : simplement posée après la bande,
-une fenêtre haute l'aurait fait atterrir sur l'orange. Tenue au pied par une
-marge automatique, elle est **à 92-94 % du dégradé quelle que soit la fenêtre**.
+Le rouge `#d40000` et le bleu `#0044aa` de la maquette, qui portaient les deux
+températures, servent de repli sur une carte — une journée sans température n'a
+pas de bande, donc pas de couleur d'échelle, et retombe sur eux — et **de couleur
+propre aux deux courbes du graphe**, où ils reprennent leur premier métier :
+nommer la maximale et la minimale. C'est aussi ce qui impose le papier sous le
+graphe plutôt que le sol : posée sur le dégradé, une courbe rouge tomberait vers
+les deux tiers sur le rouge de l'été, où elle cesse d'exister. Les deux nombres
+d'une carte se mesurent contre une carte pour la même raison.
 
-**Le rythme vertical y est plus serré que le rythme partagé**, parce que cette
-page est faite pour être vue d'un coup : elle porte un ensemble fixe de blocs, et
-sa bande défile latéralement, de sorte que rien ne se gagne à en pousser une
-partie sous la ligne de flottaison. Mesurée à 893 px au rythme partagé, elle
-tombe à 789, et un second cran sous 800 px de fenêtre la ramène à 720. L'air se
-reprend aux deux bouts d'abord, où il ne sépare rien, avant de se reprendre aux
-intervalles.
+**La page tient au moins la fenêtre**, comme l'accueil, et pour deux raisons
+superposées. Le calque du ciel est calé sur le `body` : sans hauteur minimale il
+s'arrête où s'arrête le contenu, et une page de 789 px dans une fenêtre de 960
+laissait 171 px de crème nue sous le dégradé. Et la provenance, qui s'écrit en
+clair, ne le peut que là où le dégradé a viré au noir : simplement posée après la
+bande, une fenêtre haute l'aurait fait atterrir sur l'orange. Tenue au pied par
+une marge automatique, elle est **à 92-94 % du dégradé quelle que soit la
+fenêtre**.
+
+**Elle ne tient plus dans la fenêtre, en revanche, et c'est un arbitrage rendu.**
+Le graphe ajoute quelque 420 px : la page passe de 789 à **1212 px** en
+1440 × 960 et de 720 à **1144** en 1280 × 720. Le choix était entre replier le
+graphe comme la provenance et laisser la page défiler ; c'est le second qui a été
+retenu, le graphe étant la seconde lecture de la recherche et non une note. La
+propriété perdue est réelle — cette page était faite pour être vue d'un coup — et
+elle ne se paie pas en lisibilité : le dégradé étant ancré au document, une page
+plus haute l'étire, chaque bloc glisse vers une portion plus claire, et **tous les
+rapports montent** (tables ci-dessous).
+
+**Le rythme vertical y reste plus serré que le rythme partagé.** Mesurée à 893 px
+au rythme partagé avant le graphe, elle tombait à 789, et un second cran sous
+800 px de fenêtre la ramène à 720. L'air se reprend aux deux bouts d'abord, où il
+ne sépare rien, avant de se reprendre aux intervalles. Ce resserrement n'a plus
+pour objet de tenir dans un écran ; il garde son sens, qui est de ne pas
+distendre un ensemble de blocs qu'on lit à la suite.
 
 Contrastes mesurés sur le rendu, fenêtre 1440 × 960, par
 [`scripts/ink_contrast.py`](../scripts/ink_contrast.py) :
 
 | Texte | hiver | printemps | été | automne |
 |---|---|---|---|---|
-| le lieu | 15,5:1 | 14,4:1 | 14,9:1 | 15,6:1 |
-| la plage | 12,9:1 | 11,5:1 | 11,6:1 | 13,0:1 |
-| nouvelle recherche | 14,4:1 | 13,7:1 | 12,0:1 | 14,4:1 |
-| l'avertissement | 12,6:1 | 12,8:1 | 9,3:1 | 12,4:1 |
-| le scénario | 10,2:1 | 10,1:1 | 7,3:1 | 10,0:1 |
-| le jour | 10,0:1 | 11,6:1 | 6,7:1 | 9,7:1 |
-| le mois | 9,2:1 | 9,6:1 | 6,1:1 | 8,8:1 |
-| la maximale | 5,4:1 | 5,4:1 | 5,4:1 | 5,4:1 |
-| la minimale | 8,6:1 | 8,6:1 | 8,6:1 | 8,6:1 |
+| le lieu | 15,7:1 | 14,5:1 | 15,5:1 | 15,8:1 |
+| la plage | 13,2:1 | 11,6:1 | 12,3:1 | 13,3:1 |
+| nouvelle recherche | 14,8:1 | 14,0:1 | 13,0:1 | 14,8:1 |
+| l'avertissement | 13,6:1 | 13,3:1 | 10,6:1 | 13,6:1 |
+| le scénario | 11,2:1 | 10,6:1 | 8,5:1 | 11,1:1 |
+| le mois | 10,3:1 | 10,2:1 | 7,4:1 | 10,1:1 |
+| le jour | 11,7:1 | 12,3:1 | 8,2:1 | 11,3:1 |
 | les deux mesures | 16,9:1 | 15,3:1 | 18,1:1 | 17,4:1 |
-| la couture | 7,0:1 | 10,5:1 | 5,4:1 | 7,4:1 |
-| la provenance | 8,1:1 | 7,0:1 | 8,8:1 | 8,4:1 |
+| la couture | 9,5:1 | 11,4:1 | 6,5:1 | 9,3:1 |
+| les repères du graphe | 14,6:1 | 12,5:1 | 15,7:1 | 15,1:1 |
+| la couture du graphe | 16,9:1 | 15,3:1 | 18,1:1 | 17,4:1 |
+| la provenance | 8,3:1 | 7,4:1 | 9,3:1 | 8,8:1 |
+
+**Les deux températures ne sont plus des lignes de cette table**, et leur retrait
+est une correction et non un ménage. Elles ne sont pas sur la carte mais sur leur
+aplat depuis que la rampe existe ; mesurées contre la carte, le script rapportait
+un chiffre blanc sur papier blanc à **1,0:1** et en faisait le plancher de la
+page. Le rapport qui veut dire quelque chose est celui de l'encre contre sa
+propre bande, et la table de la rampe le publie neuf fois. Les valeurs qui
+figuraient ici, 5,4:1 et 8,6:1, décrivaient la page d'avant les aplats.
+
+**Les deux lignes du graphe ne bougent pas d'un dixième d'une saison à l'autre**,
+et pour la raison qui vaut déjà pour les cartes : elles sont sur le papier, qui
+ne tourne pas.
 
 **L'été est le plus sombre des quatre sols, et donc le plus tendu.** Les trois
 autres descendent moins vite et laissent partout plus de marge ; c'est la page
@@ -541,19 +598,38 @@ l'on mesure.
 
 **Deux tailles de fenêtre, donc deux jeux de chiffres.** Le dégradé étant ancré
 au document, une page raccourcie fait glisser chaque bloc sur une autre portion.
-À 1280 × 720 — et à 360 × 780, qui donne les mêmes — le plancher de la page est
-**la couture, à 4,6:1 en hiver**, 4,8 en été, 5,3 en automne et 7,6 au
-printemps : l'étiquette verticale est le seul texte que le resserrement pousse
-sur la partie sombre du dégradé. Tout le reste tient au-dessus de 5,3. Sur une
-fenêtre haute tout remonte, et le plancher redevient la maximale à 5,4:1, qui ne
-bouge pas puisqu'elle est sur la carte blanche.
+À 1280 × 720, la page fait 1144 px et tout se resserre d'un cran :
 
-**Deux valeurs publiées ici ont été corrigées** le jour où l'instrument a
-remplacé la pipette : la couture, donnée à 6,5:1, et la phrase qui faisait de la
-maximale le plancher à 1280 × 720. `ink_contrast.py` lit le centre de l'étiquette
-— qui est verticale et centrée sur la bande, donc plus bas sur le dégradé que la
-mesure d'origine ne l'avait prise. Sur les dix autres lignes de l'été, il retrouve
-les chiffres publiés à 0,2 près, ce qui est la vérification de la méthode.
+| Texte | hiver | printemps | été | automne |
+|---|---|---|---|---|
+| le lieu | 15,9:1 | 14,6:1 | 15,8:1 | 15,9:1 |
+| la plage | 13,3:1 | 11,7:1 | 12,5:1 | 13,4:1 |
+| nouvelle recherche | 14,9:1 | 14,0:1 | 13,2:1 | 14,9:1 |
+| l'avertissement | 13,9:1 | 13,4:1 | 11,0:1 | 13,9:1 |
+| le scénario | 11,4:1 | 10,7:1 | 8,7:1 | 11,4:1 |
+| le mois | 10,7:1 | 10,3:1 | 7,8:1 | 10,5:1 |
+| le jour | 12,0:1 | 12,5:1 | 8,6:1 | 11,7:1 |
+| les deux mesures | 16,9:1 | 15,3:1 | 18,1:1 | 17,4:1 |
+| la couture | 9,9:1 | 11,5:1 | 6,7:1 | 9,7:1 |
+| les repères du graphe | 14,6:1 | 12,5:1 | 15,7:1 | 15,1:1 |
+| la couture du graphe | 16,9:1 | 15,3:1 | 18,1:1 | 17,4:1 |
+| la provenance | 8,6:1 | 7,9:1 | 9,8:1 | 9,2:1 |
+
+**Le plancher de la page est la couture, à 6,5:1 en été** sur la fenêtre haute et
+6,7 sur la courte — l'étiquette verticale est le seul texte que la géométrie
+pousse sur la partie sombre du dégradé, et l'été le seul sol où cela coûte
+quelque chose. Le sens des deux géométries s'est inversé le jour où le graphe est
+arrivé : la page ne se raccourcit plus pour tenir dans l'écran, elle s'allonge
+dans les deux cas, et **c'est la fenêtre courte qui donne désormais les meilleurs
+rapports**, la page y étant proportionnellement plus haute que le dégradé
+qu'elle traverse.
+
+**Ces chiffres étaient plus bas avant le graphe** — plancher à 4,6:1 sur la
+fenêtre courte —, et la remontée n'est pas un progrès de palette : c'est la
+conséquence mécanique d'une page plus haute sur un dégradé ancré au document.
+Elle se reperdrait le jour où la page raccourcirait, ce qui est la raison pour
+laquelle cette table se remesure à chaque changement de mise en page plutôt que
+de se recopier.
 
 ### L'échelle de couleur des températures
 
@@ -619,6 +695,89 @@ délibérément une référence froide pour un site qui montre l'avenir. À Pari
 d'après le modèle climatique, les journées à 30 °C ou plus passent de 4,9 par an
 à 21, et celles à 35 ou plus de 0,5 à 5,3. L'échelle rougit à mesure que le siècle
 avance, parce que la référence ne bouge pas.
+
+### Le graphe sous la bande
+
+**Une carte dit une journée ; quatre-vingt-dix cartes disent quatre-vingt-dix
+journées, une à la fois, et jamais la forme de la période** — où la chaleur se
+tient, quelle quinzaine est humide. C'est ce que le graphe ajoute, et c'est ce
+qui règle sa largeur : dessiné colonne par colonne sous les cartes, il serait
+parfaitement aligné et inutile, huit jours de courbe étant exactement ce que la
+bande montre déjà. Il prend donc la largeur de la page et porte la plage entière.
+
+**Deux panneaux partageant un axe de dates, jamais deux échelles verticales sur
+un même tracé.** L'endroit où deux échelles se rencontrent est arbitraire, et un
+lecteur prend le croisement d'une courbe et d'une barre pour un fait
+météorologique. Les températures sont donc au-dessus, les précipitations en
+dessous, dans un panneau à elles avec leur propre ligne de base. Chacun porte son
+titre : les unités disent ce qui est mesuré, pas ce qu'on regarde.
+
+**Chaque journée porte sa marque, et les segments sont droits.** La donnée est
+l'agrégat journalier ; le segment qui joint deux marques est une commodité pour
+l'œil, et c'est précisément pourquoi il ne doit pas être lissé — une courbe
+adoucie inventerait un mardi après-midi dont la série n'a aucune lecture. Une
+journée manquante coupe la courbe au lieu d'être traversée, et une lecture isolée
+garde son point sans segment.
+
+**L'écart entre les deux températures est rempli**, très pâle. L'amplitude
+devient une épaisseur, ce qui est la seule chose que le graphe dise et qu'une
+carte ne dise pas — et il la dit sans rien calculer : c'est la place entre deux
+lectures déjà tracées.
+
+#### Les deux axes
+
+Ce sont les deux seules décisions du graphe, et toutes deux ont été arbitrées.
+
+**En température, l'axe se cale sur les bornes de l'échelle de couleur** : bas au
+multiple de cinq sous la lecture la plus froide, haut au multiple au-dessus de la
+plus chaude, plus une demi-bande d'air à chaque bout. **À l'intérieur de
+l'échelle, chaque filet est une borne servie** — le même palier que les aplats
+des cartes, de sorte qu'une hauteur ici et une couleur là-haut sont la même
+lecture. **Au-delà de ses deux extrémités ouvertes, le réglage continue au même
+intervalle** : tout ce qui est sous 5 °C est une seule bande et n'a aucune borne
+à tracer, si bien qu'une période gelée aurait reçu un panneau réglé une fois. La
+continuation est ce qui pose la ligne sur zéro, et symétriquement sur 45.
+
+Un axe absolu fixe a été écarté : il tiendrait la comparaison entre deux
+recherches, au prix d'écraser une plage d'été dans un tiers du panneau, ce qui
+coûte exactement ce que le graphe apporte.
+
+**En précipitations, l'axe prend la journée la plus arrosée de la période, avec
+un plancher de 10 mm.** Le plancher n'est pas un confort : sans lui, une plage
+dont la journée la plus humide fait 0,3 mm cadrerait l'axe sur 0,3 mm, et cette
+bruine dessinerait la même barre qu'un orage de 40 mm ailleurs. Rien n'étant
+servi pour graduer ce panneau, l'intervalle se choisit sur la hauteur qu'il a :
+le plus petit pas rond laissant au plus quatre intervalles — 5 et 10 sur une
+période calme, 10 et 20 sur une période humide. Les millimètres y gardent leur
+dixième, comme sur les cartes : deux règles d'arrondi pour une seule grandeur
+seraient une divergence de plus.
+
+**Aucun nombre portant sur la période n'est écrit.** Le plafond dépend du
+maximum, mais il n'est pas affiché — l'étiquette qui le nommait a été retirée,
+étant un extrême de la plage → [Ce que l'interface ne calcule
+pas](#ce-que-linterface-ne-calcule-pas).
+
+#### Ce que le graphe emprunte
+
+**Il est dessiné sur le papier des cartes**, et ses marques prennent les couleurs
+déjà nommées par la feuille. Il n'ajoute donc **aucune variable saisonnière** :
+les six qui tournent restent six.
+
+**Il porte la même couture que la bande, au même jour** — une verticale
+traversant les deux panneaux, sous la même étiquette. Où elle tombe est une règle
+partagée par un seul module, `series.js`, et non recopiée dans chacune des deux
+vues.
+
+**Son équivalent accessible est la bande elle-même**, qui porte déjà chaque
+valeur en toutes lettres. Le dessin est annoncé par un nom qui renvoie à elle, et
+ne réénonce aucun nombre : une infobulle serait un second exemplaire de la carte.
+
+**Sous 58 rem, il défile latéralement au lieu de rétrécir.** Le dessin est un
+`viewBox` unique et se met à l'échelle en entier, sa typographie comprise : à la
+largeur d'un téléphone, les nombres de l'axe sortaient à quatre pixels. Il n'y a
+pas de point de rupture à choisir — le minimum est l'endroit où onze unités
+valent onze pixels — et c'est la réponse que la bande donne déjà au même
+problème.
 
 ---
 

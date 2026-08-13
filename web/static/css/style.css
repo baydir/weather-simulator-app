@@ -1070,17 +1070,21 @@ button[type="submit"]:hover {
 /*
  * macOS hides its overlay scrollbars until something moves, so the strip showed
  * a card cut off at the right edge and nothing to say it could be scrolled.
- * Styling the track forces it to stay.
+ * Styling the track forces it to stay. The chart under the strip scrolls on a
+ * narrow window for its own reason and needs the same telling.
  */
-.band::-webkit-scrollbar {
+.band::-webkit-scrollbar,
+.chart-panel::-webkit-scrollbar {
   height: 8px;
 }
 
-.band::-webkit-scrollbar-track {
+.band::-webkit-scrollbar-track,
+.chart-panel::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.band::-webkit-scrollbar-thumb {
+.band::-webkit-scrollbar-thumb,
+.chart-panel::-webkit-scrollbar-thumb {
   border: 2px solid transparent;
   border-radius: 999px;
   background-color: var(--rule-strong);
@@ -1300,6 +1304,146 @@ body.results [data-band="8"] { --band: #16100c; --band-ink: #fff; }
   color: var(--ink-soft);
 }
 
+/* --- the chart under the strip ---------------------------------------------
+ *
+ * **It is drawn on the same paper as a card, and that is not decoration.** The
+ * two temperature colours are the mock-up's own, and they were chosen against a
+ * card; laid on the ground they would fall on the summer's own red somewhere
+ * around two thirds of the gradient, where a red curve stops existing. Putting
+ * the drawing on `--raised` is what keeps a warm line warm on all four seasons —
+ * the same reasoning docs/application.md gives for the two numbers on a card,
+ * which is why they read the same whatever the season.
+ *
+ * So this block changes nothing per season. The paper does not turn, and the
+ * four inks it borrows — the rule, the soft ink, the two temperatures — are the
+ * card's.
+ *
+ * **The marks take `currentColor`.** `.high` and `.low` already carry the warm
+ * and the cool a few rules above, for the day a card has no band to show; the
+ * curve asks the same two classes for the same two colours rather than naming
+ * them again. It is also what lets `ink_contrast.py` read an SVG text: the
+ * script asks the page for `color`, which `fill` alone would leave untouched.
+ */
+
+/*
+ * **It scrolls sideways under a certain width, exactly as the strip does.**
+ * The drawing scales as a whole — it is one `viewBox` — so its type shrinks
+ * with it: at the width of a phone the axis numbers came out at four pixels,
+ * which is a label that has stopped being one. Below the size where eleven
+ * units read as eleven pixels, the panel scrolls instead of shrinking further.
+ *
+ * No media query, because there is no breakpoint to pick: the minimum is where
+ * the type stops being legible, and every width below it gets the same answer.
+ */
+.chart-panel {
+  margin-top: calc(var(--space) * 6);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule-strong) transparent;
+}
+
+.chart {
+  display: block;
+  width: 100%;
+  min-width: 58rem;
+  height: auto;
+  border: 1px solid var(--rule);
+  background: var(--raised);
+  color: var(--ink-soft);
+}
+
+/* The segments join readings; they do not smooth between them. Round joins
+   only so that a spike does not grow a spur where two segments meet. */
+.chart-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+/* The reading itself, drawn over the line that joins it to the next. */
+.chart-point {
+  fill: currentColor;
+}
+
+.chart-line.high,
+.chart-point.high {
+  color: var(--warm);
+}
+
+.chart-line.low,
+.chart-point.low {
+  color: var(--cool);
+}
+
+/* The spread between the two, as a thickness rather than as a number. Faint
+   enough that it reads as air between the curves and not as a third mark. */
+.chart-ribbon {
+  fill: var(--ink);
+  opacity: 0.07;
+}
+
+/* Quieter than a card's border, which is the same token at full strength: a
+   gridline is read past, not read. */
+.chart-rule,
+.chart-baseline {
+  stroke: var(--rule);
+  stroke-width: 1;
+  opacity: 0.5;
+}
+
+.chart-bar {
+  fill: var(--cool);
+  opacity: 0.75;
+}
+
+/* A day whose rain is missing, which would otherwise draw exactly what a dry
+   day draws: nothing at all. */
+.chart-gap {
+  fill: var(--ink-soft);
+}
+
+.chart-axis,
+.chart-month,
+.chart-seam-label,
+.chart-title {
+  fill: currentColor;
+  font-family: var(--font);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The same small-capitals register the strip's own reading marks wear. Set in
+   pixels because this is inside a viewBox, where an em is the drawing's scale
+   and not the page's. */
+.chart-month,
+.chart-seam-label,
+.chart-title {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* What each panel plots. The page's own ink rather than the soft one: it names
+   the thing below it, where the graduation only measures it. */
+.chart-title {
+  color: var(--ink);
+}
+
+/* The crossing, drawn firmer than a gridline and in the page's own ink: it is
+   the one line here that says the ground under the numbers has changed. */
+.chart-seam-rule {
+  stroke: var(--rule-strong);
+  stroke-width: 1.5;
+}
+
+.chart-seam-label {
+  color: var(--ink);
+}
+
 /* --- where the days come from ---------------------------------------------- */
 
 .provenance {
@@ -1447,11 +1591,13 @@ body.results .failure {
   border-left-color: var(--ink);
 }
 
-body.results .band {
+body.results .band,
+body.results .chart-panel {
   scrollbar-color: var(--rule-strong) transparent;
 }
 
-body.results .band::-webkit-scrollbar-thumb {
+body.results .band::-webkit-scrollbar-thumb,
+body.results .chart-panel::-webkit-scrollbar-thumb {
   background-color: var(--rule-strong);
 }
 

@@ -19,8 +19,9 @@
  * that rewrote them would only be inventing a second, less accurate version.
  */
 
-import { search, SearchError } from "./fetch.js";
+import { loadConfig, search, SearchError } from "./fetch.js";
 import { sources, strip } from "./band.js";
+import { chart } from "./chart.js";
 import { applyTexts, el } from "./dom.js";
 import { texts } from "./i18n.js";
 import { fullDate } from "./present.js";
@@ -33,10 +34,26 @@ const warning = document.getElementById("warning");
 const wait = document.getElementById("wait");
 const failure = document.getElementById("failure");
 const band = document.getElementById("days");
+const chartPanel = document.getElementById("chart-panel");
 const provenance = document.getElementById("provenance");
 const provenanceGrid = document.getElementById("provenance-grid");
 
 applyTexts();
+
+/**
+ * The band ladder the chart graduates its axis on, asked for at once and waited
+ * on at the end.
+ *
+ * It is a second call, and deliberately not one the page hangs on: the chart is
+ * a second reading of days the strip already carries in full, so a config that
+ * does not arrive costs the drawing and not the results. Hence the failure
+ * folded into `null` here rather than thrown — the search has its own refusals
+ * to report, and none of them is this one.
+ */
+const ladder = loadConfig().then(
+  (config) => ({ edges: config.temperature_band_edges, step: config.temperature_band_step }),
+  () => null,
+);
 
 const query = new URLSearchParams(window.location.search);
 const asked = {
@@ -66,17 +83,25 @@ async function run() {
     const series = await search(asked, (done, total) => {
       wait.textContent = texts.results.progress(done, total);
     });
-    show(series);
+    await show(series);
   } catch (error) {
     fail(error instanceof SearchError ? error.message : texts.transport.serviceFailed);
   }
 }
 
-function show(series) {
+async function show(series) {
   wait.hidden = true;
   warning.hidden = !series.has_simulated;
   count.textContent = texts.results.count(series.days.length);
   band.append(...strip(series.days));
+
+  // After the strip, always: the days are what the visitor came for, and the
+  // drawing waits on a call of its own.
+  const scale = await ladder;
+  if (scale) {
+    chartPanel.append(chart(series.days, scale));
+    chartPanel.hidden = false;
+  }
 
   const pairs = sources(series.grid);
   if (pairs.length === 0) {
