@@ -132,6 +132,7 @@ Les chiffres restent attachés au script qui les mesure : chaque `README.md` de
 | `scripts/sky_thresholds/` | le calage des seuils de ciel, étape 3 |
 | `scripts/calibration_grid/` | la grille de correction, étape 4 |
 | `scripts/forecast_seam/` | la couture analyse / prévision, étape 7 |
+| `scripts/temperature_scale/` | les bornes de l'échelle de couleur des températures |
 | `scripts/inspect_seam.py` | lecture des coutures sur requête réelle |
 | `scripts/screenshots.py` | photographie l'interface, treize vues — et `--offline`, qui invente les données pour travailler sans quota |
 | `scripts/ink_contrast.py` | les contrastes de la page de résultats, sur les quatre saisons |

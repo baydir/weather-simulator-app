@@ -379,6 +379,10 @@ def test_the_contract_never_carries_a_pictogram(client, frozen_today) -> None:
         "wind_speed_mean",
         "wind_speed_max",
         "sky",
+        # The band, not the colour — the same division as the class and the
+        # pictogram, one step further.
+        "temperature_min_band",
+        "temperature_max_band",
     }
 
 

@@ -191,9 +191,11 @@ faisait servir un seul pour les deux.
 
 **Les températures ne portent pas de libellé.** Deux nombres près d'un signe
 degré n'en demandent pas. Ce que la carte doit dire, en revanche, c'est laquelle
-est la maximale — et à l'écran c'est la couleur et la position qui l'indiquent,
-ce qui n'est une information ni pour un lecteur d'écran, ni pour qui ne sépare
-pas les deux teintes. Chacune est donc nommée pour qui ne la voit pas.
+est la maximale — et à l'écran **seule la position l'indique désormais**, les deux
+nombres partageant une même échelle de couleur depuis qu'elle existe : à 22 °C,
+une maximale et une minimale portent le même aplat. Ce qui n'est une information
+ni pour un lecteur d'écran, ni pour qui ne voit pas l'ordre. Chacune est donc
+nommée pour qui ne la voit pas.
 
 **Les libellés des deux autres mesures sont sortis de l'écran, pas du
 document.** La carte porte « 4,8 mm » et « 31 km/h » nus : les unités suffisent à
@@ -483,12 +485,13 @@ posent le marqueur de mois et la ligne du scénario. Ce qui sépare ces textes d
 ce qu'ils nomment, c'est leur forme — onze pixels, capitales, interlettrage —,
 exactement comme sur l'accueil quand le ton ne peut plus le porter.
 
-**Les cartes sont le seul blanc du projet**, et la seule couleur saturée : le
-rouge `#d40000` et le bleu `#0044aa` de la maquette, là où le reste du site
-s'interdit toute couleur pure hors de l'émoji. Sur une carte blanche les deux
-passent largement, et ce sont les deux nombres qu'une lecture vient chercher.
-**La carte cesse par ailleurs d'être la boîte** : la date se pose nue sur le
-dégradé, et seul le corps en dessous est dessiné.
+**Les cartes sont le seul blanc du projet.** Sur ce sol, rien de plus discret ne
+tiendrait : une carte est ce sur quoi l'œil se pose. Le rouge `#d40000` et le
+bleu `#0044aa` de la maquette, qui portaient les deux températures, ne servent
+plus que de repli — une journée sans température n'a pas de bande, donc pas de
+couleur d'échelle, et retombe sur eux. **La carte cesse par ailleurs d'être la
+boîte** : la date se pose nue sur le dégradé, et seul le corps en dessous est
+dessiné.
 
 **La page est la fenêtre**, comme l'accueil, et pour deux raisons superposées. Le
 calque du ciel est calé sur le `body` : sans hauteur minimale il s'arrête où
@@ -552,6 +555,71 @@ maximale le plancher à 1280 × 720. `ink_contrast.py` lit le centre de l'étiqu
 mesure d'origine ne l'avait prise. Sur les dix autres lignes de l'été, il retrouve
 les chiffres publiés à 0,2 près, ce qui est la vérification de la méthode.
 
+### L'échelle de couleur des températures
+
+Les deux nombres d'une carte portent un aplat coloré, et le nombre se lit dessus.
+**L'échelle est absolue** : la couleur ne dépend que de la température, jamais de
+la date ni du lieu. Janvier est froid et juillet est chaud, et l'échelle le dit —
+c'est ce que font les cartes météo grand public. Aucune normale n'entre donc dans
+le calcul ; les normales ont servi à **placer les bornes**, pas à comparer.
+
+**Neuf bandes de cinq degrés**, de moins de 5 °C à 40 et au-delà :
+
+| bande | couleur | aplat | encre |
+|---|---|---|---|
+| < 5 °C | bleu foncé | `#123a72` | blanc |
+| 5 à 10 | bleu clair | `#5aa9de` | sombre |
+| 10 à 15 | vert clair | `#8bc94a` | sombre |
+| 15 à 20 | jaune | `#f2ce1b` | sombre |
+| 20 à 25 | orange | `#f0902a` | sombre |
+| 25 à 30 | rouge clair | `#e9634a` | sombre |
+| 30 à 35 | rouge foncé | `#b01712` | blanc |
+| 35 à 40 | rouge très foncé | `#6b0a0a` | blanc |
+| ≥ 40 | noir | `#16100c` | blanc |
+
+**Neuf, parce que neuf se nomment.** Mesuré sur les mêmes données que les bornes,
+une recherche de 47 jours montre 1,9 à 2,8 couleurs distinctes avec un pas de
+10 °C — la bande entière est alors un aplat presque uniforme — et 2,7 à 4,0 avec
+un pas de 5. Un pas de 2,5 °C a été essayé et écarté pour la raison inverse :
+vingt-deux teintes ne se nomment plus, et une échelle dont les paliers n'ont pas
+de nom est un dégradé, qui suggère une précision que des agrégats journaliers
+n'ont pas. Le détail des mesures →
+[`scripts/temperature_scale/`](../scripts/temperature_scale/README.md).
+
+**Où l'échelle commence est ce qui garde les couleurs justes.** De 5 à 40 plutôt
+que de 0 à 35, chaque couleur tombe là où un lecteur français l'attend — le jaune
+sur 15-20, l'orange sur 20-25, le rouge à partir de 25 — et la bande haute revient
+à une chaleur que le climat de référence n'atteint jamais. Le prix est un bas
+d'échelle grossier : tout ce qui est sous 5 °C porte une seule couleur, soit 7 %
+des maximales françaises et 28 % des minimales.
+
+**L'encre bascule avec le fond, et c'est ce qui rend le jaune possible.** Une
+encre blanche unique obligerait chaque aplat à être assez sombre pour la porter,
+et un jaune assez sombre pour du blanc *est* un ocre — une première rampe l'a été,
+et c'est ce qui l'a fait rejeter. Chaque bande nomme donc son encre : blanc sur
+les quatre sombres, noir cassé sur les cinq claires. **Plancher mesuré : 5,51:1**,
+porté par le rouge clair ; `scripts/ink_contrast.py` relit les neuf paires depuis
+la feuille de style à chaque fois que l'une bouge.
+
+**Où la couleur ne sépare plus.** Les trois dernières bandes sont rouges ou
+noires : la teinte n'y distingue plus rien, seule la clarté le fait, et l'écart
+entre le rouge très foncé et le noir vaut 1,50:1. Côte à côte c'est net ;
+éloignées dans la bande, ces deux-là se lisent surtout par le nombre qu'elles
+portent. Les six premières s'en sortent mieux parce qu'elles changent de teinte
+en même temps que de clarté.
+
+**L'aplat est la seule forme pleine du site**, là où la feuille pose que rien
+n'est dans une boîte. L'exception se paie et se justifie : une teinte posée sur
+une surface se distingue bien mieux de sa voisine que la même teinte sur les
+traits fins d'un chiffre, et c'est la seule chose de la carte qui doive se lire
+comme une **quantité** plutôt que comme un mot.
+
+**La période de référence est 1981-2010**, la normale de l'OMM, et c'est
+délibérément une référence froide pour un site qui montre l'avenir. À Paris,
+d'après le modèle climatique, les journées à 30 °C ou plus passent de 4,9 par an
+à 21, et celles à 35 ou plus de 0,5 à 5,3. L'échelle rougit à mesure que le siècle
+avance, parce que la référence ne bouge pas.
+
 ---
 
 ## Le contrat JSON
@@ -559,13 +627,22 @@ les chiffres publiés à 0,2 près, ce qui est la vérification de la méthode.
 Un tableau d'objets journaliers, stable et documenté, pour qu'un graphique, un
 cumul ou une carte s'y branchent sans toucher au pipeline. Chaque journée porte
 `date`, `origin`, `source`, les deux températures, `precipitation`,
-`cloud_cover`, les deux vents et `sky`.
+`cloud_cover`, les deux vents, `sky`, et les deux bandes de l'échelle de couleur
+— `temperature_min_band` et `temperature_max_band`.
+
+**Il transporte la classe, jamais le dessin.** `sky` est un mot parmi cinq et
+l'émoji vit du seul côté de l'affichage ; les deux bandes sont un entier de 0 à 8
+et la teinte vit dans la feuille de style. Le partage est le même, et pour la même
+raison : savoir dans quel palier tombe une température est une règle dont dépend
+une grandeur affichée, donc elle revient au serveur ; de quelle couleur ce palier
+se dessine ne regarde que la page, et repeindre la rampe ne doit toucher rien
+d'autre.
 
 **Ce qu'il ne transporte pas est aussi arrêté que ce qu'il transporte.** Ni
 `temperature_mean`, demandée pour le seul critère de neige et que
 [`donnees.md`](donnees.md) dit non affichée ; ni `snowfall`, conservée comme
-témoin mais servie d'un seul côté de la couture ; ni le pictogramme, ni aucune
-gradation d'intensité.
+témoin mais servie d'un seul côté de la couture ; ni le pictogramme, ni les
+couleurs, ni aucune gradation d'intensité.
 
 La réponse porte en outre **`has_simulated`** et les métadonnées de la grille.
 Le premier dit si l'avertissement est dû. Il est servi plutôt que recalculé sur

@@ -1185,6 +1185,9 @@ button[type="submit"]:hover {
   font-feature-settings: "tnum";
 }
 
+/* The fallback, and only that: a day whose temperature is missing carries no
+   band, so it keeps the warm and the cool that used to carry the distinction on
+   their own. Any day that has a number takes its colour from the scale below. */
 .high {
   color: var(--warm);
 }
@@ -1192,6 +1195,78 @@ button[type="submit"]:hover {
 .low {
   color: var(--cool);
 }
+
+/*
+ * The temperature scale: nine steps of five degrees, from under 5 to 40 and over.
+ *
+ * **The band is decided by the server**; this is only what it looks like. The
+ * step numbers here are the ones `domain/temperature.py` hands out, and the
+ * boundaries they stand for are written where they are measured — twelve French
+ * towns, 1981-2010.
+ *
+ * **The colour is a ground, and the number sits on it.** That is what buys the
+ * scale its legibility: a hue laid over an area is far easier to tell from its
+ * neighbour than the same hue on the thin strokes of a digit. It is also the one
+ * place on this site that is a filled shape — the sheet's own habit is that
+ * nothing is in a box — and it earns the exception by being the only thing on
+ * the card that has to be read as a *quantity* rather than as a word.
+ *
+ * **The ink turns over with the ground, and that is what makes a yellow
+ * possible.** A single white ink would force every band dark enough to carry
+ * it, and a yellow dark enough for white text is an ochre — which is what an
+ * earlier ramp was, and why it was thrown out. So each band names its own ink:
+ * white on the four dark ones, near-black on the five light ones. Every pairing
+ * is measured, and the weakest is 4.77:1; `scripts/ink_contrast.py` re-reads
+ * them from this file whenever one moves.
+ *
+ * **Nine, because nine can be named.** Dark blue, light blue, light green,
+ * yellow, orange, light red, dark red, very dark red, black — a reader can hold
+ * that many and tell one from the next. Finer steps were tried at 2.5 °C and
+ * needed twenty-two tones, which is a gradient wearing a legend.
+ */
+body.results .card-degrees[data-band] {
+  padding: calc(var(--space) * 1) calc(var(--space) * 2);
+  background-color: var(--band);
+  color: var(--band-ink);
+}
+
+/* Air between the maximum and the minimum. Touching, the two grounds read as a
+   single two-tone bar and the eye stops counting them as two readings. */
+body.results .card-degrees[data-band] ~ .card-degrees[data-band] {
+  margin-top: calc(var(--space) * 1.5);
+}
+
+/* The unit rides on the tint, so it drops its own ink and keeps only the step
+   down in weight the sheet gives it everywhere else. */
+body.results .card-degrees[data-band] .unit {
+  color: inherit;
+}
+
+/* Near-black rather than the page's own ink: that one turns with the season,
+   and a band is drawn on a card, which does not. */
+body.results .card-degrees[data-band] {
+  --dark-ink: #1c1408;
+}
+
+/* < 5 — bleu foncé */
+body.results [data-band="0"] { --band: #123a72; --band-ink: #fff; }
+/* 5 à 10 — bleu clair */
+body.results [data-band="1"] { --band: #5aa9de; --band-ink: var(--dark-ink); }
+/* 10 à 15 — vert clair */
+body.results [data-band="2"] { --band: #8bc94a; --band-ink: var(--dark-ink); }
+/* 15 à 20 — jaune */
+body.results [data-band="3"] { --band: #f2ce1b; --band-ink: var(--dark-ink); }
+/* 20 à 25 — orange */
+body.results [data-band="4"] { --band: #f0902a; --band-ink: var(--dark-ink); }
+/* 25 à 30 — rouge clair */
+body.results [data-band="5"] { --band: #e9634a; --band-ink: var(--dark-ink); }
+/* 30 à 35 — rouge foncé */
+body.results [data-band="6"] { --band: #b01712; --band-ink: #fff; }
+/* 35 à 40 — rouge très foncé */
+body.results [data-band="7"] { --band: #6b0a0a; --band-ink: #fff; }
+/* ≥ 40 — noir. Le haut de l'échelle s'éteint plutôt qu'il ne crie : c'est la
+   bande qu'aucune journée française de 1981-2010 n'atteint. */
+body.results [data-band="8"] { --band: #16100c; --band-ink: #fff; }
 
 .sep {
   margin-inline: 0.5ch;

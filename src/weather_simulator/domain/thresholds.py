@@ -54,6 +54,46 @@ SNOW_TEMPERATURE_C = 1.5
 OVERCAST_PERCENT = 70.0
 CLOUDY_PERCENT = 30.0
 
+# The temperature colour scale: eight boundaries, nine bands.
+#
+# **Absolute, not an anomaly.** A band depends on the temperature and on nothing
+# else — not on the date, not on the place. January is cold and July is warm, and
+# the scale says so, which is what the public weather maps do.
+#
+# **Placed on what France actually recorded**, by scripts/temperature_scale/:
+# twelve towns, one per French climate, 1981-2010, ERA5-Land — 131 484 days. The
+# reference period is the WMO normal, and it is deliberately a cold one for a
+# site that shows the future: at Paris, days at or above 30 °C run to 4.9 a year
+# over 1981-2010 and to 21 over 2036-2050 in the climate model. The scale reddens
+# as the century advances because the reference does not move.
+#
+# **The source is the reanalysis, not the record books.** A grid cell smooths
+# extremes: no French cell of these thirty years reaches 40 °C, where station
+# records do. Boundaries taken from an almanac would be colours the page could
+# not display. The top band is therefore the one the reference climate never
+# reaches and the simulated future does.
+#
+# **Nine bands, at five degrees.** Measured on the same data, over a 47-day
+# search — the length of a typical one — a step of 10 °C shows 1.9 to 2.8 distinct
+# colours and the strip reads as one flat wash; a step of 5 °C shows 2.7 to 4.0.
+# Nine is also what a palette can name: dark blue, light blue, light green,
+# yellow, orange, light red, dark red, dark violet, light violet. A scale whose
+# steps cannot be named is a gradient, and a gradient claims a precision daily
+# aggregates do not have.
+#
+# **Where the ladder starts is what keeps the colours honest.** Running 5 to 40
+# rather than 0 to 35 puts each colour where a French reader expects it — yellow
+# on 15-20, orange on 20-25, red from 25 — and leaves the top band, which the
+# reference climate never reaches, to the heat the simulated future brings. The
+# price is a coarse cold end: everything under 5 °C is one colour, which is 7 %
+# of French maxima and 28 % of minima.
+#
+# The bands are a display convention over a continuum, exactly as "cloudy" and
+# "overcast" are. Measurement says what falls either side of a line; it cannot
+# say where to draw it.
+TEMPERATURE_BAND_STEP_C = 5.0
+TEMPERATURE_BAND_EDGES = tuple(5.0 + TEMPERATURE_BAND_STEP_C * step for step in range(8))
+
 # What the design document originally called a snow day, and what the criterion
 # above is calibrated to reproduce. The climate model serves snow depth too
 # irregularly to read it directly — hence the derived rule — but the reanalyses

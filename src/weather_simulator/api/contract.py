@@ -5,11 +5,17 @@ chart, a running total or a map can branch onto this later without touching the
 pipeline — which means the shape here is a commitment, not an implementation
 detail.
 
-Three things it carries and three it refuses to.
+Four things it carries and three it refuses to.
 
 **It carries the class, never the pictogram.** ``sky`` is one of five words, and
 the emoji lives on the display side alone, so that moving to a drawn icon set
 touches nothing but the rendering.
+
+**It carries the temperature band, never the colour.** The same division, one
+step further: which of twenty-two steps a temperature falls in is a rule, and
+docs/application.md sends every rule a displayed quantity depends on to the
+server. Which hue that step is drawn in is a stylesheet's business, and repainting
+the ramp must touch nothing else.
 
 **It carries ``origin`` on every day, and ``has_simulated`` on the response.**
 The interface must warn wherever the series stops being weather and becomes a
@@ -50,6 +56,7 @@ from datetime import date
 from pydantic import BaseModel, Field
 
 from weather_simulator.calibration.table import Metadata
+from weather_simulator.domain import temperature
 from weather_simulator.domain.records import DailyRecord, Origin
 from weather_simulator.domain.sky import SkyClass
 
@@ -100,6 +107,19 @@ class Day(BaseModel):
         ),
     )
 
+    temperature_min_band: int | None = Field(
+        default=None,
+        description=(
+            "0 to 21, the step of the shared temperature scale this minimum falls "
+            "in — null when the temperature is. The interface turns it into a "
+            "colour; the colour itself is no more part of this contract than the "
+            "pictogram is."
+        ),
+    )
+    temperature_max_band: int | None = Field(
+        default=None, description="The same scale, for the maximum."
+    )
+
     @classmethod
     def from_record(cls, record: DailyRecord, sky: SkyClass | None) -> Day:
         """Ship one day. ``sky`` is passed in, already decided on the full values.
@@ -109,7 +129,12 @@ class Day(BaseModel):
         which claims a precision the table does not have — it stores tenths.
         The rounding happens after the class has been decided, deliberately: a
         day at 29.97 % must not become cloudy because it was tidied up.
+
+        The two bands are worked out here rather than passed in, unlike ``sky``:
+        each depends on that day's own temperature and on nothing else, so there
+        is no full series to decide them against.
         """
+        low_band, high_band = temperature.bands_of(record)
         return cls(
             date=record.date,
             origin=record.origin,
@@ -121,6 +146,8 @@ class Day(BaseModel):
             wind_speed_mean=record.wind_speed_mean,
             wind_speed_max=record.wind_speed_max,
             sky=sky,
+            temperature_min_band=low_band,
+            temperature_max_band=high_band,
         )
 
 

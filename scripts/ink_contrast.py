@@ -180,6 +180,48 @@ PROBE = """
 """
 
 
+# The temperature ramp, read the same way: the browser resolves each band class
+# to a colour, and the two card papers are read off a real card. Asking the page
+# rather than the file is what keeps this from becoming a second copy of the
+# ramp — the numbers here come from whatever the stylesheet currently says.
+RAMP_PROBE = """
+(count) => {
+  const card = document.querySelector('.card-body');
+  const probe = document.createElement('span');
+  probe.className = 'card-degrees';
+  card.append(probe);
+  const bands = [];
+  for (let i = 0; i < count; i++) {
+    probe.setAttribute('data-band', String(i));
+    const style = getComputedStyle(probe);
+    bands.push({ ground: style.backgroundColor, ink: style.color });
+  }
+  probe.remove();
+  return bands;
+}
+"""
+
+BAND_COUNT = 9
+
+
+def measure_ramp(page) -> list[tuple[int, str, str, float]]:
+    """Every band of the temperature scale, under the ink it actually carries.
+
+    The number sits *on* the band, so the ratio that matters is the ink against
+    its own ground — the card behind it never shows through. The ink is read
+    rather than assumed: it turns over with the ground, white on the dark bands
+    and near-black on the light ones, and reading it here is what keeps this
+    from being a second opinion about which is which.
+    """
+    rows = []
+    for index, band in enumerate(page.evaluate(RAMP_PROBE, BAND_COUNT)):
+        ground = parse_colour(band["ground"])[0]
+        ink = parse_colour(band["ink"])
+        as_hex = lambda colour: "#" + "".join(f"{round(c):02x}" for c in colour)  # noqa: E731
+        rows.append((index, as_hex(ground), as_hex(ink[0]), ratio(over(ink, ground), ground)))
+    return rows
+
+
 def measure(page, season: str) -> dict:
     """The page as it stands, repainted in one season and read."""
     page.evaluate("(season) => { document.body.dataset.season = season; }", season)
@@ -223,6 +265,7 @@ def main() -> None:
             # range spanning today, so the warning and the seam are both there.
             results(page, base)
             measured = {season: measure(page, season) for season in wanted}
+            ramp = measure_ramp(page)
             browser.close()
     finally:
         server.terminate()
@@ -241,6 +284,15 @@ def main() -> None:
                 floor = (f"{label}, {season}", value)
         print(f"| {label} | " + " | ".join(cells) + " |")
     print(f"\nplancher : {floor[0]}, à {floor[1]:.1f}:1".replace(".", ","))
+
+    # The two temperatures are no longer one colour each, so they cannot be one
+    # row each: what has to hold is the whole ramp, on both papers a card takes.
+    print("\nLa rampe des températures : le chiffre sur son aplat\n")
+    print("| bande | aplat | encre | chiffre |")
+    print("|---|---|---|---|")
+    for index, hexa, ink, on_band in ramp:
+        print(f"| {index} | `{hexa}` | `{ink}` | {on_band:.2f}:1 |".replace(".", ","))
+    print(f"\nplancher de la rampe : {min(r[3] for r in ramp):.2f}:1".replace(".", ","))
 
 
 if __name__ == "__main__":

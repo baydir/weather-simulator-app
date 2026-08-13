@@ -101,9 +101,9 @@ export function card(day, namesMonth) {
       // maximum first too, and band.test.js pins that order.
       el("p", { className: "card-temperatures" }, [
         el("span", { className: "sr-only", text: texts.measure.high }),
-        degrees(day.temperature_max, "high", celsius),
+        degrees(day.temperature_max, "high", celsius, day.temperature_max_band),
         el("span", { className: "sr-only", text: texts.measure.low }),
-        degrees(day.temperature_min, "low", celsius),
+        degrees(day.temperature_min, "low", celsius, day.temperature_min_band),
       ]),
       el("p", { className: "card-sky", text: label }),
       el("dl", { className: "card-measures" }, [
@@ -135,11 +135,23 @@ function value(shown, raw, className) {
  * stacking costs: side by side, "14 · 28 °C" let one sign serve both, and one
  * above the other it would sit against the lower number alone.
  */
-function degrees(raw, className, unit) {
-  return el("span", { className: `card-degrees ${className}` }, [
-    value(present.temperature(raw), raw, "value"),
-    el("span", { className: "unit", text: unit }),
-  ]);
+function degrees(raw, className, unit, band) {
+  // The band arrives decided by the server and is written as an attribute, never
+  // as a colour: the twenty-two hues live in the stylesheet, exactly as the
+  // pictogram lives here rather than in the JSON.
+  //
+  // An attribute rather than a class so that the sheet can say *any band* in one
+  // selector — which is what carries the white ink and the tint. A day with no
+  // temperature carries no attribute at all, keeps the page's own ink and stays
+  // untinted: a gap is not a shade of cold.
+  return el(
+    "span",
+    {
+      className: `card-degrees ${className}`,
+      attrs: { "data-band": band === null || band === undefined ? undefined : String(band) },
+    },
+    [value(present.temperature(raw), raw, "value"), el("span", { className: "unit", text: unit })],
+  );
 }
 
 /**
