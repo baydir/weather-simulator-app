@@ -8,9 +8,10 @@ se met à jour.
 
 ## Où on en est
 
-Les étapes 0 à 3, la 5 et la 6 sont faites, la 4 est engagée. **Le site
-fonctionne** ; la collecte de l'étape 4 étant inachevée, il ne sert le futur
-qu'autour de Paris, le passé partout.
+Les étapes 0 à 3, la 5, la 6 et la 7 sont faites, la 4 est engagée. **Le site
+fonctionne.** Le passé est servi partout, la quinzaine à venir aussi depuis
+l'étape 7 ; la collecte de l'étape 4 étant inachevée, seul le futur au-delà de la
+prévision reste borné à ce que la grille a refermé.
 
 L'ordre effectif s'écarte de l'ordre annoncé : l'étape 5 a été menée avant que la
 collecte de l'étape 4 soit finie. Elle le pouvait sans la table provisoire, la
@@ -23,10 +24,11 @@ chaîne complète sur une correction authentique.
 | 1 | Récupération et série homogène, sans classe de ciel | 0 | **fait** |
 | 2 | Confirmation du modèle parmi les cinq éligibles | 1 | **fait** |
 | 3 | Calage des seuils de nébulosité et classe de ciel | 1 | **fait** |
-| 4 | Grille de calibration France et correction de nébulosité | 2 | *en cours, 23 nœuds sur 594* |
+| 4 | Grille de calibration France et correction de nébulosité | 2 | *en cours, 394 nœuds sur 594* |
 | 5 | API, validation des entrées et bloc de transformation | 3, 4 | **fait** |
 | 6 | Interface : accueil, résultats, bande journalière | 5 | **fait** |
-| 7 | Élargissement mondial de la grille | 4 | à faire |
+| 7 | La quinzaine à venir, servie par ECMWF IFS | 1, 6 | **fait** |
+| 8 | Élargissement mondial de la grille | 4 | à faire |
 
 L'ordre est imposé par les dépendances, non par le contenu : celui-ci se décide
 au moment d'aborder l'étape, à la lumière de ce que la précédente a révélé. La
@@ -124,9 +126,30 @@ par population desservie. Et le constat « champ de biais lisse » du script 15
 n'est pas général : le versant méditerranéen le contredit, avec 5,52 points sur
 un seul degré à la montée vers les Cévennes.
 
-**Reste à faire : la collecte.** 23 nœuds sur 594. C'est le débit d'Open-Meteo
-qui commande — de l'ordre de trente nœuds par heure, soit une quinzaine d'heures
-encore.
+**Le débit a été mal lu, et deux fois.** On l'avait estimé à trente nœuds par
+heure, soit une quinzaine d'heures pour la France — chiffre tiré d'une fenêtre de
+trente-six minutes prise sur un quota frais. Le plafond est en réalité
+**journalier**, Open-Meteo le disant lui-même par un `HTTP 429 : Daily API
+request limit exceeded`, et il laisse passer cinquante à cent trente nœuds par
+jour. La France demande donc de l'ordre de la semaine. La leçon est de méthode :
+les nœuds arrivant par salves, un rythme mesuré à l'intérieur d'une salve n'est
+pas un débit.
+
+**Un défaut d'indexation a coûté cinq nœuds sur 219.** `build.py` rangeait chaque
+nœud sur la coordonnée renvoyée par Open-Meteo — le centre de sa maille, parfois
+à un quart de degré du point demandé — puis l'arrondissait au réseau. Or Python
+arrondit un demi vers le pair : `round(49,25 × 2) / 2` vaut 49,0 et non 49,5. Le
+nœud demandé à 49,5 disparaissait, et celui de 49,0 recevait en silence une
+correction mesurée vingt-huit kilomètres plus au nord. La clé se lit désormais
+dans le nom du fichier, qui porte le point demandé. Neuf mailles y étaient
+suspendues, dont toute la Normandie.
+
+**Reste à faire : la collecte.** 394 nœuds sur 594, 320 mailles refermées — 35
+des 39 villes de la liste de priorité. Ne manquent que la pointe bretonne, le
+Pays basque et la Corse.
+
+Le chiffre a triplé en trois jours sans que rien change au débit : c'est le
+plafond journalier, décrit plus haut, qui commande — il suffit de relancer.
 
 → [`application.md`](application.md), `scripts/calibration_grid/`
 
@@ -191,6 +214,42 @@ premières ; quant au troisième, ce sont les **nombres** qui divergeraient, et 
 viennent de `/api/config`. La reformulation tient.
 
 → [`application.md`](application.md)
+
+---
+
+## Étape 7 — La quinzaine à venir
+
+**Ce que l'étape a corrigé de ce que les précédentes supposaient.** Le découpage
+posait la coupure à ce soir : au-delà, le modèle climatique. C'était traité comme
+une conséquence des sources disponibles, alors que c'était un segment manquant.
+Un modèle climatique n'est pas initialisé sur l'état de l'atmosphère, donc sa
+première journée est aussi étrangère à demain que la dernière l'est à 2050 — et
+demain, à la différence de 2046, se vérifie. Le constat n'est pas venu d'une
+mesure mais de l'usage : les premiers jours se lisaient comme une prévision
+fausse.
+
+**Ce n'est pas un quatrième segment, c'est le segment IFS qui va plus loin.**
+L'archive jusqu'à ce soir, la prévision jusqu'à J+14, le même système de part et
+d'autre. Ce soir cesse d'être une couture ; il y en a toujours deux, et la
+seconde se place là où la prévisibilité s'arrête.
+
+**Le sondage qui a décidé l'étape**, Toulouse, dix journées communes : l'analyse
+et la prévision sont à 0,53 °C et 3,4 points de nébulosité d'écart moyen. À
+comparer aux −1,8 à +0,9 °C de la couture d'archive que le forçage de `models`
+évite, et aux 8 à 11 points de déficit du modèle climatique qui justifient toute
+la grille. C'est la plus petite jonction de la série. La mesure aux dix sites de
+l'étape 2 reste à passer → `scripts/forecast_seam/`.
+
+**Ce que l'étape a débloqué sans qu'on le cherche.** Une plage tenant dans la
+quinzaine ne comporte aucune journée simulée, donc n'appelle aucune correction :
+elle est servie partout dans le monde, sans attendre les 594 nœuds.
+
+**Ce qu'elle a coûté.** La règle 1 a dû être amendée : « l'application ne produit
+pas de prévision » était devenu faux. L'amendement distingue les deux régimes de
+futur sans rien retirer au lointain, et la contrepartie est assumée — un lecteur
+qui vérifie J+3 et trouve juste peut reporter cette confiance sur 2046.
+
+→ [`donnees.md`](donnees.md), [`projet.md`](projet.md), `scripts/forecast_seam/`
 
 ---
 

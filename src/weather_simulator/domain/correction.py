@@ -23,7 +23,7 @@ thirty years, against a bias of eight to eleven. The method is not chosen for
 what it wins here. It is chosen because a method picked on the grounds that the
 trend happens to be negligible in France would silently erase a real signal in
 the subtropics, where RCP8.5 dries the sky considerably, and the grid is meant
-to reach them at step 7.
+to reach them at step 8.
 
 **Nothing here touches the observed segments.** The past is what happened; only
 the projection is corrected.

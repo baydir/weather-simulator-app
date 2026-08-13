@@ -8,16 +8,17 @@ ce qu'on dérive ensuite de ces données → [`regles.md`](regles.md).
 
 ---
 
-## 1. Trois segments, quatre requêtes
+## 1. Quatre segments, cinq requêtes
 
-Une plage demandée est découpée en trois segments. Chacun a sa source. Une
+Une plage demandée est découpée en quatre segments. Chacun a sa source. Une
 requête n'appelle que les segments qu'elle recoupe.
 
 | Segment | Période | Source | Résolution |
 |---|---|---|---|
 | Passé ancien | 1950-01-01 → dernier jour servi par les réanalyses | `era5_land` (températures) **+** `era5` (le reste) | 11 km / 25 km |
 | Passé récent | lendemain de cette borne → aujourd'hui | `ecmwf_ifs` | 9 km |
-| Futur | demain → 2050-12-31 | `MRI_AGCM3_2_S` | 10 km |
+| Prévision | demain → J+14 | `ecmwf_ifs025` | 25 km |
+| Futur | lendemain du dernier jour servi par la prévision → 2050-12-31 | `MRI_AGCM3_2_S` | 10 km |
 
 Le passé ancien coûte **deux** requêtes parce que la source se choisit *par
 variable* : ERA5-Land ne sert que les températures, tout le reste y est nul.
@@ -26,9 +27,26 @@ Les deux réponses se joignent sur la seule date.
 Le passé récent existe parce que les réanalyses ont **5 à 6 jours de retard**.
 Sans lui, toute requête touchant aujourd'hui finirait par un trou d'une semaine.
 
+La prévision existe parce qu'un modèle climatique **n'est pas initialisé sur
+l'état de l'atmosphère** : sa première journée simulée est aussi étrangère à la
+météo de demain que la dernière l'est à 2050. Servi par le modèle, J+1 se lisait
+donc comme une prévision fausse — et à la différence de 2046, le lecteur peut
+vérifier demain.
+
+**Ce n'est pas un quatrième segment de plein droit, c'est le segment IFS qui va
+plus loin.** Même système de part et d'autre d'aujourd'hui : l'archive jusqu'à
+ce soir, la prévision ensuite. **Ce soir n'est donc pas une couture** — il y en a
+toujours deux, et la seconde s'est déplacée à la fin de la prévision.
+
+Les deux produits ne sont pas identiques pour autant : l'archive sert une
+*analyse* à 9 km, la prévision une *intégration vers l'avant* à 0,25°. L'écart
+mesuré à cette jonction → [`science.md`](science.md) et
+`scripts/forecast_seam/`.
+
 | Usage | Adresse |
 |---|---|
 | Passé (réanalyses et IFS) | `https://archive-api.open-meteo.com/v1/archive` |
+| Prévision | `https://api.open-meteo.com/v1/forecast` |
 | Futur | `https://climate-api.open-meteo.com/v1/climate` |
 | Géocodage | `https://geocoding-api.open-meteo.com/v1/search` |
 
@@ -36,14 +54,17 @@ Sans lui, toute requête touchant aujourd'hui finirait par un trou d'une semaine
 
 ## 2. Paramètres
 
-Communs aux quatre requêtes : `latitude`, `longitude`, `start_date`, `end_date`
-(`YYYY-MM-DD`), `daily`, `models`, `timezone`.
+Communs aux cinq requêtes : `latitude`, `longitude`, `start_date`, `end_date`
+(`YYYY-MM-DD`), `daily`, `models`, `timezone`. L'endpoint de prévision accepte
+`start_date`/`end_date` comme les deux autres, ce qui permet de construire les
+cinq requêtes par la même fonction.
 
 ```
 models=era5_land      daily=temperature_2m_max,temperature_2m_min,temperature_2m_mean
 models=era5           daily=precipitation_sum,snowfall_sum,cloud_cover_mean,
                             wind_speed_10m_max,wind_speed_10m_mean
 models=ecmwf_ifs      daily=<les huit>
+models=ecmwf_ifs025   daily=<les huit>          (API Forecast)
 models=MRI_AGCM3_2_S  daily=<les huit>          (API Climate)
 ```
 
@@ -56,9 +77,18 @@ Trois règles sans exception :
 - **`models` toujours forcé.** Laissé libre, l'endpoint d'archive choisit sa
   source variable par variable et bascule vers IFS en 2017 : une seconde
   couture, non documentée, de −1,8 à +0,9 °C.
-- **La borne entre les deux passés se lit dans la réponse**, jamais un nombre de
-  jours codé en dur : c'est le dernier jour effectivement servi, IFS reprenant
-  au lendemain. Une constante serait fausse un jour sur deux.
+- **Une borne de couture se lit dans la réponse**, jamais dans un nombre de jours
+  codé en dur, et cela vaut aux **deux** coutures. Côté passé, c'est le dernier
+  jour effectivement servi par les réanalyses, IFS reprenant au lendemain : une
+  constante serait fausse un jour sur deux. Côté futur, c'est le dernier jour
+  effectivement servi par la prévision, qui peut en rendre moins que la
+  quinzaine demandée.
+
+  Aucune des deux ne se connaît au moment de bâtir le plan, et le navigateur
+  l'exécute d'un seul tenant. Les deux segments qui suivent sont donc **demandés
+  en recouvrement** — IFS sur toute la plage post-2017, le modèle climatique dès
+  demain — et le chevauchement se règle au retour, la source antérieure
+  l'emportant là où elle a servi. Même fonction dans les deux cas.
 
 Aucune clé d'accès. Limites de débit **par adresse IP** — d'où la récupération
 côté navigateur en production.
@@ -92,8 +122,10 @@ décide de quelle requête sert quoi dans le passé ancien.
 | `wind_speed_10m_max` | `wind_speed_max` | km/h | vent **établi** le plus fort — pas la rafale | affiché |
 | `wind_speed_10m_mean` | `wind_speed_mean` | km/h | vent moyen sur la journée à 10 m | **servi, non affiché** → [`application.md`](application.md) |
 
-**Les segments récent (`ecmwf_ifs`) et futur (`MRI_AGCM3_2_S`) demandent les
-huit d'un coup**, en une requête chacun : les deux sources les servent toutes.
+**Les segments récent (`ecmwf_ifs`), prévision (`ecmwf_ifs025`) et futur
+(`MRI_AGCM3_2_S`) demandent les huit d'un coup**, en une requête chacun : les
+trois sources les servent toutes. Vérifié sur la prévision, `cloud_cover_mean`
+et `temperature_2m_mean` comprises, qui étaient les deux à craindre.
 
 Trois précisions qui coûtent cher si on les découvre en route :
 
@@ -167,12 +199,19 @@ acceptées à la lecture.
 6. Modèle climatique à partir de demain, si la plage y va.
 7. Concaténation et tri chronologique.
 
-Chaque journée porte son `origin` (`observed` / `simulated`) et sa `source`
-(pour le diagnostic des coutures). Passé et futur ne diffèrent **que** par ces
-champs — jamais par les champs renseignés, jamais par la façon de les calculer.
+Chaque journée porte son `origin` (`observed` / `forecast` / `simulated`) et sa
+`source` (pour le diagnostic des coutures). Les trois régimes ne diffèrent
+**que** par ces champs — jamais par les champs renseignés, jamais par la façon
+de les calculer.
+
+`forecast` n'est pas un troisième genre de série : c'est la queue du même
+passage d'IFS qui sert le passé récent. Ce qui l'écarte d'`observed` n'est pas
+l'instrument, c'est le temps — ces journées n'ont pas eu lieu. La distinction
+porte : la correction de l'étape 4 ne s'applique qu'aux journées `simulated`, et
+l'interface doit avertir sur celles-là sans avertir sur les autres.
 
 Ce qui vient après — correction de nébulosité sur le seul segment futur, puis
-classe de ciel appliquée aux trois segments par une fonction unique — sort du
+classe de ciel appliquée aux quatre segments par une fonction unique — sort du
 cadre de ce fichier.
 
 ---
@@ -242,7 +281,7 @@ résolues que celles du futur.
 | `sources/openmeteo.py` | adresses, modèles, variables, construction des requêtes |
 | `sources/client.py` | GET JSON, réessais, débit |
 | `sources/parse.py` | lecture des payloads, nuls silencieux, jointure |
-| `sources/series.py` | découpage de la plage, assemblage des trois segments |
+| `sources/series.py` | découpage de la plage, assemblage des quatre segments |
 | `sources/errors.py` | `FetchError`, `MissingVariableError`, `CoverageError` |
 | `domain/records.py` | `DailyRecord`, `Origin`, unités |
 | `scripts/inspect_seam.py` | lecture des coutures sur requête réelle |

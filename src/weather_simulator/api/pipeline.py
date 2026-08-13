@@ -4,10 +4,12 @@
    happened; only the projection is corrected.
 2. **The transformation block**, on the whole series. Neutral by default, and
    the project owner's to fill.
-3. **The sky class, on all three segments, through one function.** That single
-   call site is the point of the module. The old past, the recent past and the
-   future are classified by the same code path or the seam that ``sources``
-   works to erase reappears here, one branch at a time.
+3. **The sky class, on all four segments, through one function.** That single
+   call site is the point of the module. The old past, the recent past, the
+   fortnight ahead and the far future are classified by the same code path, or
+   the seams that ``sources`` works to erase reappear here, one branch at a
+   time. The count went from three to four the day the forecast became a
+   segment, and nothing here had to change — which is the point.
 
 The order is not interchangeable. The correction comes first because the class
 turns on cloud cover, and classifying before correcting would fix the pictogram

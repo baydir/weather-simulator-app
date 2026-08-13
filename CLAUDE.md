@@ -11,18 +11,38 @@ quand la tâche le touche.
 
 ## Les règles qui ne se négocient pas
 
-### 1. L'application ne produit pas de prévision
+### 1. Une trajectoire ne se présente jamais comme une prévision
 
 Cette contrainte prime sur toutes les autres. Un modèle climatique ne prédit pas
-les conditions du 14 juillet 2046 : il produit une trajectoire plausible. Trois
-règles en découlent, applicables au code comme aux textes de l'interface :
+les conditions du 14 juillet 2046 : il produit une trajectoire plausible.
 
-- **Vocabulaire de la prévision proscrit pour les dates futures** — « prévision »,
-  « il fera ». Les termes retenus sont « simulation », « météo plausible »,
-  « scénario ».
-- **Tout écran affichant une date future porte un avertissement explicite et
-  visible.**
-- **Aucune assertion d'exactitude portant sur une date déterminée n'est admise.**
+**Le futur comporte deux régimes, et cette règle porte sur le second.** La
+quinzaine à venir vient d'ECMWF IFS : c'est une prévision météorologique, et la
+nommer ainsi est exact. Au-delà commence le modèle climatique. Les règles qui
+suivent s'appliquent aux **journées simulées**, au code comme aux textes de
+l'interface :
+
+- **Vocabulaire de la prévision proscrit pour les journées simulées** —
+  « prévision », « il fera ». Les termes retenus sont « simulation », « météo
+  plausible », « scénario ».
+- **Tout écran affichant une journée simulée porte un avertissement explicite et
+  visible.** Une recherche qui ne dépasse pas la prévision n'en porte pas :
+  l'avertissement y serait faux.
+- **Aucune assertion d'exactitude portant sur une date déterminée n'est admise,
+  dans les deux régimes.** Une prévision énonce une probabilité, jamais ce que
+  sera la journée. « Il fera » reste donc proscrit partout.
+
+**La frontière entre les deux régimes est une donnée du serveur**, jamais un
+nombre recopié dans l'interface — c'est la règle 3, et l'origine de chaque
+journée voyage déjà dans le contrat.
+
+**Ce que cet amendement ne fait pas.** Il ne retire rien au futur lointain : les
+trois obligations y sont inchangées. Il retire la seule chose devenue fausse —
+qu'une journée à venir soit nécessairement une simulation. La contrepartie est
+réelle et assumée : un lecteur qui vérifie J+3 contre une autre source et trouve
+juste peut reporter cette confiance sur 2046. Ce qui la contient, c'est que la
+couture reste marquée dans la bande, et que la transition à la fin de la
+prévision devient l'endroit qui montre où la prévisibilité s'arrête.
 
 Le pourquoi → [`docs/projet.md`](docs/projet.md).
 
@@ -42,9 +62,14 @@ une, le principe vaut à chacune.
 
 Une grandeur affichée, ou une règle dont dépend une grandeur affichée, se calcule
 côté serveur, par une fonction unique. **La classe de ciel en est le cas type :
-une fonction, appelée trois fois.** Toute duplication de cette logique — entre
-segments, ou entre Python et JavaScript comme dans le prototype initial — rouvre
-la divergence que la règle 2 interdit.
+une fonction, appelée quatre fois** — une par segment. Toute duplication de cette
+logique — entre segments, ou entre Python et JavaScript comme dans le prototype
+initial — rouvre la divergence que la règle 2 interdit.
+
+Le nombre d'appels a changé le jour où la prévision est devenue un segment, et
+c'est précisément ce que la règle protège : il n'y a rien eu à modifier, la
+fonction étant appelée là où les segments sont assemblés et non recopiée dans
+chacun.
 
 **Le navigateur dérive ce dont le serveur ne détient pas de version** : mise en
 forme, repères de lecture, ordonnancement, cache. Le critère n'est pas la
@@ -106,12 +131,13 @@ Les chiffres restent attachés au script qui les mesure : chaque `README.md` de
 | `scripts/model_selection/` | le départage des cinq modèles, étape 2 |
 | `scripts/sky_thresholds/` | le calage des seuils de ciel, étape 3 |
 | `scripts/calibration_grid/` | la grille de correction, étape 4 |
+| `scripts/forecast_seam/` | la couture analyse / prévision, étape 7 |
 | `scripts/inspect_seam.py` | lecture des coutures sur requête réelle |
-| `scripts/screenshots.py` | photographie l'interface, huit vues en une commande |
+| `scripts/screenshots.py` | photographie l'interface, neuf vues — et `--offline`, qui invente les données pour travailler sans quota |
 
 Les trois premiers ne se ressemblent pas, et c'est délibéré. `verification/` date
 de la conception : aucune dépendance, `urllib` seul, chaque script isolé. Les
-deux autres sont postérieurs au paquet et s'appuient sur lui — refaire la
+autres sont postérieurs au paquet et s'appuient sur lui — refaire la
 construction des requêtes y aurait ouvert la porte à deux comportements
 divergents — et séparent la collecte, lente et limitée en débit, de l'analyse,
 qui se rejoue hors réseau depuis `data/`.
@@ -120,11 +146,17 @@ qui se rejoue hors réseau depuis `data/`.
 
 ## Où on en est
 
-Étapes 0 à 3, **5 et 6 faites**. **Étape 4 en cours** : la méthode de correction,
-la table et son interpolation sont écrites, la collecte avance — **219 nœuds sur
-594, 148 mailles refermées**. Le site sert donc le futur sur une vingtaine des
-plus grandes villes ; la Bretagne, l'Alsace et le Jura ne sont pas encore
-atteints. Le passé est servi partout dans le monde.
+Étapes 0 à 3, **5, 6 et 7 faites**. **Étape 4 en cours** : la méthode de
+correction, la table et son interpolation sont écrites, la collecte avance —
+**394 nœuds sur 594, 320 mailles refermées**, soit **35 des 39 villes** de la
+liste de priorité. Ne manquent que la pointe bretonne, le Pays basque et la
+Corse.
+
+**Ce que l'étape 7 a changé de cette contrainte.** La quinzaine à venir vient
+d'ECMWF IFS et ne demande aucune correction : elle est donc servie **partout dans
+le monde**, sans attendre la grille. Le passé aussi. Ce que la grille conditionne
+encore, c'est le futur **au-delà de la prévision**, et lui seul — c'est ce que
+dit le refus hors grille.
 
 **Le débit est plafonné par jour, non par heure.** Open-Meteo le dit lui-même —
 `HTTP 429 : Daily API request limit exceeded` — et laisse passer entre cinquante

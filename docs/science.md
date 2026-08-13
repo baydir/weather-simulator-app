@@ -200,6 +200,21 @@ années. Trois mécanismes l'expliquent :
   surface — soit exactement ceux sur lesquels les deux divergent le plus. **La
   série IFS porte ses propres ruptures internes.**
 
+**L'analyse et la prévision d'IFS ne sont pas le même produit non plus.**
+L'archive sert l'analyse à 9 km, l'endpoint de prévision une intégration vers
+l'avant à 0,25° — c'est la jonction que l'étape 7 a introduite. Sondée à Toulouse
+sur dix journées communes, elle vaut **0,53 °C** d'écart absolu moyen en
+température et **3,4 points** en nébulosité, pour une altitude identique de part
+et d'autre. À comparer aux −1,8 à +0,9 °C de la couture d'archive que le forçage
+de `models` évite, et aux 8 à 11 points de déficit du modèle climatique : c'est
+la plus petite jonction de la série.
+
+**Ce chiffre est un sondage, pas une mesure.** Un site, dix journées, et la
+question de savoir ce que l'endpoint de prévision renvoie pour une journée passée
+— le passage du modèle qui avait cours, ou une réanalyse recollée — n'est pas
+tranchée. La mesure aux dix sites de l'étape 2 est écrite et attend le quota →
+`scripts/forecast_seam/`.
+
 **Aucune des deux n'est « plus fausse » dans l'absolu.** Pour restituer un point
 un jour donné, en terrain complexe surtout, IFS est meilleur : il voit le
 relief. Pour comparer deux dates séparées de décennies, ERA5 est meilleur : il

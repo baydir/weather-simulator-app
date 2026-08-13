@@ -29,8 +29,8 @@ C'est ce signal grossier, et lui seul, qui survit au passage au pas journalier.
 
 ## La classe de ciel
 
-Cinq classes, **le même arbre de décision sur les trois segments**, à partir des
-seuls agrégats journaliers :
+Cinq classes, **le même arbre de décision sur les quatre segments**, à partir
+des seuls agrégats journaliers :
 
 | | Condition | Classe |
 |---|---|---|
@@ -205,14 +205,19 @@ déficit.
 
 ## Où ces règles s'insèrent
 
-Après l'assemblage des trois segments décrit dans [`donnees.md`](donnees.md) :
+Après l'assemblage des quatre segments décrit dans [`donnees.md`](donnees.md) :
 
-1. Correction de nébulosité **sur le seul segment futur**.
-2. Classe de ciel appliquée **aux trois segments, par la même fonction**.
+1. Correction de nébulosité **sur le seul segment futur**. La prévision n'y a
+   pas droit et ne doit pas y avoir droit : IFS est une observation portée en
+   avant, pas un modèle climatique biaisé. Lui appliquer la correction
+   inventerait un biais qu'elle n'a pas.
+2. Classe de ciel appliquée **aux quatre segments, par la même fonction**.
 
-Cette fonction unique, appelée trois fois, n'est pas négociable : toute
+Cette fonction unique, appelée quatre fois, n'est pas négociable : toute
 duplication de cette logique rouvrirait la divergence que tout le dispositif
-vise à interdire.
+vise à interdire. Le nombre d'appels est passé de trois à quatre le jour où la
+prévision est devenue un segment, sans qu'il y ait rien à modifier — c'est la
+preuve de la règle plutôt qu'une exception à elle.
 
 ---
 

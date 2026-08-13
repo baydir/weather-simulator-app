@@ -12,6 +12,14 @@ Un site grand public volontairement restreint : **une page d'accueil portant le
 formulaire, une page de résultats**. Des pages explicatives viendront plus tard,
 statiques et peu interactives.
 
+L'accueil n'annonce pas le site par son nom. Il pose une question qui tourne —
+« Pourrais-je faire pousser des tomates à Montpellier en 2050 ? » — et met la
+promesse dessous. Un nom dit comment la chose s'appelle et rien de ce à quoi
+elle sert ; le nom reste dans le titre de l'onglet, qui est l'endroit où un nom
+se lit vraiment. Derrière, un couchant en dégradé, et la chaleur qui en monte.
+Le détail de ces choix, et les contrastes mesurés qui les bornent →
+[la section *Le ciel de l'accueil*](#le-ciel-de-laccueil).
+
 Objectif de conception : simple d'abord, extensible ensuite. Chaque brique est
 pensée pour être remplacée sans que les autres bougent.
 
@@ -90,7 +98,7 @@ requête de plus, de 90 jours au plus, sur toute plage touchant 2017.
 
 ```
 src/weather_simulator/
-    sources/       requêtes, lecture des payloads, assemblage des trois segments
+    sources/       requêtes, lecture des payloads, assemblage des quatre segments
     domain/        enregistrement journalier, seuils, classe de ciel
     transform/     bloc de transformation, neutre par défaut
     api/           endpoints, validation, plan de requêtes, contrat JSON
@@ -223,8 +231,65 @@ montre les journées, et rien au-dessus d'elles.**
 Une ligne de synthèse est envisagée dans [`idees.md`](idees.md), mais adossée à
 la comparaison au climat ancien, non retenue pour la première version.
 
-**Tout écran affichant une date future porte un avertissement explicite et
-visible** → [`projet.md`](projet.md).
+**Tout écran affichant une journée simulée porte un avertissement explicite et
+visible** → [`projet.md`](projet.md). Une recherche qui ne dépasse pas la
+prévision n'en porte pas : l'avertissement y serait faux. La bascule se lit sur
+`has_simulated`, jamais sur un comptage de journées.
+
+---
+
+### Le ciel de l'accueil
+
+L'accueil porte un couchant, **écrit en dégradé CSS** à partir de onze couleurs
+échantillonnées dans la photographie de référence. La photographie n'ayant aucun
+détail — c'est un lavis —, le dégradé la reproduit pour zéro octet et reste net à
+n'importe quelle densité d'écran, là où une image de 540 px de large étirée sur
+un écran large serait floue.
+
+**Il est ancré au document, non à la fenêtre**, et ce point n'est pas cosmétique.
+Fixé à la fenêtre, la couleur sous un élément donné dépend de la hauteur d'écran
+du lecteur : mesuré sous l'avertissement, le fond allait de `#d89470` sur une
+fenêtre de 700 px à `#124a73` sur une de 2000. Aucune encre ne sert la bande
+claire et le bleu profond. Ancré au document, c'est `#e28f5b` à toutes les
+hauteurs, et l'encre se choisit au lieu de s'espérer.
+
+**Aucun voile n'est posé dessus.** Un assombrissement progressif a été essayé
+puis retiré : il achète du contraste en salissant la photographie, ce qui est la
+mauvaise monnaie. La lisibilité se paie en encre — l'encre secondaire est
+éclaircie sur cette page, et l'avertissement passe en brun brûlé parce qu'il est
+le seul texte à tomber sur la bande claire quelle que soit la fenêtre.
+
+Contrastes mesurés sur le rendu, page défilée en bas, fenêtre 1440 × 900 :
+
+| Texte | Rapport |
+|---|---|
+| la question | 10,3:1 |
+| la promesse | 7,3:1 |
+| l'étiquette *Lieu* | 5,6:1 |
+| le champ *Lieu* | 6,1:1 |
+| le bouton | 7,8:1 |
+| l'avertissement | 5,9:1 |
+
+**Ces chiffres se remesurent à chaque changement de mise en page**, et pas par
+excès de zèle : resserrer la page a fait glisser le formulaire sur du bleu plus
+clair et emporté l'étiquette *Lieu* à 4,4:1, sous le seuil. Ici, mise en page et
+lisibilité sont la même question.
+
+**Et le rapport ne suffit pas.** L'avertissement était mesuré à 5,9:1 en italique
+et restait pénible à lire : un rapport compare les couleurs de deux surfaces et
+ne sait rien de la finesse des traits entre elles. C'est ce qui a fait renoncer à
+l'italique, non le contraste.
+
+La chaleur qui monte de la bande basse **n'est pas le filtre SVG de déplacement**
+avec lequel elle a d'abord été écrite. Rastérisé pixel par pixel et par image, il
+faisait tomber 120 images par seconde à 12 sur un écran de 2560 px ; ni le
+masquer ni le calculer en demi-résolution n'y changeait rien. Déplacer les pixels
+d'un lavis ne fait que changer un peu la couleur de chacun, ce qu'une bande
+translucide qui passe dessus produit aussi : sans détail à déformer, l'opération
+chère et la gratuite convergent. Mesuré après : 121 images par seconde.
+
+Le miroitement s'arrête entièrement sous `prefers-reduced-motion`, comme la
+rotation de la question.
 
 ---
 
@@ -319,12 +384,41 @@ omettre laisserait l'interpolation manchote là précisément où les gens habit
 
 **Le coût de la collecte est la contrainte dominante.** Deux requêtes par nœud —
 la réanalyse sur la période de calibration, le modèle sur 1985-2050 d'un seul
-tenant. Le réseau ne représente qu'une heure ; c'est le débit autorisé qui
-commande, de l'ordre de **trente nœuds par heure**, soit quinze à vingt heures
-pour la France. La documentation d'Open-Meteo annonce des limites qui
-impliqueraient quatre nœuds par jour, deux cents fois moins que ce qu'on
-observe, et l'API n'expose aucun en-tête de quota : **le débit ne se prédit pas,
-il se mesure.**
+tenant. Le réseau ne représente qu'une heure ; tout le reste est de l'attente.
+
+**Le plafond est journalier, non horaire.** C'est le point à retenir, et il a été
+mal lu d'abord. Open-Meteo le dit lui-même, dès qu'on le franchit :
+
+```
+HTTP 429 : Daily API request limit exceeded. Please try again tomorrow.
+```
+
+Les nœuds arrivent par **salves** — une quinzaine à une vingtaine en quelques
+minutes quand le budget se recharge — puis plus rien pendant des heures. Le
+rythme *dans* une salve n'est donc pas un débit : mesuré sur une fenêtre de
+trente-six minutes, il donne trente nœuds par heure et une prévision de quinze à
+vingt heures pour la France, qui s'est révélée fausse d'un facteur dix.
+
+Ce qui se mesure vraiment, c'est le rendement d'une journée civile :
+
+| Journée | Nœuds |
+|---|---|
+| 9 août | 61 |
+| 10 août | 127 |
+
+**Cinquante à cent trente nœuds par jour**, quelle que soit la façon dont on s'y
+prend — raccourcir le palier de reprise de 300 à 60 s a été essayé, sans effet.
+La France demande donc **de l'ordre de la semaine**, en temps réel, pour une
+collecte qui n'occupe qu'une heure de réseau.
+
+La documentation d'Open-Meteo annonce par ailleurs des limites qui impliqueraient
+quatre nœuds par jour, plus de vingt fois moins que ce qu'on observe, et l'API
+n'expose aucun en-tête de quota. **Le débit ne se prédit pas, il se mesure — et
+il se mesure sur des journées entières, pas sur des fenêtres.**
+
+Conséquence pratique : la collecte tire sur le même quota que le navigateur d'un
+visiteur, puisque c'est la même adresse IP. **Elle se coupe avant d'essayer le
+site**, faute de quoi les recherches échouent sur le message de limite.
 
 Le remplissage est **ordonné par population desservie décroissante**, estimée en
 sommant les aires d'attraction françaises pondérées par l'inverse du carré de la
@@ -340,10 +434,19 @@ données non corrigées reviendrait à montrer un futur artificiellement
 ensoleillé ; se rabattre sur le nœud le plus proche serait silencieux et
 trompeur.
 
-**Ce refus ne vaut que si la plage comporte un segment futur.** Une requête
+**Ce refus ne vaut que si la plage comporte des journées simulées.** Une requête
 entièrement passée n'appelle aucun coefficient : la refuser serait gratuit, et
 priverait sans motif un utilisateur de Santiago de l'histoire météorologique de
 sa ville.
+
+**Depuis l'étape 7, la quinzaine à venir échappe elle aussi au refus.** Elle vient
+d'ECMWF IFS, qui ne demande aucune correction, donc une recherche qui n'atteint
+pas le modèle climatique est servie partout dans le monde. Le message le dit :
+c'est « pour les dates lointaines » que le lieu n'est pas couvert, et « les dates
+passées **et les jours à venir** » restent consultables. Ce libellé a été faux
+pendant la durée de l'étape — il annonçait que seul le passé restait accessible —
+et c'est le genre d'erreur qu'aucun test ne rattrape, un message restant vrai
+grammaticalement en cessant de l'être en fait.
 
 ### Métadonnées et table provisoire
 

@@ -144,11 +144,11 @@ def test_a_month_the_table_is_short_of_stops_the_request() -> None:
     assert raised.value.month == 6
 
 
-# --- the sky class, one function over the three segments ---------------------
+# --- the sky class, one function over the four segments ----------------------
 
 
 def test_the_same_day_gets_the_same_class_whatever_served_it() -> None:
-    """The seam must not be visible in the class. One function, called three times."""
+    """The seam must not be visible in the class. One function, called four times."""
     fields = {"precipitation": 0.0, "cloud_cover": 85.0, "temperature_mean": 10.0}
     reanalysis = _record(date(2020, 6, 1), Origin.OBSERVED, **fields)
     recent = replace(_record(date(2026, 8, 1), Origin.OBSERVED, **fields), source="ecmwf_ifs")

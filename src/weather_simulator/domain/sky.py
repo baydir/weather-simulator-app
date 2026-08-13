@@ -1,6 +1,6 @@
 """The sky class: one day of numbers turned into one of five words.
 
-**One function, called three times.** That is the whole point of this module,
+**One function, called four times.** That is the whole point of this module,
 and it is a requirement of docs/regles.md rather than a
 stylistic preference. The old past, the recent past and the future must be
 classified by the same code path, or the seam the whole of ``sources`` works to

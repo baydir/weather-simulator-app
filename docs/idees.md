@@ -35,7 +35,7 @@ plusieurs fois par jour** — Météo-France en open data pour la France, la NOA
 mondialement. C'est une observation, non une dérivation.
 
 Un modèle ajusté sur cette cible, prenant en entrée les agrégats journaliers
-disponibles sur les trois segments, ferait mieux qu'un seuil unique. **La mesure
+disponibles sur les quatre segments, ferait mieux qu'un seuil unique. **La mesure
 le montre déjà** : ajouter la seule **amplitude thermique** — un grand écart
 entre minimale et maximale signe un ciel dégagé, le sol chauffant le jour et
 rayonnant la nuit sans couverture — fait passer la variance expliquée de 0,50 à

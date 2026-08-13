@@ -39,7 +39,7 @@ regard de cet objectif.
 
 ---
 
-## Pourquoi ce n'est pas une prévision
+## Pourquoi le futur lointain n'est pas une prévision
 
 **Cette contrainte prime sur toutes les autres.**
 
@@ -49,10 +49,23 @@ plausible dans un climat modifié. **La date affichée situe la journée dans un
 saison et dans une décennie ; elle n'engage aucune exactitude sur cette
 journée.**
 
+**La quinzaine à venir fait exception, et il faut le dire dans ce sens-là.** Elle
+vient d'une prévision météorologique et non du modèle : l'appeler simulation
+serait le même mensonge que l'inverse. Ce qui distingue les deux régimes n'est
+pas un degré de confiance, c'est leur nature — l'un part de l'état de
+l'atmosphère observé ce matin, l'autre n'en sait rien et ne le prétend pas.
+
+Le risque que cette exception introduit est réel et assumé : un lecteur qui
+vérifie après-demain contre une autre source, et trouve juste, peut reporter
+cette confiance sur 2046. Ce qui la contient, c'est que la couture reste marquée
+là où la prévisibilité s'arrête — et cette limite, montrée plutôt qu'affirmée,
+est le meilleur objet pédagogique du site : elle donne à voir la différence entre
+la météo et le climat, qui est son sujet même.
+
 L'application doit être suffisamment réaliste pour remplir sa fonction
 pédagogique, et suffisamment explicite sur son statut pour ne pas induire en
-erreur. Cet arbitrage se pose à chaque décision d'interface. Les trois règles
-qui en découlent, applicables au code comme aux textes, sont dans
+erreur. Cet arbitrage se pose à chaque décision d'interface. Les règles qui en
+découlent, applicables au code comme aux textes, sont dans
 [`CLAUDE.md`](../CLAUDE.md).
 
 ---
@@ -64,15 +77,22 @@ supposer aucune connaissance préalable des modèles climatiques.**
 
 ---
 
-## Les deux régimes de données
+## Les trois régimes de données
 
-Une requête peut couvrir simultanément le passé et le futur. L'application
-combine alors deux sources de nature différente :
+Une requête peut couvrir simultanément le passé, les jours à venir et le futur
+lointain. L'application combine alors des sources de nature différente :
 
 - **Passé** (1950 → date du jour) : observations issues de réanalyses
   météorologiques.
-- **Futur** (date du jour → 2050) : sorties d'un modèle climatique.
+- **Jours à venir** (demain → quinze jours) : une prévision météorologique.
+- **Futur** (au-delà → 2050) : sorties d'un modèle climatique.
 
-Les deux proviennent d'Open-Meteo. Ce que valent ces sources →
+Le régime du milieu est le seul où l'application dit ce que la météo *sera*, avec
+les réserves d'usage d'une prévision. Il existe parce qu'un modèle climatique ne
+sait rien de l'atmosphère d'aujourd'hui : sa première journée est aussi étrangère
+à demain que la dernière l'est à 2050 — et demain, à la différence de 2046, se
+vérifie.
+
+Les trois proviennent d'Open-Meteo. Ce que valent ces sources →
 [`science.md`](science.md) ; comment on construit une série homogène malgré le
 changement de source → [`donnees.md`](donnees.md).

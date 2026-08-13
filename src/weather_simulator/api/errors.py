@@ -64,7 +64,7 @@ class RangeTooLong(ApiError):
 class OutOfGrid(ApiError):
     """A simulated segment was asked for where the correction grid has no nodes.
 
-    The wording says the place is not covered *yet*, which is true — step 7
+    The wording says the place is not covered *yet*, which is true — step 8
     widens the grid to the world — and it does not offer to show the future
     uncorrected, because there is no honest version of that.
 
