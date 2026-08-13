@@ -300,6 +300,36 @@ def results_refused(page: Page, base: str) -> None:
     page.wait_for_selector(".failure:not([hidden])", timeout=90_000)
 
 
+# The four grounds.
+#
+# Fixed dates in a year gone by, and both halves of that matter. **Past**, so the
+# range is served everywhere in the world and asks the correction grid for
+# nothing — these views work on the network as well as offline. **Fixed**, so a
+# shot taken in February is comparable with one taken in August: a range counted
+# from today would drift through the seasons and photograph a different ground
+# every few weeks, which is the one thing a set of four must not do.
+#
+# They carry neither warning nor seam, every day in them being observed. That is
+# not a gap: the ground is what they are for, and `results` goes on showing the
+# crossing, on whatever season the day of the shot falls in.
+SEASON_RANGES = {
+    "winter": (date(2025, 1, 5), date(2025, 2, 20)),
+    "spring": (date(2025, 4, 5), date(2025, 5, 20)),
+    "summer": (date(2025, 7, 5), date(2025, 8, 20)),
+    "autumn": (date(2025, 10, 5), date(2025, 11, 20)),
+}
+
+
+def season_view(start: date, end: date):
+    """One of the four, waiting on a card as the others do."""
+
+    def shoot(page: Page, base: str) -> None:
+        page.goto(results_url(base, PARIS, start, end))
+        page.wait_for_selector(".card", timeout=90_000)
+
+    return shoot
+
+
 VIEWS = {
     "home": (home, DESKTOP, "light"),
     "home-candidates": (home_candidates, DESKTOP, "light"),
@@ -310,6 +340,10 @@ VIEWS = {
     "results-forecast": (results_forecast, DESKTOP, "light"),
     "results-narrow": (results, PHONE, "light"),
     "results-refused": (results_refused, DESKTOP, "light"),
+    **{
+        f"results-{name}": (season_view(start, end), DESKTOP, "light")
+        for name, (start, end) in SEASON_RANGES.items()
+    },
 }
 
 

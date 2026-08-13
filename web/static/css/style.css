@@ -224,58 +224,34 @@ body.home {
 }
 
 /*
- * The results page, on the summer that produced it.
+ * The results page, on the season it was asked about.
  *
- * Eleven stops again, sampled every ten percent of the mock-up's own gradient —
- * which is a raster image inside the Inkscape file, so it was decoded and read
- * rather than guessed. Cream at the top, through orange and red, to near-black.
+ * **Four grounds, one structure.** `season.js` counts the days of the range —
+ * the season holding most of them wins — and writes `data-season` on the body
+ * before the first paint. Everything below reads that attribute; nothing in this
+ * sheet knows a date.
  *
  * **This page inverts as it descends, and that is the whole difficulty.** The
  * home sky runs dark-to-bright and one ivory serves the lot. Here the first
- * screen is `#fafdea` — paler than the page's own ivory — and the last is
- * `#070000`. No single ink serves both ends, so the ink is dark by default and
- * turns pale where the ground goes dark, at the provenance. Every figure is
- * measured on the render; the table is in docs/application.md.
+ * screen is near-white and the last near-black, on all four seasons. No single
+ * ink serves both ends, so the ink is dark by default and turns pale where the
+ * ground goes dark, at the provenance. Every figure is measured on the render;
+ * the table is in docs/application.md.
+ *
+ * What this block holds is what does not touch the ground. What the season
+ * changes is six tokens, below.
  */
 body.results {
-  --sky: linear-gradient(
-    to bottom,
-    #fafdea 0%,
-    #f9deb1 10%,
-    #fbbe7f 20%,
-    #fe9e52 30%,
-    #ff7b30 40%,
-    #fd5816 50%,
-    #fd3a0c 60%,
-    #fd2101 70%,
-    #d60e01 80%,
-    #810402 90%,
-    #070000 100%
-  );
-
-  /* Dark ink on a bright ground — the reverse of every other surface here. The
-     brown is the sunset's own, not a black: the warning on the home page picks
-     its ink the same way. */
-  --ink: #21100a;
-  /* Barely softer than the ink itself, and measured rather than chosen. The
-     secondary ink sits on the saturated middle of the gradient — the month
-     marker above a card, the scenario line under the warning — and #7a3f24, the
-     tone that reads as secondary, gave 2,6:1 there. What separates these from
-     the text they name is that they are eleven pixels, letterspaced and
-     capitalised, exactly as on the home page: hierarchy carried by form when
-     tone can no longer afford it. */
-  --ink-soft: #3d1608;
-  --rule: #c9793f;
-  --rule-strong: #8f3f16;
-
   /* The cards are the one white in the project, and they have to be: a card is
-     what the eye lands on, and on this ground nothing quieter would hold. */
+     what the eye lands on, and on this ground nothing quieter would hold. White
+     on all four seasons, which is also what keeps the two temperatures out of
+     the palettes — they are measured against a card, not against a sky. */
   --raised: #fffdf7;
   --raised-simulated: #fdefdc;
 
   /* The mock-up's two, and they are saturated where the rest of the site is
      not. On a white card they are unambiguous, which is what the page needs:
-     these two numbers are what a summer read comes for. */
+     these two numbers are what a read comes for. */
   --warm: #d40000;
   --cool: #0044aa;
 
@@ -286,7 +262,10 @@ body.results {
      at its size, plus the padding, and nothing spare. */
   --card: 8.25rem;
 
-  background-color: #fafdea;
+  /* Served, not copied: this is the gradient's own first stop, and the sky layer
+     stops where the document does. The same reasoning as `--sky-foot` on the
+     home page, from the other end. */
+  background-color: var(--sky-head);
   position: relative;
   color: var(--ink);
 
@@ -325,6 +304,126 @@ body.results {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
+}
+
+/*
+ * The four palettes.
+ *
+ * Six tokens each and no more: the gradient, its head, and the four inks that
+ * sit on it. Everything else on this page is the same whatever the season,
+ * because everything else is drawn on a card rather than on the sky.
+ *
+ * **Summer is read, the other three are drawn.** Its eleven stops were decoded
+ * from the raster embedded in design/summer_result.svg and sampled every ten
+ * percent. There is no mock-up for the other three, and inventing eleven stops
+ * for them would be a precision that measured nothing — they carry five, chosen
+ * for the hue of the middle. That middle stop is the whole of the work: white to
+ * brown interpolated in sRGB passes through a dirty beige, and white to navy
+ * through a dead grey. Left to two stops these would be washes of nothing.
+ *
+ * **The shape is summer's, and it has to be.** Light down to the middle, the
+ * darkening concentrated past 70 %. That is what carries the bare date above a
+ * card — measured on summer at 6,6:1, and the same spot gives 10,7 on winter,
+ * 11,8 on spring and 10,2 on autumn — and it is what lets the provenance stay
+ * pale at the foot on all four, where white measures between 9,6 and 20,8.
+ *
+ * **The secondary ink is barely softer than the ink**, on all four and for the
+ * reason summer established: it lands on the saturated middle of the gradient,
+ * where a tone that reads as secondary falls to 2,6:1. What separates those
+ * texts from what they name is their form — eleven pixels, letterspaced,
+ * capitalised — exactly as on the home page. Hierarchy carried by form when tone
+ * can no longer afford it.
+ *
+ * The full table is in docs/application.md, and `scripts/ink_contrast.py`
+ * re-measures it on the render whenever one of these numbers moves.
+ */
+
+/* Winter, 21 December to 20 March. White above, deep blue below. */
+body.results[data-season="winter"] {
+  --sky-head: #f7fbfe;
+  --sky: linear-gradient(
+    to bottom,
+    var(--sky-head) 0%,
+    #dbeaf7 20%,
+    #b3d0e8 40%,
+    #6f9dc9 60%,
+    #2c5b90 80%,
+    #0a1b33 100%
+  );
+
+  --ink: #0b1c30;
+  --ink-soft: #12293f;
+  --rule: #5b87b5;
+  --rule-strong: #2f5b87;
+}
+
+/* Spring, 21 March to 20 June. White through yellow-green, and down to the dark
+   green of a wood — the foot has to go dark for the provenance to keep reading
+   pale, which is the one thing the four grounds must agree on. */
+body.results[data-season="spring"] {
+  --sky-head: #f9fcef;
+  --sky: linear-gradient(
+    to bottom,
+    var(--sky-head) 0%,
+    #eaf3c8 20%,
+    #d8e894 40%,
+    #c8d94a 60%,
+    #5f8a22 80%,
+    #0f2409 100%
+  );
+
+  --ink: #17280c;
+  --ink-soft: #24380f;
+  --rule: #7d9438;
+  --rule-strong: #4c6d1e;
+}
+
+/* Summer, 21 June to 20 September — the mock-up's own, and the page was drawn on
+   it. Not one value here has moved; only the selector around them has. */
+body.results[data-season="summer"] {
+  --sky-head: #fafdea;
+  --sky: linear-gradient(
+    to bottom,
+    var(--sky-head) 0%,
+    #f9deb1 10%,
+    #fbbe7f 20%,
+    #fe9e52 30%,
+    #ff7b30 40%,
+    #fd5816 50%,
+    #fd3a0c 60%,
+    #fd2101 70%,
+    #d60e01 80%,
+    #810402 90%,
+    #070000 100%
+  );
+
+  /* Dark ink on a bright ground — the reverse of every other surface here. The
+     brown is the sunset's own, not a black: the warning on the home page picks
+     its ink the same way. */
+  --ink: #21100a;
+  --ink-soft: #3d1608;
+  --rule: #c9793f;
+  --rule-strong: #8f3f16;
+}
+
+/* Autumn, 21 September to 20 December. White through the orange of the leaves,
+   into the brown they end as. */
+body.results[data-season="autumn"] {
+  --sky-head: #fdf7ec;
+  --sky: linear-gradient(
+    to bottom,
+    var(--sky-head) 0%,
+    #fae2bd 20%,
+    #f3bb72 40%,
+    #e08a35 60%,
+    #a4501a 80%,
+    #1e0c03 100%
+  );
+
+  --ink: #2a1206;
+  --ink-soft: #3d1c07;
+  --rule: #bd7734;
+  --rule-strong: #8c4315;
 }
 
 body.results main {

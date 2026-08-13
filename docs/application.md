@@ -395,40 +395,100 @@ clair : la marque de segment et le calendrier viennent du même réglage et ne s
 séparent pas. L'échange est assumé — le calendrier est un passage bref, le
 repérage dans la date un geste constant.
 
-### La chaleur de la page de résultats
+### La saison de la page de résultats
 
 La page de résultats était une bande de cartes sur papier plat. Elle porte
-désormais l'été qui les a produites, d'après `design/summer_result.svg`. Onze
-arrêts, à la même cadence que le ciel de l'accueil, mais **relevés et non
-transcrits** : le dégradé de la maquette est une image matricielle encastrée
-dans le fichier Inkscape, décodée puis échantillonnée tous les dix pour cent.
+désormais **le sol de la saison sur laquelle porte la recherche**. L'été vient de
+`design/summer_result.svg` et la page a été dessinée sur lui ; les trois autres
+en dérivent.
+
+**La saison se compte, elle ne se lit pas à une extrémité.** Le navigateur
+parcourt la plage jour par jour et retient celle qui en tient le plus. La borne
+de 90 jours garantit qu'il n'y a jamais plus de deux candidates : la plus courte
+saison, l'hiver, fait exactement 90 jours. Trois arbitrages complètent la règle :
+
+- **Bornes astronomiques**, 21 décembre au 20 mars et ainsi de suite — les dates
+  sur lesquelles le visiteur a été interrogé. Elles glissent d'un jour selon
+  l'année dans le ciel et pas ici : un sol qui changerait de teinte le 20 mars
+  une année et le 21 la suivante répondrait à une question que personne ne pose.
+- **Saisons inversées sous l'équateur.** La latitude voyage dans l'URL à côté des
+  dates, et janvier à Santiago est un été. Une latitude illisible retombe sur
+  l'hémisphère nord — le calendrier, plutôt qu'une erreur.
+- **À égalité parfaite, la saison où la plage se termine.** Une plage se lit vers
+  l'avant.
+
+**Ce comptage se fait dans le navigateur, et la règle 3 n'y voit rien à redire** :
+le serveur n'en détient aucune version, il n'y a donc pas de second exemplaire.
+C'est de la mise en forme dérivée de deux dates déjà présentes dans l'URL, au
+même titre que le repérage des mois dans la bande. La saison est posée sur le
+`body` avant le premier rendu, et **avant les quatre allers-retours** : une
+recherche refusée porte son sol comme une autre.
+
+**L'été est relevé, les trois autres sont dessinés.** Le dégradé de la maquette
+est une image matricielle encastrée dans le fichier Inkscape : il a été décodé
+puis échantillonné tous les dix pour cent, ce qui donne onze arrêts. Il n'existe
+pas de maquette pour les trois autres, et leur inventer onze arrêts serait une
+précision qui ne mesurerait rien — ils en portent **cinq**, choisis pour la
+teinte du milieu. Cet arrêt central est tout le travail : blanc à marron
+interpolé en sRVB passe par un beige sale, blanc à bleu par un gris mort. À deux
+arrêts, ces sols seraient des lavis de rien.
 
 ```
-0 % #fafdea   30 % #fe9e52   60 % #fd3a0c   90 % #810402
-10 % #f9deb1   40 % #ff7b30   70 % #fd2101  100 % #070000
-20 % #fbbe7f   50 % #fd5816   80 % #d60e01
+été       0 % #fafdea   30 % #fe9e52   60 % #fd3a0c   90 % #810402
+         10 % #f9deb1   40 % #ff7b30   70 % #fd2101  100 % #070000
+         20 % #fbbe7f   50 % #fd5816   80 % #d60e01
+
+hiver     0 % #f7fbfe   20 % #dbeaf7   40 % #b3d0e8   60 % #6f9dc9   80 % #2c5b90   100 % #0a1b33
+printemps 0 % #f9fcef   20 % #eaf3c8   40 % #d8e894   60 % #c8d94a   80 % #5f8a22   100 % #0f2409
+automne   0 % #fdf7ec   20 % #fae2bd   40 % #f3bb72   60 % #e08a35   80 % #a4501a   100 % #1e0c03
 ```
+
+**La forme est celle de l'été, et elle doit l'être** : clair jusqu'au milieu,
+l'assombrissement concentré après 70 %. C'est ce qui porte la date nue au-dessus
+d'une carte, et c'est ce qui permet à la provenance de rester pâle au pied sur
+les quatre. **Le printemps y perd sa lecture littérale** — il avait été demandé
+blanc à vert-jaune — et le vert-jaune occupe désormais le milieu, le pied
+descendant vers un vert de sous-bois. C'était l'alternative : un pied clair
+obligeait la provenance à changer d'encre selon la saison.
 
 **Cette page s'inverse en descendant, et c'est toute sa difficulté.** Le ciel de
 l'accueil va du sombre au clair et une seule encre ivoire le sert d'un bout à
-l'autre. Ici le premier écran est `#fafdea` — plus pâle que l'ivoire du site — et
-le dernier `#070000`. Aucune encre ne sert les deux extrémités. L'encre est donc
+l'autre. Ici le premier écran est presque blanc et le dernier presque noir, sur
+les quatre saisons. Aucune encre ne sert les deux extrémités. L'encre est donc
 sombre par défaut, et **le seul bloc qui bascule au clair est la provenance**,
 au pied de la page.
 
-**L'encre secondaire y est presque aussi noire que l'encre principale**, et c'est
-une mesure qui l'a imposé : `#7a3f24`, le ton qui *lit* comme secondaire, tombe à
-2,6:1 sur l'orange saturé du milieu, où se posent le marqueur de mois et la ligne
-du scénario. Ce qui sépare ces textes de ce qu'ils nomment, c'est leur forme —
-onze pixels, capitales, interlettrage —, exactement comme sur l'accueil quand le
-ton ne peut plus le porter.
+Six variables changent avec la saison, et six seulement : le dégradé, sa tête, et
+les quatre encres qui se posent dessus.
+
+| | encre | encre secondaire | filet | filet fort |
+|---|---|---|---|---|
+| hiver | `#0b1c30` | `#12293f` | `#5b87b5` | `#2f5b87` |
+| printemps | `#17280c` | `#24380f` | `#7d9438` | `#4c6d1e` |
+| été | `#21100a` | `#3d1608` | `#c9793f` | `#8f3f16` |
+| automne | `#2a1206` | `#3d1c07` | `#bd7734` | `#8c4315` |
+
+**La couleur de tête est servie, jamais recopiée** : `--sky-head` est à la fois
+le fond du `body` et le premier arrêt du dégradé, comme `--sky-foot` sur
+l'accueil l'est du panneau de candidats et du dernier arrêt.
+
+**Rien d'autre ne bouge**, parce que rien d'autre ne touche au sol. Les cartes
+restent blanches sur les quatre, et les deux températures se mesurent contre une
+carte, non contre un ciel — c'est pourquoi elles donnent le même rapport partout.
+
+**L'encre secondaire y est presque aussi noire que l'encre principale**, sur les
+quatre saisons, et c'est une mesure qui l'a imposé : sur l'été, `#7a3f24`, le ton
+qui *lit* comme secondaire, tombe à 2,6:1 sur l'orange saturé du milieu, où se
+posent le marqueur de mois et la ligne du scénario. Ce qui sépare ces textes de
+ce qu'ils nomment, c'est leur forme — onze pixels, capitales, interlettrage —,
+exactement comme sur l'accueil quand le ton ne peut plus le porter.
 
 **Les cartes sont le seul blanc du projet**, et la seule couleur saturée : le
 rouge `#d40000` et le bleu `#0044aa` de la maquette, là où le reste du site
 s'interdit toute couleur pure hors de l'émoji. Sur une carte blanche les deux
-passent largement, et ce sont les deux nombres qu'une lecture d'été vient
-chercher. **La carte cesse par ailleurs d'être la boîte** : la date se pose nue
-sur le dégradé, et seul le corps en dessous est dessiné.
+passent largement, et ce sont les deux nombres qu'une lecture vient chercher.
+**La carte cesse par ailleurs d'être la boîte** : la date se pose nue sur le
+dégradé, et seul le corps en dessous est dessiné.
 
 **La page est la fenêtre**, comme l'accueil, et pour deux raisons superposées. Le
 calque du ciel est calé sur le `body` : sans hauteur minimale il s'arrête où
@@ -446,29 +506,51 @@ tombe à 789, et un second cran sous 800 px de fenêtre la ramène à 720. L'air
 reprend aux deux bouts d'abord, où il ne sépare rien, avant de se reprendre aux
 intervalles.
 
-Contrastes mesurés sur le rendu, fenêtre 1440 × 960 :
+Contrastes mesurés sur le rendu, fenêtre 1440 × 960, par
+[`scripts/ink_contrast.py`](../scripts/ink_contrast.py) :
 
-| Texte | Rapport |
-|---|---|
-| le lieu | 14,1:1 |
-| la plage | 11,8:1 |
-| nouvelle recherche | 12,3:1 |
-| l'avertissement | 8,9:1 |
-| le scénario | 7,5:1 |
-| le jour | 6,6:1 |
-| le mois | 6,3:1 |
-| la maximale | 5,4:1 |
-| la minimale | 8,6:1 |
-| les deux mesures | 18,1:1 |
-| la couture | 6,5:1 |
-| la provenance | 9,1:1 |
+| Texte | hiver | printemps | été | automne |
+|---|---|---|---|---|
+| le lieu | 15,5:1 | 14,4:1 | 14,9:1 | 15,6:1 |
+| la plage | 12,9:1 | 11,5:1 | 11,6:1 | 13,0:1 |
+| nouvelle recherche | 14,4:1 | 13,7:1 | 12,0:1 | 14,4:1 |
+| l'avertissement | 12,6:1 | 12,8:1 | 9,3:1 | 12,4:1 |
+| le scénario | 10,2:1 | 10,1:1 | 7,3:1 | 10,0:1 |
+| le jour | 10,0:1 | 11,6:1 | 6,7:1 | 9,7:1 |
+| le mois | 9,2:1 | 9,6:1 | 6,1:1 | 8,8:1 |
+| la maximale | 5,4:1 | 5,4:1 | 5,4:1 | 5,4:1 |
+| la minimale | 8,6:1 | 8,6:1 | 8,6:1 | 8,6:1 |
+| les deux mesures | 16,9:1 | 15,3:1 | 18,1:1 | 17,4:1 |
+| la couture | 7,0:1 | 10,5:1 | 5,4:1 | 7,4:1 |
+| la provenance | 8,1:1 | 7,0:1 | 8,8:1 | 8,4:1 |
 
-**Deux géométries, donc deux jeux de chiffres.** Le dégradé étant ancré au
-document, une page raccourcie fait glisser chaque bloc sur une autre portion. La
-variante resserrée est la plus serrée des deux : à 1280 × 720, le scénario tombe
-à 6,2:1, le jour à 5,7 et le mois à 5,4 — le plancher de la page reste alors la
-maximale, à 5,4:1, qui ne bouge pas puisqu'elle est sur la carte blanche. Sur une
-fenêtre haute tout remonte : 9,1, 9,0 et 8,3 à 1440 × 1400.
+**L'été est le plus sombre des quatre sols, et donc le plus tendu.** Les trois
+autres descendent moins vite et laissent partout plus de marge ; c'est la page
+dessinée sur la maquette qui fixe le plancher, pas celles qui en dérivent.
+
+**Une géométrie, quatre palettes.** La page mesurée est la vue `results` — dix
+jours en arrière, quarante en avant —, qui porte un avertissement en haut et une
+couture au milieu ; la saison est ensuite imposée sur le `body`, quatre fois. Ce
+n'est pas un artifice : une plage à cheval sur aujourd'hui, en janvier, *est* une
+page d'hiver avec avertissement et couture. C'est le seul moyen de comparer
+quatre sols sur une même page, la saison d'une vraie couture dépendant du jour où
+l'on mesure.
+
+**Deux tailles de fenêtre, donc deux jeux de chiffres.** Le dégradé étant ancré
+au document, une page raccourcie fait glisser chaque bloc sur une autre portion.
+À 1280 × 720 — et à 360 × 780, qui donne les mêmes — le plancher de la page est
+**la couture, à 4,6:1 en hiver**, 4,8 en été, 5,3 en automne et 7,6 au
+printemps : l'étiquette verticale est le seul texte que le resserrement pousse
+sur la partie sombre du dégradé. Tout le reste tient au-dessus de 5,3. Sur une
+fenêtre haute tout remonte, et le plancher redevient la maximale à 5,4:1, qui ne
+bouge pas puisqu'elle est sur la carte blanche.
+
+**Deux valeurs publiées ici ont été corrigées** le jour où l'instrument a
+remplacé la pipette : la couture, donnée à 6,5:1, et la phrase qui faisait de la
+maximale le plancher à 1280 × 720. `ink_contrast.py` lit le centre de l'étiquette
+— qui est verticale et centrée sur la bande, donc plus bas sur le dégradé que la
+mesure d'origine ne l'avait prise. Sur les dix autres lignes de l'été, il retrouve
+les chiffres publiés à 0,2 près, ce qui est la vérification de la méthode.
 
 ---
 

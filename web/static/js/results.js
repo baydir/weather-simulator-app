@@ -9,6 +9,11 @@
  * server already answers that question for itself — it is what sends it looking
  * for a cloud-cover correction — and it is the fact CLAUDE.md rule 1 hangs on.
  *
+ * The season is the one thing here decided from the URL rather than from the
+ * answer, and deliberately: it is a background, it must be right before the four
+ * round trips rather than after them, and a refused search deserves its ground
+ * as much as a served one.
+ *
  * A refusal is shown as the server wrote it, word for word. The API answers in
  * French under a single `message` field whatever the cause, so an interface
  * that rewrote them would only be inventing a second, less accurate version.
@@ -19,6 +24,7 @@ import { sources, strip } from "./band.js";
 import { applyTexts, el } from "./dom.js";
 import { texts } from "./i18n.js";
 import { fullDate } from "./present.js";
+import { dominantSeason } from "./season.js";
 
 const place = document.getElementById("place");
 const range = document.getElementById("range");
@@ -40,6 +46,13 @@ const asked = {
   start: query.get("debut") ?? "",
   end: query.get("fin") ?? "",
 };
+
+// The ground, before anything is fetched and before the first paint — this is a
+// module, so it runs on the parsed document and the page never shows one season
+// then another. Nothing is written when the range is unusable: the markup
+// carries a season of its own, and that is the one fallback.
+const season = dominantSeason(asked);
+if (season) document.body.dataset.season = season;
 
 // textContent, never innerHTML: the name came from the query string, which is
 // to say from outside.

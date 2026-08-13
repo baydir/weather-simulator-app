@@ -10,8 +10,10 @@
   </head>
   <!-- The heat, as the home page has its sunset. A results page used to be a
        strip of cards on flat paper; the mock-up puts them on the summer that
-       produced them. -->
-  <body class="results">
+       produced them — and results.js turns the ground over to the season the
+       range actually falls in. The attribute written here is the fallback, for
+       a URL carrying no usable range: the summer the page was drawn on. -->
+  <body class="results" data-season="summer">
     <div class="sky" aria-hidden="true"></div>
 
     <a class="skip" href="#days" data-text="site.skipToDays"></a>
