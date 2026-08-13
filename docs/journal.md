@@ -24,7 +24,7 @@ chaîne complète sur une correction authentique.
 | 1 | Récupération et série homogène, sans classe de ciel | 0 | **fait** |
 | 2 | Confirmation du modèle parmi les cinq éligibles | 1 | **fait** |
 | 3 | Calage des seuils de nébulosité et classe de ciel | 1 | **fait** |
-| 4 | Grille de calibration France et correction de nébulosité | 2 | *en cours, 394 nœuds sur 594* |
+| 4 | Grille de calibration France et correction de nébulosité | 2 | *en cours, 438 nœuds sur 594* |
 | 5 | API, validation des entrées et bloc de transformation | 3, 4 | **fait** |
 | 6 | Interface : accueil, résultats, bande journalière | 5 | **fait** |
 | 7 | La quinzaine à venir, servie par ECMWF IFS | 1, 6 | **fait** |
@@ -144,9 +144,22 @@ correction mesurée vingt-huit kilomètres plus au nord. La clé se lit désorma
 dans le nom du fichier, qui porte le point demandé. Neuf mailles y étaient
 suspendues, dont toute la Normandie.
 
-**Reste à faire : la collecte.** 394 nœuds sur 594, 320 mailles refermées — 35
-des 39 villes de la liste de priorité. Ne manquent que la pointe bretonne, le
-Pays basque et la Corse.
+**Reste à faire : la collecte.** 438 nœuds sur 594, 365 mailles refermées — 37
+des 39 villes de la liste de priorité. Ne manque plus que la Corse, Bastia et
+Ajaccio.
+
+**Et une leçon d'exploitation, payée deux fois.** La collecte remplit le cache ;
+`build.py` en fait la table ; l'application la lit au démarrage. Chacun de ces
+trois pas peut être en retard sur le précédent sans que rien ne le signale, et le
+symptôme — une ville refusée alors que ses quatre nœuds sont sur le disque — se
+lit comme un défaut de couverture, pas comme un décalage. Pontarlier a été
+collecté, puis refusé pendant deux jours faute de reconstruction.
+
+Le second retard est de la même famille : `pkill -f run_until_done` ne tue que le
+script enveloppe, et le collecteur Python lui survit. On se retrouve alors sans
+relance automatique mais avec le quota qui continue de partir, et sans le journal
+pour le dire. Le motif qui coupe les deux est
+`pkill -f 'run_until_done|calibration_grid/collect.py'`.
 
 Le chiffre a triplé en trois jours sans que rien change au débit : c'est le
 plafond journalier, décrit plus haut, qui commande — il suffit de relancer.

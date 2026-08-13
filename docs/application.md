@@ -107,7 +107,7 @@ web/
     pages/         home.html, results.html — HTML statique, aucun gabarit
     static/css/    style.css, une feuille bâtie sur des variables
     static/js/     fetch.js, i18n.js, present.js, bounds.js, band.js, dom.js,
-                   home.js, results.js
+                   prompt.js, home.js, results.js
 ```
 
 Dans `api/`, `plan.py` porte **à la fois la façon de demander chaque segment et
@@ -132,6 +132,22 @@ sépare pas le rendu du reste, comme le laissait entendre un `render.js`, mais
 `band.js` (la construction de la bande) tournent sous `node --test` ; `home.js`
 et `results.js` ne portent que le câblage. C'est la même frontière qui garde une
 migration possible.
+
+**`prompt.js` la montre autrement**, et c'est pourquoi la question qui tourne a
+son module plutôt qu'un coin de `home.js` : ici la frontière ne passe pas entre
+deux fichiers mais **à l'intérieur d'un seul**. `next` est de l'arithmétique et
+se teste sans horloge ni DOM ; `rotate` est une minuterie posée sur une page et
+ne se teste pas. Séparer les deux à l'intérieur du module est ce qui rend la
+partie vérifiable vérifiable.
+
+Les questions elles-mêmes sont tenues **par deux tests et non par un**, et le
+partage mérite d'être su avant d'en écrire une nouvelle : `prompt.test.js`
+vérifie qu'il y en a, que chacune pose bien une question, et que la promesse
+garde son verbe — « Simulez », l'un des trois termes que la règle 1 retient ;
+`present.test.js` porte la liste des mots proscrits et signale la fautive sous
+`home.questions.<rang>`. Ni l'un ni l'autre ne rattrape « Quel temps fera-t-il à
+Nice en 2050 ? », qui ne contient aucun mot interdit et promet pourtant la
+journée.
 
 ---
 
@@ -158,14 +174,33 @@ La règle antérieure voulait les quatre mesures de même rang. La bande constru
 l'a démentie à l'usage : à poids égal, rien ne se détache et la carte se lit
 comme un tableau.
 
-**La minimale à gauche, la maximale à droite**, dans l'ordre où
-[`projet.md`](projet.md) et le README écrivent déjà la paire : « 21 °C / 39 °C ».
+**La maximale au-dessus, la minimale en dessous**, empilées et non côte à côte.
+La règle antérieure les posait sur une ligne, « minimale à gauche, maximale à
+droite », dans l'ordre où [`projet.md`](projet.md) et le README écrivent la
+paire : « 21 °C / 39 °C ». La maquette de la page de résultats les empile et
+mène par la maximale, qui est le chiffre qu'une lecture d'été vient chercher ;
+c'est aussi ce qui libère la place de les composer en grand sur une tuile
+étroite. **Les deux textes qui écrivent la paire dans l'autre sens n'ont pas été
+touchés** : ils énoncent une plage en prose, pas une carte, et « 21 °C / 39 °C »
+s'y lit du plus petit au plus grand comme on écrit un intervalle.
+
+L'ordre de lecture suit l'œil : un lecteur d'écran entend désormais la maximale
+en premier, et `tests/js/band.test.js` fige cet ordre. Le signe degré accompagne
+chacune des deux — c'est ce que l'empilement coûte, là où une ligne unique en
+faisait servir un seul pour les deux.
 
 **Les températures ne portent pas de libellé.** Deux nombres près d'un signe
 degré n'en demandent pas. Ce que la carte doit dire, en revanche, c'est laquelle
 est la maximale — et à l'écran c'est la couleur et la position qui l'indiquent,
 ce qui n'est une information ni pour un lecteur d'écran, ni pour qui ne sépare
 pas les deux teintes. Chacune est donc nommée pour qui ne la voit pas.
+
+**Les libellés des deux autres mesures sont sortis de l'écran, pas du
+document.** La carte porte « 4,8 mm » et « 31 km/h » nus : les unités suffisent à
+l'œil. Un lecteur d'écran n'a pas d'unités sur quoi s'appuyer, et le `dt` reste
+donc dans le document, hors champ — c'est ce qui garde « vent maximal » attaché
+au nombre que ce document interdit de lire comme une moyenne. La classe de ciel
+écrite, qui double le pictogramme, suit la même règle et pour la même raison.
 
 **Le vent moyen n'est pas affiché.** La question s'est posée deux fois. Le
 présent document portait d'abord les deux vents, [`projet.md`](projet.md) la
@@ -267,7 +302,7 @@ Contrastes mesurés sur le rendu, page défilée en bas, fenêtre 1440 × 900 :
 | la promesse | 7,3:1 |
 | l'étiquette *Lieu* | 5,6:1 |
 | le champ *Lieu* | 6,1:1 |
-| le bouton | 7,8:1 |
+| le bouton | 7,5:1 |
 | l'avertissement | 5,9:1 |
 
 **Ces chiffres se remesurent à chaque changement de mise en page**, et pas par
@@ -290,6 +325,150 @@ chère et la gratuite convergent. Mesuré après : 121 images par seconde.
 
 Le miroitement s'arrête entièrement sous `prefers-reduced-motion`, comme la
 rotation de la question.
+
+### Le formulaire sur le ciel
+
+Trois pièces du formulaire ont été reprises après coup, et pour le même motif à
+chaque fois : **elles avaient été dessinées contre le papier sombre, où le fond
+est une constante.** Sur un dégradé le fond est une variable, et ce qui tenait a
+cessé de tenir.
+
+**Le bouton ne porte plus de fond opaque.** Il était `#4a443a`, une couleur de la
+palette du papier ; sur le couchant il se lisait comme un morceau de la page de
+résultats collé sur la photographie — le seul objet opaque d'une page dont toute
+l'habitude est que rien n'est dans une boîte. Il porte désormais un brun brûlé à
+45 %, que le ciel traverse, et un filet d'ivoire à 22 %. **Le filet est une ombre
+interne et non une bordure** : une bordure ajouterait deux pixels de hauteur, et
+sur cette page un bouton plus haut pousse l'avertissement sur une autre zone du
+dégradé — la ligne du tableau ci-dessus a été corrigée de 7,8 à 7,5, et c'est la
+seule qui ait bougé, la géométrie n'ayant pas changé d'un pixel. Le survol
+**fonce** le fond au lieu de l'éclaircir, de sorte que le rapport monte en
+approchant et ne descend jamais.
+
+Une variante sans fond, filet seul, a été mesurée puis écartée à **3,7:1** : un
+bouton transparent hérite du contraste de ce qu'il y a derrière, et à cet endroit
+du ciel c'est perdu d'avance.
+
+**La liste des lieux flotte au-dessus de la page au lieu de la pousser.** Dans le
+flux, elle s'insérait entre le champ *Lieu* et les dates et les faisait descendre
+dès la deuxième lettre tapée : les champs que le lecteur venait de regarder
+glissaient sous ses yeux. Une liste de correspondances est une réponse passagère
+à ce qu'on est en train d'écrire, pas une nouvelle partie du formulaire, et elle
+ne doit coûter aucune hauteur — mesuré depuis : zéro.
+
+**Elle est opaque, et c'est la seule surface du site qui le soit.** Ce qu'elle
+recouvre, ce sont les deux champs de date, et lire un nom de commune au travers
+de « 12/08/2026 » est pire que de ne pas afficher la liste du tout. Une opacité
+de 97 % a été essayée : la date en dessous ressortait à 1,06:1 contre le panneau,
+ce que le rapport déclare négligeable et que l'œil lit sans peine. **Un rapport
+de contraste est construit pour du texte sur un fond et n'a rien à dire de six
+niveaux d'écart au fond des noirs** — c'est le même avertissement que porte plus
+haut le renoncement à l'italique, sous une autre forme. Le panneau est donc
+plein, et il prend `#27030a`, le dernier arrêt du dégradé : la couleur dans
+laquelle le couchant se termine, ramenée au premier plan. Cette valeur est
+**servie et non recopiée**, sortie du dégradé dans une variable que les deux
+lisent ; recopiée, le panneau garderait l'ancienne teinte le jour où la
+photographie serait rééchantillonnée.
+
+**Les champs de date ont dû rendre visible où l'on se trouve dans la date.** Le
+navigateur marque le segment que la frappe suivante changera, et il le marque
+avec une couleur système : dans Firefox un bleu, sur un champ posé sur un ciel
+bleu. Mesuré, ce marquage ne se détachait du champ qu'à **1,54:1** — assez peu
+pour que le défaut soit rapporté comme une impossibilité de remplir les dates,
+alors que le champ prenait chaque touche. **Rien n'était bloqué ; c'est le retour
+qui manquait**, et le symptôme ressemblait à s'y méprendre à une panne.
+
+La page ne peut pas choisir cette couleur, et deux tentatives sont consignées ici
+pour qu'elles ne soient pas refaites : `::selection` est inerte — Firefox ne fait
+pas passer un segment de date par là, deux rendus à profil neuf sortent
+identiques au pixel — et `accent-color` l'est également. Ce qui s'atteint, c'est
+ce qui entoure la marque. `color-scheme: light` sur ces champs demande au système
+sa marque claire, le bleu vif plutôt que le bleu-vert éteint ; et le champ prend
+un fond sombre **pendant l'édition seulement**. Ensemble : **4,3:1 dans Firefox,
+3,3:1 dans Chromium**. Au repos, une date reste ce qu'est tout champ de cette
+page, une ligne de texte sur un filet.
+
+**Deux conséquences se paient, et la seconde n'est pas réparable.** L'icône du
+calendrier de Chrome devient noire sous le schéma clair ; une inversion la rend à
+l'ivoire. Mais le calendrier natif, lorsqu'il s'ouvre, s'affiche désormais en
+clair : la marque de segment et le calendrier viennent du même réglage et ne se
+séparent pas. L'échange est assumé — le calendrier est un passage bref, le
+repérage dans la date un geste constant.
+
+### La chaleur de la page de résultats
+
+La page de résultats était une bande de cartes sur papier plat. Elle porte
+désormais l'été qui les a produites, d'après `design/summer_result.svg`. Onze
+arrêts, à la même cadence que le ciel de l'accueil, mais **relevés et non
+transcrits** : le dégradé de la maquette est une image matricielle encastrée
+dans le fichier Inkscape, décodée puis échantillonnée tous les dix pour cent.
+
+```
+0 % #fafdea   30 % #fe9e52   60 % #fd3a0c   90 % #810402
+10 % #f9deb1   40 % #ff7b30   70 % #fd2101  100 % #070000
+20 % #fbbe7f   50 % #fd5816   80 % #d60e01
+```
+
+**Cette page s'inverse en descendant, et c'est toute sa difficulté.** Le ciel de
+l'accueil va du sombre au clair et une seule encre ivoire le sert d'un bout à
+l'autre. Ici le premier écran est `#fafdea` — plus pâle que l'ivoire du site — et
+le dernier `#070000`. Aucune encre ne sert les deux extrémités. L'encre est donc
+sombre par défaut, et **le seul bloc qui bascule au clair est la provenance**,
+au pied de la page.
+
+**L'encre secondaire y est presque aussi noire que l'encre principale**, et c'est
+une mesure qui l'a imposé : `#7a3f24`, le ton qui *lit* comme secondaire, tombe à
+2,6:1 sur l'orange saturé du milieu, où se posent le marqueur de mois et la ligne
+du scénario. Ce qui sépare ces textes de ce qu'ils nomment, c'est leur forme —
+onze pixels, capitales, interlettrage —, exactement comme sur l'accueil quand le
+ton ne peut plus le porter.
+
+**Les cartes sont le seul blanc du projet**, et la seule couleur saturée : le
+rouge `#d40000` et le bleu `#0044aa` de la maquette, là où le reste du site
+s'interdit toute couleur pure hors de l'émoji. Sur une carte blanche les deux
+passent largement, et ce sont les deux nombres qu'une lecture d'été vient
+chercher. **La carte cesse par ailleurs d'être la boîte** : la date se pose nue
+sur le dégradé, et seul le corps en dessous est dessiné.
+
+**La page est la fenêtre**, comme l'accueil, et pour deux raisons superposées. Le
+calque du ciel est calé sur le `body` : sans hauteur minimale il s'arrête où
+s'arrête le contenu, et une page de 789 px dans une fenêtre de 960 laissait
+171 px de crème nue sous le dégradé. Et la provenance, qui s'écrit en clair, ne
+le peut que là où le dégradé a viré au noir : simplement posée après la bande,
+une fenêtre haute l'aurait fait atterrir sur l'orange. Tenue au pied par une
+marge automatique, elle est **à 92-94 % du dégradé quelle que soit la fenêtre**.
+
+**Le rythme vertical y est plus serré que le rythme partagé**, parce que cette
+page est faite pour être vue d'un coup : elle porte un ensemble fixe de blocs, et
+sa bande défile latéralement, de sorte que rien ne se gagne à en pousser une
+partie sous la ligne de flottaison. Mesurée à 893 px au rythme partagé, elle
+tombe à 789, et un second cran sous 800 px de fenêtre la ramène à 720. L'air se
+reprend aux deux bouts d'abord, où il ne sépare rien, avant de se reprendre aux
+intervalles.
+
+Contrastes mesurés sur le rendu, fenêtre 1440 × 960 :
+
+| Texte | Rapport |
+|---|---|
+| le lieu | 14,1:1 |
+| la plage | 11,8:1 |
+| nouvelle recherche | 12,3:1 |
+| l'avertissement | 8,9:1 |
+| le scénario | 7,5:1 |
+| le jour | 6,6:1 |
+| le mois | 6,3:1 |
+| la maximale | 5,4:1 |
+| la minimale | 8,6:1 |
+| les deux mesures | 18,1:1 |
+| la couture | 6,5:1 |
+| la provenance | 9,1:1 |
+
+**Deux géométries, donc deux jeux de chiffres.** Le dégradé étant ancré au
+document, une page raccourcie fait glisser chaque bloc sur une autre portion. La
+variante resserrée est la plus serrée des deux : à 1280 × 720, le scénario tombe
+à 6,2:1, le jour à 5,7 et le mois à 5,4 — le plancher de la page reste alors la
+maximale, à 5,4:1, qui ne bouge pas puisqu'elle est sur la carte blanche. Sur une
+fenêtre haute tout remonte : 9,1, 9,0 et 8,3 à 1440 × 1400.
 
 ---
 

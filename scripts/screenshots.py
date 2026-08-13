@@ -75,7 +75,11 @@ OUT = ROOT / "shots"
 # Paris sits inside the three cells the collection has closed, so its future is
 # served. Pontarlier does not, which is what makes it the refusal case.
 PARIS = {"lieu": "Paris", "lat": "48.8566", "lon": "2.3522"}
-PONTARLIER = {"lieu": "Pontarlier", "lat": "46.9036", "lon": "6.3547"}
+# Well outside the French box, and it has to be: Pontarlier stood here until the
+# grid reached it, and a refusal photographed at a covered place is a picture of
+# nothing. Santiago is the example docs/application.md itself uses when it says
+# a wholly past search must stay served anywhere in the world.
+SANTIAGO = {"lieu": "Santiago", "lat": "-33.4489", "lon": "-70.6693"}
 
 DESKTOP = {"width": 1440, "height": 960}
 PHONE = {"width": 360, "height": 780}
@@ -284,12 +288,15 @@ def results_seam(page: Page, base: str) -> None:
 def results_refused(page: Page, base: str) -> None:
     """Outside the grid, and far enough ahead to need it.
 
-    The range has to clear the forecast horizon. A fortnight at Pontarlier is now
-    served like anywhere else — it carries no simulated day, so it asks the grid
-    for nothing and there is nothing left to refuse.
+    Two conditions, and the view is worth nothing if either lapses. The range
+    must clear the forecast horizon — a fortnight anywhere carries no simulated
+    day, asks the grid for nothing, and leaves nothing to refuse. And the place
+    must be one the grid will not reach: Pontarlier stood here until the
+    collection covered it, and this shot quietly became a picture of a page that
+    loads fine.
     """
     today = date.today()
-    page.goto(results_url(base, PONTARLIER, today, today + timedelta(days=40)))
+    page.goto(results_url(base, SANTIAGO, today, today + timedelta(days=40)))
     page.wait_for_selector(".failure:not([hidden])", timeout=90_000)
 
 

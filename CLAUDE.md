@@ -148,9 +148,15 @@ qui se rejoue hors réseau depuis `data/`.
 
 Étapes 0 à 3, **5, 6 et 7 faites**. **Étape 4 en cours** : la méthode de
 correction, la table et son interpolation sont écrites, la collecte avance —
-**394 nœuds sur 594, 320 mailles refermées**, soit **35 des 39 villes** de la
-liste de priorité. Ne manquent que la pointe bretonne, le Pays basque et la
-Corse.
+**438 nœuds sur 594, 365 mailles refermées**, soit **37 des 39 villes** de la
+liste de priorité. Ne manque plus que la Corse — Bastia et Ajaccio.
+
+**Un nœud collecté n'est pas un nœud servi.** La collecte remplit
+`data/calibration_grid/` ; c'est `build.py` qui en fait la table embarquée, et
+l'application la lit **une fois au démarrage**. Entre les deux, une ville peut
+être couverte dans le cache et refusée à l'écran — c'est arrivé, et le symptôme
+ne ressemble pas à un décalage mais à une panne de couverture. La table servie
+porte les 438.
 
 **Ce que l'étape 7 a changé de cette contrainte.** La quinzaine à venir vient
 d'ECMWF IFS et ne demande aucune correction : elle est donc servie **partout dans

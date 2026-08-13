@@ -37,9 +37,14 @@ export const texts = {
     // temps fera-t-il à Nice en 2050 ? », qui viole pourtant la règle 1 — ce
     // qu'aucune formulation ne doit faire, c'est promettre la journée.
     questions: [
-      "Vaudra-t-il mieux se marier en Provence en mars plutôt qu'en juin ?",
-      "Faut-il faire ses vieux jours à Lille ou à Nice ?",
+      "Faut-il se marier en avril plutôt qu'en juin ?",
+      "Faut-il passer ses vieux jours à Nice ou à Lille ?",
       "Pourrais-je faire pousser des tomates à Montpellier en 2050 ?",
+      "Cet été, vacances à Ajaccio ou à Berck-plage ?",
+      "Investir dans un appartement sous les toits à Paris : bonne ou mauvaise idée ?",
+      "Vélo ou rando cet hiver à la montagne ?",
+      "Noël au balcon, Pâques avec glaçons ?",
+      "Team canicule d’été ou inondation d’hiver ?"
     ],
     // The verb is what keeps this within rule 1: "simulez" is one of the three
     // terms it names as kept, and the sentence promises an exercise rather than

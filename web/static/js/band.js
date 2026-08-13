@@ -89,18 +89,21 @@ export function card(day, namesMonth) {
       el("p", { className: "card-emoji", text: emoji, attrs: { "aria-hidden": "true" } }),
       // Straight under the pictogram, large, and unlabelled: two numbers beside
       // a degree sign on a weather card need no word to say what they are.
-      // Which is the maximum *does* need saying — that is carried by colour on
-      // screen, and colour is not information, so each is named for anyone not
-      // reading it.
-      // Minimum on the left, maximum on the right — the order docs/projet.md
-      // and the README already write the pair in: "21 °C / 39 °C".
+      // Which is the maximum *does* need saying — that is carried by colour and
+      // by position on screen, and neither is information, so each is named for
+      // anyone not reading them.
+      //
+      // **Maximum above minimum**, stacked rather than set side by side. The
+      // earlier card ran "min · max" on one line, in the order projet.md and
+      // the README write the pair; the results mock-up stacks them and leads
+      // with the maximum, which is the figure a summer read is looking for.
+      // The reading order follows the eye — a screen reader now hears the
+      // maximum first too, and band.test.js pins that order.
       el("p", { className: "card-temperatures" }, [
-        el("span", { className: "sr-only", text: texts.measure.low }),
-        value(present.temperature(day.temperature_min), day.temperature_min, "low"),
-        el("span", { className: "sep", text: "·", attrs: { "aria-hidden": "true" } }),
         el("span", { className: "sr-only", text: texts.measure.high }),
-        value(present.temperature(day.temperature_max), day.temperature_max, "high"),
-        el("span", { className: "unit", text: celsius }),
+        degrees(day.temperature_max, "high", celsius),
+        el("span", { className: "sr-only", text: texts.measure.low }),
+        degrees(day.temperature_min, "low", celsius),
       ]),
       el("p", { className: "card-sky", text: label }),
       el("dl", { className: "card-measures" }, [
@@ -125,10 +128,32 @@ function value(shown, raw, className) {
   });
 }
 
-/** A labelled measure: the word on the left, the number and its unit on the right. */
+/**
+ * One temperature on a line of its own, degree sign included.
+ *
+ * The unit rides on each of the two rather than once at the end, which is what
+ * stacking costs: side by side, "14 · 28 °C" let one sign serve both, and one
+ * above the other it would sit against the lower number alone.
+ */
+function degrees(raw, className, unit) {
+  return el("span", { className: `card-degrees ${className}` }, [
+    value(present.temperature(raw), raw, "value"),
+    el("span", { className: "unit", text: unit }),
+  ]);
+}
+
+/**
+ * A measure: the word, then the number and its unit.
+ *
+ * **The word is carried but not shown.** The mock-up puts bare figures on the
+ * card — "3,2 mm", "5 km/h" — and the units make them legible at a glance. A
+ * screen reader gets no units to lean on, so the `dt` stays in the document and
+ * goes off-screen instead of away: that is what keeps "Vent maximal" attached
+ * to a number docs/application.md forbids reading as an average.
+ */
 function measure(label, raw, format, unit) {
   return [
-    el("dt", { text: label }),
+    el("dt", { className: "sr-only", text: label }),
     el("dd", { className: "card-measure" }, [
       value(format(raw), raw, "value"),
       el("span", { className: "unit", text: unit }),

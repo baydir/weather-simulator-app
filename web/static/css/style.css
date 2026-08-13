@@ -64,8 +64,22 @@
   --ink-soft: #8d867a;
   --rule: #332e26;
   --rule-strong: #5a5245;
-  --button: #4a443a;
+  /* The submit band, translucent on purpose — see the rule near the bottom of
+     the form section. Burnt brown rather than the earth grey it replaces, and
+     an edge drawn in the page's own ivory. */
+  --button: rgb(28 14 6 / 45%);
+  --button-hover: rgb(28 14 6 / 62%);
+  --button-edge: rgb(236 231 221 / 22%);
   --raised: #1e1a15;
+  /* The candidate list is the one thing on the site that covers another
+     control, and it covers it whole. Ninety-seven percent was tried and looks
+     opaque on paper — the date underneath measured 1.06:1 against the panel —
+     but the ratio is the wrong instrument here: it is built for text on a
+     ground, and six levels apart down in the shadows is plainly legible. The
+     eye resolves in the dark what the formula rounds away.
+     The home page overrides this with the sunset's own foot; this neutral is
+     what any page without a sky would get. */
+  --overlay: var(--raised);
   /* A shade apart, not a wash of colour. Scrolled past the written seam, a
      card must still say which side of it it is on. */
   --raised-simulated: #241f18;
@@ -163,6 +177,12 @@ body.home {
   --ink-soft: #dad3c6;
   --rule: #6b6153;
 
+  /* The foot of the sunset, lifted out of the gradient because a second thing
+     reads it now: the candidate panel below borrows this exact colour, and a
+     panel meant to be the sky's own dark would drift the day someone resampled
+     the photograph and edited only the stop. Served, not copied. */
+  --sky-foot: #27030a;
+
   /* Declared once, painted twice: the still layer and the shimmering copy over
      it read the same variable, so the sky cannot come to exist in two versions
      that drift apart. */
@@ -178,8 +198,14 @@ body.home {
     #908490 70%,
     #cf9880 80%,
     #f58738 90%,
-    #27030a 100%
+    var(--sky-foot) 100%
   );
+
+  /* On this page the overlay stops being a neutral dark and becomes the sky's
+     own: the panel reads as the sunset's deepest tone brought forward, not as a
+     piece of the results page laid on the photograph. The same reasoning that
+     took the earth grey off the button. */
+  --overlay: var(--sky-foot);
 
   background-color: var(--paper);
   /* The layer below is absolutely positioned against this. */
@@ -195,6 +221,169 @@ body.home {
   z-index: -1;
   background-image: var(--sky);
   background-repeat: no-repeat;
+}
+
+/*
+ * The results page, on the summer that produced it.
+ *
+ * Eleven stops again, sampled every ten percent of the mock-up's own gradient —
+ * which is a raster image inside the Inkscape file, so it was decoded and read
+ * rather than guessed. Cream at the top, through orange and red, to near-black.
+ *
+ * **This page inverts as it descends, and that is the whole difficulty.** The
+ * home sky runs dark-to-bright and one ivory serves the lot. Here the first
+ * screen is `#fafdea` — paler than the page's own ivory — and the last is
+ * `#070000`. No single ink serves both ends, so the ink is dark by default and
+ * turns pale where the ground goes dark, at the provenance. Every figure is
+ * measured on the render; the table is in docs/application.md.
+ */
+body.results {
+  --sky: linear-gradient(
+    to bottom,
+    #fafdea 0%,
+    #f9deb1 10%,
+    #fbbe7f 20%,
+    #fe9e52 30%,
+    #ff7b30 40%,
+    #fd5816 50%,
+    #fd3a0c 60%,
+    #fd2101 70%,
+    #d60e01 80%,
+    #810402 90%,
+    #070000 100%
+  );
+
+  /* Dark ink on a bright ground — the reverse of every other surface here. The
+     brown is the sunset's own, not a black: the warning on the home page picks
+     its ink the same way. */
+  --ink: #21100a;
+  /* Barely softer than the ink itself, and measured rather than chosen. The
+     secondary ink sits on the saturated middle of the gradient — the month
+     marker above a card, the scenario line under the warning — and #7a3f24, the
+     tone that reads as secondary, gave 2,6:1 there. What separates these from
+     the text they name is that they are eleven pixels, letterspaced and
+     capitalised, exactly as on the home page: hierarchy carried by form when
+     tone can no longer afford it. */
+  --ink-soft: #3d1608;
+  --rule: #c9793f;
+  --rule-strong: #8f3f16;
+
+  /* The cards are the one white in the project, and they have to be: a card is
+     what the eye lands on, and on this ground nothing quieter would hold. */
+  --raised: #fffdf7;
+  --raised-simulated: #fdefdc;
+
+  /* The mock-up's two, and they are saturated where the rest of the site is
+     not. On a white card they are unambiguous, which is what the page needs:
+     these two numbers are what a summer read comes for. */
+  --warm: #d40000;
+  --cool: #0044aa;
+
+  /* Narrower than the dark card was, and narrower again since. The mock-up's
+     are portrait, and a portrait card puts the two temperatures under the
+     pictogram instead of beside it — which is what buys the room to set them
+     large. The width is what the widest line inside actually needs: "100 km/h"
+     at its size, plus the padding, and nothing spare. */
+  --card: 8.25rem;
+
+  background-color: #fafdea;
+  position: relative;
+  color: var(--ink);
+
+  /*
+   * Tighter than the shared rhythm, and for a reason the home page does not
+   * have: this page is meant to be seen whole. It carries a fixed set of blocks
+   * — a heading, a warning, one strip, one folded note — and the strip scrolls
+   * sideways rather than down, so nothing is gained by putting part of it below
+   * the fold. Measured at 893 px against the shared spacing, which fits a
+   * 960-pixel window exactly and overran a 800-pixel one by 93.
+   *
+   * The air comes off the two ends, where there is nothing to separate, before
+   * it comes off the gaps between blocks.
+   */
+  padding-top: calc(var(--space) * 12);
+  padding-bottom: calc(var(--space) * 10);
+
+  /*
+   * The page is the window, exactly as the home page is, and for a second
+   * reason on top of the first.
+   *
+   * The first is a hole: the sky layer is `inset: 0` on this element, so it
+   * stops where the content stops. Trimmed to 789 px in a 960-pixel window,
+   * the gradient ended 171 px above the bottom edge and left a band of bare
+   * cream under it.
+   *
+   * The second is why the provenance is pushed down rather than merely
+   * followed. It is the one block on this page that reads pale, and it can do
+   * that only where the gradient has gone dark. Left to sit under the strip, a
+   * tall window would stretch the gradient beneath it and land it on orange,
+   * where pale ink is unreadable — the failure the home page's own note
+   * describes from the other side. Held at the foot, it is at 100 % of the
+   * gradient whatever the window, and its ink can be chosen instead of hoped
+   * for.
+   */
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+body.results main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+body.results .provenance {
+  margin-top: auto;
+}
+
+body.results .warning {
+  margin-top: calc(var(--space) * 8);
+}
+
+body.results .band {
+  margin-top: calc(var(--space) * 8);
+}
+
+/* No margin of its own here on purpose: the auto margin above is what holds it
+   at the foot of the window, and a fixed one written below would quietly win on
+   equal specificity — which it did, landing the pale block at 52 % of the
+   gradient on a tall window, in the middle of the orange. */
+
+/*
+ * And a second turn of the same screw, for windows the first does not reach.
+ *
+ * Trimmed once, the page stands at 789 px and fits anything from 800 up. Below
+ * that it scrolls again, and a laptop at 1280 × 720 is not an exotic size. The
+ * air comes off in the same order — the two ends first, then the gaps — and no
+ * content moves.
+ *
+ * **Two geometries means two sets of contrasts**, since the gradient is
+ * anchored to the document and a shorter page slides every block onto a
+ * different part of it. Both were measured; the tightened one is the safer of
+ * the two, everything landing a shade higher on the gradient.
+ */
+@media (max-height: 800px) {
+  body.results {
+    padding-top: calc(var(--space) * 8);
+    padding-bottom: calc(var(--space) * 6);
+  }
+
+  body.results .warning {
+    margin-top: calc(var(--space) * 6);
+    padding: calc(var(--space) * 3) 0;
+  }
+
+  body.results .band {
+    margin-top: calc(var(--space) * 6);
+  }
+
+  /* Still held at the foot; the auto margin only stops mattering once the
+     content is taller than the window, which is when it collapses on its own. */
+  body.results .provenance {
+    margin-top: auto;
+    padding-top: calc(var(--space) * 4);
+  }
 }
 
 /* The heat, coming off the warm end of it.
@@ -219,7 +408,7 @@ body.home {
  * operation and the cheap one converge, and only one of them costs a frame.
  *
  * Measured after the change: 121 frames a second at both sizes. */
-.sky::after {
+body.home .sky::after {
   content: "";
   position: absolute;
   inset: auto 0 0;
@@ -539,6 +728,49 @@ input:focus {
   border-bottom-color: var(--ink);
 }
 
+/*
+ * Where you are inside the date.
+ *
+ * A date field is three segments, and the browser marks the one the next
+ * keystroke will change. It marks it with a system colour, and that is the
+ * whole difficulty: this field lies on a blue sky, and Firefox's mark is blue.
+ * Measured on the render, it stood out from the field at 1.54:1 — which is what
+ * "I can type but I cannot see the highlight" looks like as a number. Nothing
+ * was ever blocked and nothing covered: the feedback was missing, not the
+ * behaviour.
+ *
+ * **The page cannot choose that colour, and two attempts to are recorded here
+ * so they are not tried again.** `::selection` is inert — Firefox does not
+ * route a date segment through it, and two cold-profile renders came out
+ * identical to the pixel. `accent-color` is inert too, to the same test.
+ *
+ * What can be reached is everything around it. `color-scheme: light` asks the
+ * system for its light mark, the familiar bright blue rather than a muted teal;
+ * and the focused field takes a dark ground for that mark to sit on. Measured
+ * together: 4.29:1, near three times where it started.
+ *
+ * **The ground appears only while the field is being edited.** At rest a date
+ * stays what every field on this page is — a line of type over a hairline — so
+ * the sheet's first habit survives, and the box exists only in the moment it is
+ * useful. The colour is `--paper` thinned, not a new tone: nothing enters the
+ * palette merely to say "here".
+ */
+input[type="date"] {
+  color-scheme: light;
+}
+
+input[type="date"]:focus {
+  background: color-mix(in srgb, var(--paper) 60%, transparent);
+}
+
+/* What the light scheme costs, paid back. Asking for the light widget turns
+   Chrome's calendar glyph black, and a black glyph on the sunset is the one
+   thing this page has no ink for; inverted, it is ivory again. Firefox draws
+   its own light glyph and never sees this rule. */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
 .dates {
   display: flex;
   gap: calc(var(--space) * 10);
@@ -549,29 +781,82 @@ input:focus {
   flex: 1 1 14ch;
 }
 
-/* A flat band, not a button-looking button. */
+/* A band the sky passes through, not a slab laid over it.
+ *
+ * Still a flat band and still not a button-looking button — what changed is the
+ * fill. It was #4a443a, a colour from the flat-paper palette, and on the sunset
+ * it read as a piece of the results page pasted onto the photograph: the one
+ * opaque object on a page whose whole habit is that nothing is in a box. Burnt
+ * brown at 45% leaves a target to aim at while the gradient still shows behind
+ * it, and the brown belongs to the sky the way the warning's #331708 does.
+ *
+ * **The edge is an inset shadow, not a border**, and that is not a detail: a
+ * border adds two pixels to the height, and on this page a taller button pushes
+ * the warning down onto a different part of the gradient. Layout and legibility
+ * are the same question here — the sheet says so above, and every figure in
+ * docs/application.md was measured at one geometry.
+ *
+ * Measured on the render, ink against the fill as composited over the sky:
+ * 7.5:1, where the opaque slab gave 7.8. Hovering deepens the fill rather than
+ * lightening it, so the ratio goes up on the way in and never down.
+ */
 button[type="submit"] {
   width: 100%;
   padding: calc(var(--space) * 5);
   border: 0;
   border-radius: 0;
   background: var(--button);
+  box-shadow: inset 0 0 0 1px var(--button-edge);
   color: var(--ink);
   cursor: pointer;
-  transition: background 120ms ease;
+  transition:
+    background 120ms ease,
+    box-shadow 120ms ease;
 }
 
 button[type="submit"]:hover {
-  background: color-mix(in srgb, var(--ink) 18%, var(--button));
+  background: var(--button-hover);
+  box-shadow: inset 0 0 0 1px var(--ink-soft);
 }
 
 /* --- picking the place ---------------------------------------------------- */
 
+/*
+ * The candidate list hangs over the page instead of pushing it.
+ *
+ * In the flow it was, appearing between the place field and the dates, and it
+ * moved them down the moment a second letter was typed — the fields a visitor
+ * had just been reading slid out from under their eyes. A list of matches is a
+ * transient answer to what is being typed, not a new part of the form, and it
+ * should cost the page no height.
+ *
+ * `.field` was already `position: relative`, so this is what that was for.
+ *
+ * **Opaque, and that is the exception this page allows itself.** Everything
+ * else here lets the sky through; this may not, because what it covers is the
+ * two date fields, and reading a candidate through "12/08/2026" is worse than
+ * showing no candidate. `--overlay` is the raised token at 97%: the fields
+ * underneath compute out at about a twentieth of a step of contrast, which is
+ * nothing the eye resolves.
+ *
+ * The panel reaches wider than the field by its own padding, so the names still
+ * line up with what was typed above them while the box keeps its air.
+ */
 .candidates {
-  margin: calc(var(--space) * 2) 0 0;
-  padding: 0;
+  position: absolute;
+  top: calc(100% + var(--space) * 2);
+  left: calc(var(--space) * -3);
+  right: calc(var(--space) * -3);
+  z-index: 2;
+  margin: 0;
+  padding: 0 calc(var(--space) * 3);
+  /* Five is what fetch.js asks for; the cap is here so a larger count later
+     scrolls rather than running off the bottom of the window. */
+  max-height: 17rem;
+  overflow-y: auto;
   list-style: none;
-  border-top: 1px solid var(--rule);
+  background: var(--overlay);
+  box-shadow: inset 0 0 0 1px var(--button-edge);
 }
 
 .candidate {
@@ -586,6 +871,12 @@ button[type="submit"]:hover {
   font-size: 1.0625rem;
   text-align: left;
   cursor: pointer;
+}
+
+/* The panel's own edge closes the list; a rule under the last name would double
+   it. */
+.candidates li:last-child .candidate {
+  border-bottom: 0;
 }
 
 .candidate:hover,
@@ -874,6 +1165,140 @@ button[type="submit"]:hover {
   margin: 0;
   color: var(--ink);
   font-family: var(--font-display);
+}
+
+/* --- the results page, laid on its heat ------------------------------------ */
+
+/*
+ * What the mock-up changes, component by component. Everything above stays as
+ * it was for the home page; nothing here reaches it.
+ *
+ * **The card stops being the box.** It was a bordered panel with a tinted head;
+ * now the date sits bare on the gradient and only the body below it is drawn.
+ * That is the mock-up's arrangement and it earns itself: on a ground this loud,
+ * a single white rectangle per day gives the eye something to count.
+ */
+body.results .card {
+  border: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+body.results .card-head {
+  padding: 0 0 calc(var(--space) * 2);
+  border-bottom: 0;
+  text-align: center;
+}
+
+body.results .card-day {
+  font-size: 0.9375rem;
+}
+
+body.results .card-body {
+  padding: calc(var(--space) * 4) calc(var(--space) * 3) calc(var(--space) * 4);
+  border: 1px solid var(--ink);
+  background: var(--raised);
+}
+
+/* The simulated side of the seam, still two cues and still neither alone: a
+   warmer paper, and the written marker standing in the strip. */
+body.results .card--simulated .card-body {
+  background: var(--raised-simulated);
+}
+
+/*
+ * The two temperatures, stacked, maximum first. They are the card's headline
+ * and they are set larger here than on the dark card — a white rectangle this
+ * narrow has room for exactly one thing that shouts.
+ */
+body.results .card-temperatures {
+  margin-top: calc(var(--space) * 2);
+  font-size: 1.875rem;
+  line-height: 1.2;
+}
+
+body.results .card-degrees {
+  display: block;
+}
+
+/* Written for the screen reader, drawn by the pictogram. docs/application.md
+   asks that the emoji never travel alone; it does not ask that the word be
+   shown, and the mock-up's card has no room for it. */
+body.results .card-sky {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Both measures on one centred column, the words gone off-screen with the
+   labels. The rule above them is what keeps them a footnote to the degrees. */
+body.results .card-measures {
+  display: block;
+  margin-top: calc(var(--space) * 3);
+  padding-top: calc(var(--space) * 3);
+  border-top: 1px solid var(--rule);
+  text-align: center;
+}
+
+body.results .card-measures dd {
+  text-align: center;
+  font-size: 1.0625rem;
+}
+
+body.results .card-measures dd + dt + dd,
+body.results .card-measures dd ~ dd {
+  margin-top: calc(var(--space) * 1);
+}
+
+body.results .unit {
+  color: inherit;
+  opacity: 0.75;
+}
+
+/* The seam keeps its written marker; only its rule changes side of the palette. */
+body.results .seam {
+  border-left-color: var(--ink);
+}
+
+body.results .seam span {
+  color: var(--ink);
+}
+
+/* The refusal keeps its rule, but not in red: `--warm` is the mock-up's pure
+   red here, and a red bar on an orange ground is a bar nobody sees. */
+body.results .failure {
+  border-left-color: var(--ink);
+}
+
+body.results .band {
+  scrollbar-color: var(--rule-strong) transparent;
+}
+
+body.results .band::-webkit-scrollbar-thumb {
+  background-color: var(--rule-strong);
+}
+
+/*
+ * **The bottom of the page is where the ink turns over.** By the provenance the
+ * gradient is past `#810402` and heading for black, and the dark ink that
+ * serves the heading would vanish into it. This is the one block on the page
+ * that reads pale, and the rule above it is what marks the crossing.
+ */
+body.results .provenance {
+  border-top-color: rgb(255 255 255 / 30%);
+  color: rgb(255 255 255 / 72%);
+}
+
+body.results .provenance summary {
+  color: rgb(255 255 255 / 72%);
+}
+
+body.results .provenance summary:hover,
+body.results .provenance .pairs dd {
+  color: #fff;
 }
 
 /* --- read but not shown ---------------------------------------------------- */

@@ -39,9 +39,15 @@ describe("the daily card", () => {
 
   it("carries the four measures, each one named", () => {
     // What a screen reader gets, in order — so each number arrives with a word.
+    //
+    // **The maximum comes first**, and the order is pinned here on purpose. The
+    // card used to run "min · max" on one line; the results mock-up stacks them
+    // and leads with the maximum, and what is read aloud follows what is seen
+    // rather than keeping an order the eye no longer has. The degree sign rides
+    // on each of the two now, which is what stacking costs.
     assert.equal(
       reads(only).replace(/\s+/g, " "),
-      "juillet samedi 14 Minimale 14 Maximale 28 °C Dégagé " +
+      "juillet samedi 14 Maximale 28 °C Minimale 14 °C Dégagé " +
         "Précipitations 0,4 mm Vent maximal 19 km/h",
     );
   });
