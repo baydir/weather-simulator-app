@@ -12,6 +12,11 @@ Un site grand public volontairement restreint : **une page d'accueil portant le
 formulaire, une page de résultats**. Des pages explicatives viendront plus tard,
 statiques et peu interactives.
 
+Le formulaire demande un lieu et une période, **et la période de deux façons** :
+une plage de dates, ou une saison et une année → [la section qui le
+décrit](#deux-façons-de-poser-la-même-question). La seconde ne produit rien que
+la première ne produise : elle écrit les mêmes deux dates, dans la même URL.
+
 L'accueil n'annonce pas le site par son nom. Il pose une question qui tourne —
 « Pourrais-je faire pousser des tomates à Montpellier en 2050 ? » — et met la
 promesse dessous. Un nom dit comment la chose s'appelle et rien de ce à quoi
@@ -111,7 +116,7 @@ web/
     pages/         home.html, results.html — HTML statique, aucun gabarit
     static/css/    style.css, une feuille bâtie sur des variables
     static/js/     fetch.js, i18n.js, present.js, bounds.js, band.js, chart.js,
-                   series.js, dom.js, prompt.js, home.js, results.js
+                   series.js, season.js, dom.js, prompt.js, home.js, results.js
 ```
 
 Dans `api/`, `plan.py` porte **à la fois la façon de demander chaque segment et
@@ -133,9 +138,28 @@ les sert par un montage **conditionnel** — `web/` absent, elle démarre quand 
 sépare pas le rendu du reste, comme le laissait entendre un `render.js`, mais
 **ce qui se vérifie sans navigateur de ce qui n'existe que dans la page** :
 `present.js` (formatage et arrondis), `bounds.js` (les refus du formulaire),
-`band.js` (la construction de la bande), `chart.js` (la géométrie du graphe) et
-`series.js` tournent sous `node --test` ; `home.js` et `results.js` ne portent
-que le câblage. C'est la même frontière qui garde une migration possible.
+`band.js` (la construction de la bande), `chart.js` (la géométrie du graphe),
+`series.js` et `season.js` tournent sous `node --test` ; `home.js` et
+`results.js` ne portent que le câblage. C'est la même frontière qui garde une
+migration possible.
+
+**`season.js` porte une table et deux lectures, et c'est la règle 3 appliquée à
+l'intérieur d'un fichier.** `seasonOf` prend une date et rend une saison, pour
+que la page de résultats trouve son sol ; `rangeOf` prend une saison et rend deux
+dates, pour que le formulaire puisse la demander par son nom. Écrire « 21 juin au
+20 septembre » une seconde fois pour le second sens serait le double exemplaire
+que la règle vise, et la règle ne se soucie pas de ce que les deux copies
+tiennent dans le même module — cinq lignes évidentes divergent aussi sûrement
+qu'une règle savante. Les bornes sont donc déclarées une fois et les deux
+lectures la parcourent, **dont un test referme le cycle** : demander une saison
+et relire ce qui revient doit rendre la même saison, sur les quatre et sur les
+deux hémisphères. Le jour où les deux lectures divergeraient, le formulaire
+demanderait un été et la page peindrait un hiver.
+
+Une propriété de cette table mérite d'être sue avant d'y toucher : **toutes les
+bornes tombent sur le 21**, et `rangeOf` s'y appuie pour prendre la veille de la
+suivante — le 20 du même mois, sans arithmétique de date ni fuseau à lire. Une
+borne déplacée au 1ᵉʳ rendrait un jour zéro, en silence ; un test l'interdit.
 
 **`series.js` ne porte qu'une fonction, et c'est une leçon de la règle 3 appliquée
 à l'intérieur du navigateur.** La bande et le graphe doivent marquer la même
@@ -463,6 +487,44 @@ laquelle le couchant se termine, ramenée au premier plan. Cette valeur est
 lisent ; recopiée, le panneau garderait l'ancienne teinte le jour où la
 photographie serait rééchantillonnée.
 
+#### Deux façons de poser la même question
+
+Le formulaire demande une période de deux manières, **exclusives et
+basculables** : une plage de dates, ou une saison assortie d'une année. La
+seconde existe parce que la question que ce site pose porte le plus souvent sur
+une saison — « un été à Montpellier en 2050 » — et que la première obligeait à
+savoir que l'été ouvre le 21 juin.
+
+**Le mode saison écrit dans les deux champs de date ; il ne les remplace pas.**
+C'est ce qui fait que la page de résultats n'a rien eu à apprendre : ni le
+sélecteur de saison ni celui d'année ne porte d'attribut `name`, donc aucun des
+deux n'est soumis, et l'URL reste les mêmes cinq paramètres — `lieu`, `lat`,
+`lon`, `debut`, `fin`. Une saison est un intervalle, et l'API n'a jamais rien
+demandé d'autre.
+
+**La bascule est deux boutons, non un groupe de radios**, et pour la même raison
+en sens inverse : des radios ne se groupent qu'en partageant un `name`, et un
+`name` est précisément ce qu'un formulaire GET met dans l'adresse. Sans script,
+le panneau des dates est celui qui est visible et le formulaire fonctionne comme
+avant.
+
+**L'année est celle où la saison commence**, pour les quatre. Cela ne se voit que
+sur l'hiver, seule saison à cheval sur deux années civiles : « hiver 2029 » va du
+21 décembre 2029 au 20 mars 2030. L'usage français laisse le tour ambigu ; la
+règle retenue est uniforme. La contrepartie est que l'hiver 2050 finirait en
+2051, hors couverture — la liste des années est donc construite à partir des
+bornes servies par `/api/config`, et cette année-là n'y figure pas plutôt que
+d'être offerte pour être refusée.
+
+**Sous l'équateur, la saison demandée est celle du lieu.** « Été » à Santiago va
+du 21 décembre au 20 mars. C'est le même saut que fait déjà le sol de la page de
+résultats, pris en sens inverse — sans quoi une recherche intitulée « été »
+ouvrirait une page peinte en hiver.
+
+**Quitter le mode saison ne remet pas les dates par défaut.** La plage qu'une
+saison vient de produire est une plage parfaitement bonne à ajuster à la main, et
+l'effacer jetterait ce que le visiteur vient de demander.
+
 **Les champs de date ont dû rendre visible où l'on se trouve dans la date.** Le
 navigateur marque le segment que la frappe suivante changera, et il le marque
 avec une couleur système : dans Firefox un bleu, sur un champ posé sur un ciel
@@ -516,6 +578,14 @@ jour d'automne, un hiver entier, un jour de printemps. Aucune ligne n'a changé,
 parce que le comptage n'a jamais compté que des journées ; c'est la justification
 qui avait fait de cette borne une propriété du calcul, alors qu'elle n'en était
 qu'une commodité.
+
+**La saison demandée et la saison peinte se rejoignent, et ce n'est pas une
+coïncidence.** Depuis que l'accueil sait demander « été 2029 », deux chemins
+mènent à un sol : le comptage décrit ici, et le choix du visiteur. Ils
+s'accordent parce que `rangeOf` et `seasonOf` lisent la même table en sens
+inverse — y compris sous l'équateur, où l'un traduit vers l'hémisphère nord et
+l'autre en revient. Un test le vérifie plutôt que de l'espérer →
+[l'organisation du code](#organisation-du-code).
 
 **Ce comptage se fait dans le navigateur, et la règle 3 n'y voit rien à redire** :
 le serveur n'en détient aucune version, il n'y a donc pas de second exemplaire.

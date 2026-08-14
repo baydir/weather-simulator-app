@@ -316,6 +316,70 @@ rapports qui comptent.
 
 ---
 
+## La saison demandée par son nom
+
+Le formulaire ne savait demander qu'une plage de dates. Or la question que le
+site existe pour poser porte sur une saison — « un été à Montpellier en 2050 » —
+et y répondre obligeait le visiteur à savoir que l'été ouvre le 21 juin, puis à
+essuyer un refus parce qu'il en avait demandé 92 quand l'API en servait 90.
+L'accueil porte donc **deux modes exclusifs** : la plage de dates, inchangée, et
+une saison assortie d'une année.
+
+**Quatre arbitrages ont été rendus par le porteur du projet** avant d'écrire une
+ligne : deux modes exclusifs plutôt qu'un raccourci ; l'année est celle où la
+saison *commence*, ce qui ne se voit que sur l'hiver ; sous l'équateur la saison
+demandée est celle du lieu ; et la borne passe à 92.
+
+**Quatre-vingt-dix n'était une saison que par approximation.** Aux bornes
+astronomiques que l'interface propose — le 21 —, l'hiver fait 90 jours, l'automne
+91, le printemps et l'été 92. La borne amputait donc les deux plus longues de
+deux jours, ce qui était sans conséquence tant qu'on ne pouvait pas demander une
+saison par son nom. `MAX_DAYS` est la seule écriture du nombre, et le passage a
+révélé la copie qui l'accompagnait : `errors.py` écrivait 90 en dur, en anglais
+et en français, et les deux phrases auraient continué de l'annoncer.
+
+**La page de résultats n'a pas bougé d'une ligne, et c'est le résultat.** Le mode
+saison écrit dans `debut` et `fin` au lieu de les remplacer ; ni le sélecteur de
+saison ni celui d'année ne porte de `name`, donc rien du mode ne quitte
+l'accueil. L'URL reste les mêmes cinq paramètres, `/api/plan` reçoit un
+intervalle comme toujours, et une saison *est* un intervalle. C'est ce que le
+contrat JSON et le découpage en segments achetaient depuis le début.
+
+**Une confirmation de la règle 3 à l'intérieur d'un fichier.** `seasonOf` lit une
+date et rend une saison ; `rangeOf` fait l'inverse. Écrire « 21 juin au 20
+septembre » une seconde fois pour le second sens aurait été la duplication que la
+règle vise, et la règle ne se soucie pas de ce que les deux copies tiennent dans
+le même module. Les bornes sont donc déclarées une fois, et un test **referme le
+cycle** sur les quatre saisons et les deux hémisphères : sans lui, le jour où les
+deux lectures divergent, le formulaire demande un été et la page peint un hiver.
+
+**Ce que la borne a démenti, sans rien casser.** `season.js` justifiait son
+comptage par « deux candidates au plus », l'hiver faisant exactement 90 jours. À
+92 une plage peut en toucher trois. Aucune ligne n'a changé : le comptage n'a
+jamais compté que des journées, et c'est la justification qui avait pris une
+commodité pour une propriété.
+
+**L'accueil s'est fait mesurer pour la première fois par une commande.** Ses six
+contrastes avaient été relevés à la main une fois ; `ink_contrast.py` fait
+désormais les deux pages. La bascule coûte 52 px, le dégradé est ancré au
+document, et tout ce qui la suit glissait vers le bleu pâle — six dixièmes de
+rapport perdus sous elle. Les 52 px ont été repris sur les intervalles du
+formulaire, et les étiquettes prennent l'encre pleine : **la bande entre 50 % et
+65 % du dégradé ne porte aucune encre**, le noir pur y plafonnant à 4,0:1. C'est
+une hauteur, pas un ton.
+
+**Deux constats consignés plutôt que recouverts.** Le bouton sort à 6,9:1 quand
+le document publiait 7,5, sur une méthode dont la table de la page de résultats
+se reproduit sur ses quarante-huit cellules. Et **les autres tailles de fenêtre
+ne passent pas**, ce qui est antérieur à ce travail et n'avait jamais été mesuré :
+sur une fenêtre haute le plancher est l'avertissement de la règle 1, à 3,7:1. Rien
+n'a été dégradé, rien n'est réglé ; le remède touche la composition de la page et
+**reste à arbitrer**.
+
+→ [`application.md`](application.md)
+
+---
+
 ## Ce qui reste calé sur une base mince
 
 Aucune décision scientifique n'est en attente, mais deux points méritent d'être
