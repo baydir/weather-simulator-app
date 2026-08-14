@@ -86,8 +86,11 @@ def test_every_season_the_page_can_name_has_a_palette() -> None:
     else would catch it: the two files never meet, they only agree.
     """
     sheet = (WEB / "static/css/style.css").read_text()
-    # Every name the module can hand back, read where it hands them back.
-    written = set(re.findall(r'return "(\w+)"', (WEB / "static/js/season.js").read_text()))
+    # Every name the module can hand back, read off the one table it hands them
+    # back from. It used to read the `return "winter"` literals; the table that
+    # let the module also *build* a season took them away, and the join is the
+    # same join — a name the script can write and the sheet cannot paint.
+    written = set(re.findall(r'name: "(\w+)"', (WEB / "static/js/season.js").read_text()))
     painted = set(re.findall(r'body\.results\[data-season="(\w+)"\]', sheet))
     assert written == painted == {"winter", "spring", "summer", "autumn"}
 

@@ -1,17 +1,27 @@
 /**
- * Which ground a search lands on.
+ * Which ground a search lands on, and which dates a season asked for by name is.
  *
  * Three decisions are checked here rather than described: the astronomical
  * bounds and their eve, the season the count settles on when a range straddles
  * two, and the reversal below the equator. A third candidate is reachable since
  * the bound went to ninety-two, and was reachable by a hand-typed URL before
  * that, so the three-season range is checked either way.
+ *
+ * **The round trip is the test that matters most here.** `rangeOf` and
+ * `seasonOf` read one table in opposite directions, and the day they disagree is
+ * the day the form asks for a summer and the results page paints a winter. It is
+ * checked on all four seasons and both hemispheres.
  */
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { dominantSeason, seasonOf } from "../../web/static/js/season.js";
+import { dominantSeason, rangeOf, seasonOf, yearsFor } from "../../web/static/js/season.js";
+
+/** What GET /api/config really answers, of the part this module reads. */
+const CONFIG = { coverage_start: "1950-01-01", coverage_end: "2050-12-31" };
+
+const NAMES = ["winter", "spring", "summer", "autumn"];
 
 /** Northern unless a latitude says otherwise. */
 const north = { latitude: 48.8566 }; // Paris
@@ -107,5 +117,116 @@ describe("the season a range belongs to", () => {
     assert.equal(dominantSeason({ start: "2046-07-14", end: "", ...north }), null);
     assert.equal(dominantSeason({ start: "2046-07-14", end: "2046-07-01", ...north }), null);
     assert.equal(dominantSeason({ start: "avant", end: "hier", ...north }), null);
+  });
+});
+
+describe("the dates one season covers", () => {
+  it("opens on the twenty-first and closes on the eve of the next", () => {
+    assert.deepEqual(rangeOf("spring", 2029, north.latitude), {
+      start: "2029-03-21",
+      end: "2029-06-20",
+    });
+    assert.deepEqual(rangeOf("summer", 2029, north.latitude), {
+      start: "2029-06-21",
+      end: "2029-09-20",
+    });
+    assert.deepEqual(rangeOf("autumn", 2029, north.latitude), {
+      start: "2029-09-21",
+      end: "2029-12-20",
+    });
+  });
+
+  it("gives winter the year it begins in, not the one it ends in", () => {
+    // The only season in two calendar years, and the only place the rule shows.
+    // "Hiver 2029" is the one that opens in December 2029.
+    assert.deepEqual(rangeOf("winter", 2029, north.latitude), {
+      start: "2029-12-21",
+      end: "2030-03-20",
+    });
+  });
+
+  it("is no longer than the bound the API serves", () => {
+    // Ninety-two, which is why MAX_DAYS is ninety-two. Counted both ends, as
+    // bounds.js counts, and on a leap winter for the one that could exceed it.
+    const length = ({ start, end }) =>
+      Math.round((Date.parse(`${end}T12:00:00Z`) - Date.parse(`${start}T12:00:00Z`)) / 86_400_000) +
+      1;
+    for (const name of NAMES) {
+      for (const year of [2029, 2031]) {
+        assert.ok(length(rangeOf(name, year, north.latitude)) <= 92);
+      }
+    }
+    assert.equal(length(rangeOf("winter", 2027, north.latitude)), 91); // ends in a leap year
+    assert.equal(length(rangeOf("summer", 2029, north.latitude)), 92);
+  });
+
+  it("gives the place its own season below the equator", () => {
+    // Not the calendar's: a summer asked for in Santiago is December to March.
+    assert.deepEqual(rangeOf("summer", 2029, south.latitude), {
+      start: "2029-12-21",
+      end: "2030-03-20",
+    });
+    assert.deepEqual(rangeOf("winter", 2029, south.latitude), {
+      start: "2029-06-21",
+      end: "2029-09-20",
+    });
+  });
+
+  it("closes the circle with seasonOf, on both hemispheres", () => {
+    // The one property this file exists to hold: ask for a season, and every day
+    // of what comes back reads as that season. Otherwise the form asks for a
+    // summer and the results page paints a winter.
+    for (const latitude of [north.latitude, south.latitude]) {
+      for (const name of NAMES) {
+        const range = rangeOf(name, 2029, latitude);
+        assert.equal(seasonOf(range.start, latitude), name);
+        assert.equal(seasonOf(range.end, latitude), name);
+        assert.equal(dominantSeason({ ...range, latitude }), name);
+      }
+    }
+  });
+
+  it("keeps every boundary late enough in its month for the eve to be simple", () => {
+    // rangeOf takes a season's last day to be the day before the next one opens,
+    // and reads it as "the same month, one lower". Move a boundary to the 1st
+    // and that yields a zeroth day, silently.
+    for (const name of NAMES) {
+      assert.ok(Number(rangeOf(name, 2029, north.latitude).end.slice(8, 10)) >= 1);
+    }
+  });
+
+  it("has nothing to hand back for something that is not a season", () => {
+    assert.equal(rangeOf("canicule", 2029, north.latitude), null);
+    assert.equal(rangeOf("summer", Number.NaN, north.latitude), null);
+  });
+});
+
+describe("the years a season can be asked for", () => {
+  it("offers every covered year to the three that stay inside one", () => {
+    for (const name of ["spring", "summer", "autumn"]) {
+      const years = yearsFor(name, north.latitude, CONFIG);
+      assert.equal(years.at(0), 1950);
+      assert.equal(years.at(-1), 2050);
+      assert.equal(years.length, 101);
+    }
+  });
+
+  it("withholds the last year from winter, whose far end falls outside", () => {
+    // Winter 2050 would end on 20 March 2051, past the last day the model
+    // reaches. Offering it would be offering a refusal.
+    const years = yearsFor("winter", north.latitude, CONFIG);
+    assert.equal(years.at(-1), 2049);
+    assert.ok(!years.includes(2050));
+  });
+
+  it("withholds it from summer below the equator, being the same three months", () => {
+    assert.equal(yearsFor("summer", south.latitude, CONFIG).at(-1), 2049);
+    assert.equal(yearsFor("winter", south.latitude, CONFIG).at(-1), 2050);
+  });
+
+  it("reads the coverage it is served rather than a period written here", () => {
+    const narrow = { coverage_start: "2000-01-01", coverage_end: "2030-12-31" };
+    assert.deepEqual(yearsFor("summer", north.latitude, narrow).at(0), 2000);
+    assert.deepEqual(yearsFor("summer", north.latitude, narrow).at(-1), 2030);
   });
 });
