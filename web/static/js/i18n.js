@@ -67,6 +67,15 @@ export const texts = {
     notFound: "Aucun lieu ne correspond à ce nom.",
     placeRequired: "Choisissez un lieu dans la liste.",
 
+    // Two ways of asking for the same thing — a start and an end — so the
+    // switch names the shape of the question, not what it will show. "Saison
+    // entière" and not "Une saison" : the point is that none of it is missing.
+    modeLabel: "Comment indiquer la période",
+    modeDates: "Plage de dates",
+    modeSeason: "Saison entière",
+    season: "Saison",
+    year: "Année",
+
     // Caught while the form is being filled in, so they are worded as
     // corrections rather than as refusals of a search that was really made.
     datesRequired: "Indiquez les deux dates.",
@@ -134,6 +143,17 @@ export const texts = {
       "Simulation, pas une prévision. La date situe la journée dans une saison, " +
       "elle n'engage rien sur ce jour-là.",
     scenario: "Scénario d'émissions haut.",
+  },
+
+  // The four names, in the order the form offers them, which is the order a
+  // French year is recited in. The keys are the ones `season.js` writes and the
+  // stylesheet paints — a test joins the three, because a season one of them
+  // knows and another does not leaves the page with no ground and no word.
+  season: {
+    spring: "Printemps",
+    summer: "Été",
+    autumn: "Automne",
+    winter: "Hiver",
   },
 
   sky: {

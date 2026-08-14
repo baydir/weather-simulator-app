@@ -95,6 +95,24 @@ def test_every_season_the_page_can_name_has_a_palette() -> None:
     assert written == painted == {"winter", "spring", "summer", "autumn"}
 
 
+def test_every_season_the_page_can_name_has_a_word() -> None:
+    """The second join, and it appeared the day the form offered seasons by name.
+
+    The results page needs a season it can paint; the accueil needs one it can
+    *say*, because the select is built from the dictionary. A name in the table
+    and not in `texts.season` would be an option with no label — an empty line in
+    a list, chosen by nobody, and nothing else would catch it either.
+    """
+    written = set(re.findall(r'name: "(\w+)"', (WEB / "static/js/season.js").read_text()))
+    dictionary = (WEB / "static/js/i18n.js").read_text()
+    # The `season:` block alone: `sky` and `measure` sit in the same object and
+    # their keys are not seasons.
+    block = re.search(r"\n  season: \{(.*?)\n  \},", dictionary, re.DOTALL)
+    assert block is not None
+    named = set(re.findall(r"(\w+):", block.group(1)))
+    assert written == named
+
+
 def test_the_results_page_carries_a_season_of_its_own() -> None:
     """The fallback for a URL with no usable range, and the only one there is.
 

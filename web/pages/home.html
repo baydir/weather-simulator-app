@@ -77,7 +77,36 @@
         <input type="hidden" id="lat" name="lat" />
         <input type="hidden" id="lon" name="lon" />
 
-        <div class="dates">
+        <!--
+          Two ways of asking for one period, and one of them showing at a time.
+
+          **Buttons, not a group of radios.** Radios only group by sharing a
+          `name`, and a name is what a GET form puts in the URL: the address
+          would carry a mode that means nothing to the results page. These
+          carry `type="button"`, so they are never submitted and never
+          accidentally submit the form either.
+
+          Without script the dates panel is the visible one and the form works
+          exactly as it did before the season existed.
+        -->
+        <div class="modes" role="group" data-attr-aria-label="form.modeLabel">
+          <button
+            type="button"
+            id="mode-dates"
+            class="mode"
+            aria-pressed="true"
+            data-text="form.modeDates"
+          ></button>
+          <button
+            type="button"
+            id="mode-season"
+            class="mode"
+            aria-pressed="false"
+            data-text="form.modeSeason"
+          ></button>
+        </div>
+
+        <div class="dates" id="panel-dates">
           <p class="field">
             <label for="debut" data-text="form.from"></label>
             <input type="date" id="debut" name="debut" required />
@@ -85,6 +114,27 @@
           <p class="field">
             <label for="fin" data-text="form.to"></label>
             <input type="date" id="fin" name="fin" required />
+          </p>
+        </div>
+
+        <!--
+          The season panel writes into the two date fields above; it does not
+          replace them. **Neither select carries a `name`**, so neither is
+          submitted: `debut` and `fin` stay the only things that leave, hidden
+          or not, and the URL is the same five parameters it has always been.
+          The results page therefore needs to know nothing about seasons.
+
+          Both lists are built by script — the season names come from the
+          dictionary, and the years from what the API says it covers.
+        -->
+        <div class="dates" id="panel-season" hidden>
+          <p class="field">
+            <label for="saison" data-text="form.season"></label>
+            <select id="saison"></select>
+          </p>
+          <p class="field">
+            <label for="annee" data-text="form.year"></label>
+            <select id="annee"></select>
           </p>
         </div>
 

@@ -870,6 +870,87 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(1);
 }
 
+/*
+ * A season and a year, in the same clothes as everything else on this page.
+ *
+ * A line of type over a hairline, like every field here — the sheet's first
+ * habit, and a `<select>` has no business being the one object in a box. The
+ * native arrow is left where it is: replacing it costs `appearance: none` and a
+ * drawn glyph, which is a second widget to keep, and the arrow is the one thing
+ * that says this field is a list rather than something to type in.
+ *
+ * **The dark scheme is inherited, not asked for**, and that is the difference
+ * from the date fields above. A date field wants the system's *light* mark so
+ * the edited segment stands out; a select has no segment, and its dropdown is
+ * better dark, matching the ivory-on-near-black the page already is.
+ */
+select {
+  width: 100%;
+  padding: calc(var(--space) * 2) 0;
+  border: 0;
+  border-bottom: 1px solid var(--rule-strong);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  line-height: 1.4;
+}
+
+select:hover {
+  border-bottom-color: var(--ink-soft);
+}
+
+select:focus {
+  outline: none;
+  border-bottom-color: var(--ink);
+}
+
+/*
+ * The switch between the two ways of asking.
+ *
+ * **Not a segmented control in a box.** Two words side by side, the chosen one
+ * underlined and in full ink, the other in the soft ink the labels use — the
+ * same hierarchy the rest of the page carries by weight and form rather than by
+ * a fill. Nothing here is opaque, so nothing here fights the sunset.
+ *
+ * The underline is the field hairline, borrowed: what is chosen sits on a rule
+ * exactly as a field does, and the eye reads the two panels below as continuing
+ * from it.
+ */
+.modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--space) * 6);
+  margin: 0 0 calc(var(--space) * 6);
+}
+
+.mode {
+  padding: calc(var(--space) * 1) 0;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    color 120ms ease,
+    border-color 120ms ease;
+}
+
+.mode:hover {
+  color: var(--ink);
+}
+
+.mode[aria-pressed="true"] {
+  border-bottom-color: var(--rule-strong);
+  color: var(--ink);
+}
+
 .dates {
   display: flex;
   gap: calc(var(--space) * 10);
