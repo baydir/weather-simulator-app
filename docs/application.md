@@ -81,6 +81,11 @@ sur l'endroit où l'observé s'arrête. Il est **vérifié à un jour près** de
 l'horloge du serveur, et la recherche est refusée sinon : au passage de minuit,
 la coupure entre ce qui a eu lieu et ce qui pourrait avoir lieu s'est déplacée.
 
+Il est **rendu à la page** avec la série, sans que le contrat change : le menu
+des années à comparer doit savoir lesquelles sont entièrement passées, et
+l'horloge d'un navigateur est celle du visiteur. Ce qui voyageait déjà entre les
+deux appels est simplement transmis plus loin.
+
 `/api/config` existe pour que la plage maximale soit **servie et non recopiée** :
 la borne de 92 jours s'applique dans l'interface comme dans l'API, et une
 seconde copie divergerait. **Les huit bornes de l'échelle de température y sont
@@ -116,7 +121,8 @@ web/
     pages/         home.html, results.html — HTML statique, aucun gabarit
     static/css/    style.css, une feuille bâtie sur des variables
     static/js/     fetch.js, i18n.js, present.js, bounds.js, band.js, chart.js,
-                   series.js, season.js, dom.js, prompt.js, home.js, results.js
+                   series.js, season.js, compare.js, dom.js, prompt.js,
+                   home.js, results.js
 ```
 
 Dans `api/`, `plan.py` porte **à la fois la façon de demander chaque segment et
@@ -160,6 +166,16 @@ Une propriété de cette table mérite d'être sue avant d'y toucher : **toutes 
 bornes tombent sur le 21**, et `rangeOf` s'y appuie pour prendre la veille de la
 suivante — le 20 du même mois, sans arithmétique de date ni fuseau à lire. Une
 borne déplacée au 1ᵉʳ rendrait un jour zéro, en silence ; un test l'interdit.
+
+**`compare.js` est du même côté de cette frontière**, et n'y porte que de
+l'arithmétique de calendrier : la même plage dans une autre année, l'appariement
+mois-jour des deux séries, et les années que le menu peut offrir. Rien n'y est un
+second exemplaire d'une règle du serveur — la plage décalée repart par
+`/api/plan`. Ce qui s'y vérifie sans navigateur mérite de l'être : le 29 février
+est la seule date où le décalage peut échouer, et il échoue en silence, JavaScript
+faisant glisser une date impossible au mois suivant au lieu de la refuser. Un
+décalage vers une année bissextile peut par ailleurs gagner un jour et dépasser
+la borne de 92 ; la plage est alors rognée par la fin.
 
 **`series.js` ne porte qu'une fonction, et c'est une leçon de la règle 3 appliquée
 à l'intérieur du navigateur.** La bande et le graphe doivent marquer la même
@@ -322,12 +338,20 @@ c'est ainsi qu'a été retirée l'étiquette qui écrivait le plafond des
 précipitations, laquelle nommait la journée la plus arrosée, c'est-à-dire un
 extrême de la plage.
 
+**Cette liste s'est élargie une fois, et l'élargir est un acte.** L'année
+comparée est écrite sur le dessin : ce n'est ni un total, ni une moyenne, ni un
+comptage, ni un extrême — elle nomme une marque, comme l'étiquette de couture
+nomme un passage → [Comparer à une autre année](#comparer-à-une-autre-année). Le
+test garde ce pour quoi il a été écrit, et vérifie que rien d'autre n'est passé
+avec.
+
 **Le cadrage des deux axes est la seule chose que le graphe décide**, et les deux
 relèvent de la validation qu'exige la règle 4 → [la section sur le
 graphe](#le-graphe-sous-la-bande).
 
-Une ligne de synthèse est envisagée dans [`idees.md`](idees.md), mais adossée à
-la comparaison au climat ancien, non retenue pour la première version.
+**Une ligne de synthèse reste écartée**, alors même que la comparaison au climat
+ancien est faite : « tant de journées à 30 °C d'un côté et de l'autre » est une
+agrégation, et le graphe rend inutile ce à quoi elle devait suppléer.
 
 **Tout écran affichant une journée simulée porte un avertissement explicite et
 visible** → [`projet.md`](projet.md). Une recherche qui ne dépasse pas la
@@ -552,6 +576,15 @@ demandé d'autre.
 en sens inverse : des radios ne se groupent qu'en partageant un `name`, et un
 `name` est précisément ce qu'un formulaire GET met dans l'adresse.
 
+**La saison est à gauche, et l'ordre est celui du balisage.** C'est la question
+que le site existe pour poser — un été à Montpellier en 2050 — quand deux dates
+sont l'échappatoire de qui veut une quinzaine précise. Réordonner en CSS aurait
+laissé l'ordre de lecture et l'ordre de tabulation sur la disposition que
+personne ne voit plus : un lecteur d'écran et un clavier doivent rencontrer les
+deux boutons dans l'ordre où un œil les rencontre. Les panneaux, eux, gardent le
+leur — un seul est ouvert à la fois, donc leur ordre n'est jamais lu, et celui
+qui s'affiche sans script doit rester celui que le balisage ne masque pas.
+
 **Deux bandes, dans la grammaire du bouton d'envoi et à un rang en dessous.**
 Elles portent un fond, jamais un filet seul — la variante transparente avait été
 mesurée à 3,7:1 sur le bouton d'envoi et écartée, un bouton sans fond héritant du
@@ -712,14 +745,21 @@ une marge automatique, elle est **à 92-94 % du dégradé quelle que soit la
 fenêtre**.
 
 **Elle ne tient plus dans la fenêtre, en revanche, et c'est un arbitrage rendu.**
-Le graphe ajoute quelque 420 px : la page passe de 789 à **1212 px** en
-1440 × 960 et de 720 à **1144** en 1280 × 720. Le choix était entre replier le
-graphe comme la provenance et laisser la page défiler ; c'est le second qui a été
-retenu, le graphe étant la seconde lecture de la recherche et non une note. La
-propriété perdue est réelle — cette page était faite pour être vue d'un coup — et
-elle ne se paie pas en lisibilité : le dégradé étant ancré au document, une page
-plus haute l'étire, chaque bloc glisse vers une portion plus claire, et **tous les
-rapports montent** (tables ci-dessous).
+Le choix était entre replier le graphe comme la provenance et laisser la page
+défiler ; c'est le second qui a été retenu, le graphe étant la seconde lecture de
+la recherche et non une note. La propriété perdue est réelle — cette page était
+faite pour être vue d'un coup — et elle ne se paie pas en lisibilité : le dégradé
+étant ancré au document, une page plus haute l'étire, chaque bloc glisse vers une
+portion plus claire, et **tous les rapports montent** (tables ci-dessous).
+
+**La page a grandi trois fois depuis, et chaque fois par une décision datée.**
+Elle valait 789 px avant le graphe ; celui-ci l'a portée à 1212. Puis les deux
+panneaux ont été agrandis dans le rapport où ils étaient, la comparaison à une
+autre année a ajouté son bloc, les repères de date ont ajouté deux rangées et
+l'écart entre les panneaux s'est ouvert pour que le titre du bas cesse de se lire
+comme la suite de l'axe du haut. Elle fait aujourd'hui **1472 px** en 1440 × 960
+et **1404** en 1280 × 720. Chacune de ces additions a été remesurée, et aucune
+n'a fait descendre un rapport.
 
 **Le rythme vertical y reste plus serré que le rythme partagé.** Mesurée à 893 px
 au rythme partagé avant le graphe, elle tombait à 789, et un second cran sous
@@ -733,18 +773,26 @@ Contrastes mesurés sur le rendu, fenêtre 1440 × 960, par
 
 | Texte | hiver | printemps | été | automne |
 |---|---|---|---|---|
-| le lieu | 15,7:1 | 14,5:1 | 15,5:1 | 15,8:1 |
-| la plage | 13,2:1 | 11,6:1 | 12,3:1 | 13,3:1 |
-| nouvelle recherche | 14,8:1 | 14,0:1 | 13,0:1 | 14,8:1 |
-| l'avertissement | 13,6:1 | 13,3:1 | 10,6:1 | 13,6:1 |
-| le scénario | 11,2:1 | 10,6:1 | 8,5:1 | 11,1:1 |
-| le mois | 10,3:1 | 10,2:1 | 7,4:1 | 10,1:1 |
-| le jour | 11,7:1 | 12,3:1 | 8,2:1 | 11,3:1 |
+| le lieu | 15,9:1 | 14,6:1 | 15,8:1 | 15,9:1 |
+| la plage | 13,4:1 | 11,7:1 | 12,8:1 | 13,5:1 |
+| nouvelle recherche | 15,1:1 | 14,2:1 | 13,8:1 | 15,1:1 |
+| l'avertissement | 14,2:1 | 13,6:1 | 11,6:1 | 14,2:1 |
+| le scénario | 11,9:1 | 10,9:1 | 9,4:1 | 12,0:1 |
+| le mois | 11,1:1 | 10,6:1 | 8,4:1 | 11,1:1 |
+| le jour | 12,7:1 | 12,8:1 | 9,4:1 | 12,4:1 |
 | les deux mesures | 16,9:1 | 15,3:1 | 18,1:1 | 17,4:1 |
-| la couture | 9,5:1 | 11,4:1 | 6,5:1 | 9,3:1 |
+| la couture | 11,2:1 | 12,1:1 | 7,7:1 | 10,8:1 |
 | les repères du graphe | 14,6:1 | 12,5:1 | 15,7:1 | 15,1:1 |
 | la couture du graphe | 16,9:1 | 15,3:1 | 18,1:1 | 17,4:1 |
-| la provenance | 8,3:1 | 7,4:1 | 9,3:1 | 8,8:1 |
+| comparer | 14,6:1 | 12,5:1 | 15,7:1 | 15,1:1 |
+| la provenance | 8,5:1 | 7,7:1 | 9,7:1 | 9,0:1 |
+
+**Le graphe n'a qu'une ligne dans cette table alors qu'il écrit quatre choses**
+— la graduation, les repères de date, les mois et le nom de l'année comparée. Ce
+sont une seule encre sur un seul papier ; quatre lignes auraient publié quatre
+fois le même nombre. La bascule *comparer* en a une à elle parce qu'elle est sur
+le papier du graphe et non sur le ciel, ce qui n'allait pas de soi → [le bloc de
+comparaison](#comparer-à-une-autre-année).
 
 **Les deux températures ne sont plus des lignes de cette table**, et leur retrait
 est une correction et non un ménage. Elles ne sont pas sur la carte mais sur leur
@@ -772,25 +820,26 @@ l'on mesure.
 
 **Deux tailles de fenêtre, donc deux jeux de chiffres.** Le dégradé étant ancré
 au document, une page raccourcie fait glisser chaque bloc sur une autre portion.
-À 1280 × 720, la page fait 1144 px et tout se resserre d'un cran :
+À 1280 × 720, la page fait 1404 px et tout se desserre d'un cran :
 
 | Texte | hiver | printemps | été | automne |
 |---|---|---|---|---|
-| le lieu | 15,9:1 | 14,6:1 | 15,8:1 | 15,9:1 |
-| la plage | 13,3:1 | 11,7:1 | 12,5:1 | 13,4:1 |
-| nouvelle recherche | 14,9:1 | 14,0:1 | 13,2:1 | 14,9:1 |
-| l'avertissement | 13,9:1 | 13,4:1 | 11,0:1 | 13,9:1 |
-| le scénario | 11,4:1 | 10,7:1 | 8,7:1 | 11,4:1 |
-| le mois | 10,7:1 | 10,3:1 | 7,8:1 | 10,5:1 |
-| le jour | 12,0:1 | 12,5:1 | 8,6:1 | 11,7:1 |
+| le lieu | 16,0:1 | 14,7:1 | 16,2:1 | 16,0:1 |
+| la plage | 13,4:1 | 11,8:1 | 13,0:1 | 13,5:1 |
+| nouvelle recherche | 15,2:1 | 14,2:1 | 13,9:1 | 15,2:1 |
+| l'avertissement | 14,4:1 | 13,7:1 | 12,0:1 | 14,4:1 |
+| le scénario | 12,1:1 | 11,0:1 | 9,7:1 | 12,2:1 |
+| le mois | 11,5:1 | 10,7:1 | 8,8:1 | 11,4:1 |
+| le jour | 13,0:1 | 13,0:1 | 9,8:1 | 12,9:1 |
 | les deux mesures | 16,9:1 | 15,3:1 | 18,1:1 | 17,4:1 |
-| la couture | 9,9:1 | 11,5:1 | 6,7:1 | 9,7:1 |
+| la couture | 11,5:1 | 12,2:1 | 8,0:1 | 11,1:1 |
 | les repères du graphe | 14,6:1 | 12,5:1 | 15,7:1 | 15,1:1 |
 | la couture du graphe | 16,9:1 | 15,3:1 | 18,1:1 | 17,4:1 |
-| la provenance | 8,6:1 | 7,9:1 | 9,8:1 | 9,2:1 |
+| comparer | 14,6:1 | 12,5:1 | 15,7:1 | 15,1:1 |
+| la provenance | 8,8:1 | 8,1:1 | 10,0:1 | 9,3:1 |
 
-**Le plancher de la page est la couture, à 6,5:1 en été** sur la fenêtre haute et
-6,7 sur la courte — l'étiquette verticale est le seul texte que la géométrie
+**Le plancher de la page est la couture, à 7,7:1 en été** sur la fenêtre haute et
+8,0 sur la courte — l'étiquette verticale est le seul texte que la géométrie
 pousse sur la partie sombre du dégradé, et l'été le seul sol où cela coûte
 quelque chose. Le sens des deux géométries s'est inversé le jour où le graphe est
 arrivé : la page ne se raccourcit plus pour tenir dans l'écran, elle s'allonge
@@ -799,8 +848,9 @@ rapports**, la page y étant proportionnellement plus haute que le dégradé
 qu'elle traverse.
 
 **Ces chiffres étaient plus bas avant le graphe** — plancher à 4,6:1 sur la
-fenêtre courte —, et la remontée n'est pas un progrès de palette : c'est la
-conséquence mécanique d'une page plus haute sur un dégradé ancré au document.
+fenêtre courte, 6,5 après le graphe —, et la remontée n'est pas un progrès de
+palette : c'est la conséquence mécanique d'une page plus haute sur un dégradé
+ancré au document.
 Elle se reperdrait le jour où la page raccourcirait, ce qui est la raison pour
 laquelle cette table se remesure à chaque changement de mise en page plutôt que
 de se recopier.
@@ -893,10 +943,14 @@ adoucie inventerait un mardi après-midi dont la série n'a aucune lecture. Une
 journée manquante coupe la courbe au lieu d'être traversée, et une lecture isolée
 garde son point sans segment.
 
-**L'écart entre les deux températures est rempli**, très pâle. L'amplitude
-devient une épaisseur, ce qui est la seule chose que le graphe dise et qu'une
-carte ne dise pas — et il la dit sans rien calculer : c'est la place entre deux
-lectures déjà tracées.
+**Rien n'est rempli tant qu'il n'y a qu'une année.** L'écart entre les deux
+températures l'était, très pâle, pour que l'amplitude se lise comme une
+épaisseur ; ce lavis est tombé le jour où une seconde année a pu être posée sous
+la première. Un aplat sur ce panneau dit désormais une seule chose — *ceci est
+l'année ancienne* —, là où deux lavis obligeaient à se demander à qui appartenait
+tel gris. L'amplitude n'est pas perdue : elle reste la place entre deux courbes
+toutes deux présentes, en couleur, portant leurs points. Elle cesse d'être
+peinte, ce qui n'est pas la même chose que de cesser d'être là.
 
 #### Les deux axes
 
@@ -916,6 +970,22 @@ Un axe absolu fixe a été écarté : il tiendrait la comparaison entre deux
 recherches, au prix d'écraser une plage d'été dans un tiers du panneau, ce qui
 coûte exactement ce que le graphe apporte.
 
+**Une année comparée est cadrée avec celle qu'on regarde, dans une fenêtre
+unique.** Deux fenêtres mettraient chaque année sur son échelle, et deux courbes
+sur deux échelles ne disent rien l'une de l'autre — c'est le motif ci-dessus,
+appliqué à l'intérieur d'un panneau au lieu de l'être entre deux recherches. Le
+panneau des pluies, lui, ne voit pas l'année comparée : elle n'y est pas
+dessinée, donc son plafond ne bouge pas.
+
+**Le pied du panneau des températures est un cadre, pas un zéro**, et la
+distinction se paie si on l'oublie. La ligne de base des pluies *est* la donnée :
+les barres s'y appuient, c'est zéro millimètre. Celle des températures tombe sur
+le demi-palier où la fenêtre s'est calée — 7,5 °C sur un été, −12,5 sur une
+période gelée. Elle est tracée parce qu'un panneau ouvert sur un côté se lit
+comme inachevé, et **elle ne porte aucun nombre** pour la raison qui fait qu'elle
+n'en signifie aucun : le plus bas chiffre écrit sur l'axe reste la première borne
+servie à l'intérieur de la fenêtre, un filet au-dessus.
+
 **En précipitations, l'axe prend la journée la plus arrosée de la période, avec
 un plancher de 10 mm.** Le plancher n'est pas un confort : sans lui, une plage
 dont la journée la plus humide fait 0,3 mm cadrerait l'axe sur 0,3 mm, et cette
@@ -931,6 +1001,41 @@ maximum, mais il n'est pas affiché — l'étiquette qui le nommait a été reti
 étant un extrême de la plage → [Ce que l'interface ne calcule
 pas](#ce-que-linterface-ne-calcule-pas).
 
+#### Où l'on est dans la période
+
+**Un nom de mois dit quel mois, et rien de l'endroit où l'on est dedans.** Sur
+quatre-vingt-douze jours un mois fait trois cents unités de large, et trouver la
+deuxième semaine d'août revenait à mesurer à l'œil entre deux noms. Le 1ᵉʳ, le 10
+et le 20 portent donc un trait court et leur nombre. Trois par mois est le plus
+petit compte qui suffise : neuf jours au plus serré, ce qui laisse partout la
+place de deux chiffres.
+
+**Une marque se pose sur une journée que la série porte**, lue sur sa propre
+date. Aucune journée n'est inventée pour porter un nombre rond : une plage
+ouvrant le 21 n'a ni 1ᵉʳ, ni 10, ni 20 dans ce mois-là et n'en reçoit aucun. Les
+deux rangées parcourent les journées pour cette raison, et non le calendrier.
+
+**Chaque panneau est daté à son propre pied**, par une seule fonction appelée
+deux fois. Le panneau des températures est le plus haut de loin, et y dater un
+point obligeait à descendre l'œil jusque sous les pluies. Ce sont les mêmes
+journées aux mêmes abscisses — un axe lu deux fois et non deux axes —, et un test
+vérifie que les colonnes coïncident : le jour où elles divergeraient, le graphe
+lirait deux périodes sur un seul axe de dates.
+
+**Les mois ne sont nommés que sous le panneau du bas**, où les nombres les
+surmontent, dans l'ordre où une date française se dit. Répétés aux deux panneaux
+ils auraient fait quatre mots de trop. Le nombre est centré sur sa colonne, là où
+se trouve le point de la journée ; le nom de mois garde le bord gauche, parce
+qu'il nomme un basculement et non une journée.
+
+**L'écart entre les deux panneaux tient la rangée du haut**, et c'est ce qui le
+fixe. Le titre du bas descend à douze unités au-dessus de son panneau, la rangée
+de dates remonte à quatorze sous le sien : à 36 les capitales tombaient sur les
+jambages, à 48 elles s'en dégageaient et l'ensemble se lisait encore comme un
+seul bloc — un titre posé juste sous un axe appartient à l'axe. Il faut une ligne
+de texte entière entre les deux, ce que le test exige désormais au lieu de la
+seule absence de chevauchement.
+
 #### Ce que le graphe emprunte
 
 **Il est dessiné sur le papier des cartes**, et ses marques prennent les couleurs
@@ -945,6 +1050,8 @@ vues.
 **Son équivalent accessible est la bande elle-même**, qui porte déjà chaque
 valeur en toutes lettres. Le dessin est annoncé par un nom qui renvoie à elle, et
 ne réénonce aucun nombre : une infobulle serait un second exemplaire de la carte.
+La bande ne montrant qu'une année, l'équivalent des courbes grises est ailleurs →
+[Comparer à une autre année](#comparer-à-une-autre-année).
 
 **Sous 58 rem, il défile latéralement au lieu de rétrécir.** Le dessin est un
 `viewBox` unique et se met à l'échelle en entier, sa typographie comprise : à la
@@ -952,6 +1059,118 @@ largeur d'un téléphone, les nombres de l'axe sortaient à quatre pixels. Il n'
 pas de point de rupture à choisir — le minimum est l'endroit où onze unités
 valent onze pixels — et c'est la réponse que la bande donne déjà au même
 problème.
+
+### Comparer à une autre année
+
+**« 39 °C » ne dit quelque chose qu'à qui sait ce qu'était un 14 juillet
+auparavant**, et c'est précisément ce que le lecteur vient chercher : la
+pédagogie est dans l'écart, pas dans la valeur. Un bouton sous le graphe pose les
+températures d'une autre année sur le même panneau.
+
+**La forme prise n'est pas celle qu'[`idees.md`](idees.md) avait envisagée.** Il
+prévoyait une seconde bande de quatre-vingt-dix cartes, en concédant lui-même
+qu'elle ne se compare pas à l'œil, et voulait y adjoindre une ligne de synthèse —
+laquelle est une agrégation, refusée par [Ce que l'interface ne calcule
+pas](#ce-que-linterface-ne-calcule-pas). Sur le graphe, le problème disparaît :
+la superposition *est* la comparaison, et une courbe reste une marque par
+journée.
+
+#### Ce que la comparaison ne coûte pas
+
+**Aucun code serveur.** Les mêmes dates dans une autre année repassent par
+`/api/plan` et `/api/days`, qui les découpent, les corrigent et les classent avec
+les mêmes fonctions. C'est ce qui rend les deux tracés comparables, et c'est
+[`CLAUDE.md`](../CLAUDE.md) règle 2 obtenue en ne calculant rien de neuf.
+
+**Deux requêtes, et pas de grille.** Une plage entièrement passée coûte les deux
+requêtes d'archive, ERA5-Land et ERA5, et le refus hors grille ne s'applique
+qu'aux plages atteignant l'avenir → [`donnees.md`](donnees.md). La comparaison
+marche donc **partout dans le monde**, y compris là où le futur est refusé.
+
+**Une requête par année, au plus.** Ce qui est revenu est gardé en mémoire :
+rebasculer, ou revenir sur une année déjà vue, ne redemande rien. Un échec ne
+touche pas la page — il s'écrit dans le bloc, les journées demandées étant déjà à
+l'écran.
+
+#### Le choix de l'année
+
+**Une année choisie d'intuition se trompe de l'ordre de grandeur du signal.**
+`scripts/model_selection/reference_year.py` note chaque année en écarts-types de
+sa période, sur cinq sites français : **1980 est à −2,00 σ en été**, le plus froid
+des trente à Marseille, Strasbourg, Pontarlier et Chamonix, et lui comparer un été
+simulé montrerait environ deux fois le réchauffement qu'il y a. **2003, à
++3,25 σ**, montrerait un refroidissement. Une référence tardive coûte autre chose :
+les sites français se réchauffent de 0,92 °C entre 1979-1988 et 1999-2008, si bien
+qu'une année prise dans les années 2000 dépense un degré du signal avant de
+commencer.
+
+**La plus ordinaire de la période la plus ancienne exploitable est 1991**
+(+0,49 σ en été, −0,46 en hiver, +0,03 sur l'année, sur 1979-1994) ; sur
+1979-2008 ce serait 2004. **Le menu s'ouvre sur 1991 et laisse choisir** de 1950 à
+la dernière année entièrement passée — arbitrage du porteur du projet. Le lecteur
+garde la main ; ce que le défaut achète, c'est que personne n'atterrisse sur 1980
+sans le vouloir.
+
+**Deux exigences d'honnêteté, faute de quoi la fonction induit en erreur.** Le
+libellé dit que l'année a été *choisie pour être ordinaire* — la période affichée,
+elle, n'a pas été sélectionnée et peut porter une canicule ; comparer un tirage
+libre à un tirage choisi pour sa sagesse laisserait croire que le passé n'avait
+pas d'extrêmes. Et la sélection portant sur la seule température, **la pluie de
+l'année retenue est quelconque** : elle n'est donc pas dessinée, et une note le
+dit plutôt que de le laisser découvrir.
+
+**La dernière année offerte se déduit du `today` du serveur**, remonté par
+`/api/plan` jusqu'à la page : une comparaison atteignant la prévision ne serait
+pas une autre année de météo, mais la même trajectoire en gris. Une journée qui
+n'est pas `observed` est écartée en plus de cela, ce qui est une lecture d'un
+champ servi et non un second contrôle.
+
+#### Ce que le dessin en fait
+
+**L'année comparée est une bande, pas deux courbes de plus.** Ses deux lectures
+sont tracées en gris fin, l'écart entre elles rempli, et **aucun point** : le
+point est la marque de l'année demandée. Elle cesse ainsi d'être deux tracés à
+suivre pour devenir le sol contre lequel les deux courbes saturées se lisent —
+la question étant si la journée tient dans ce qui était ordinaire ou en sort.
+
+**Le gris est un jeton posé à côté des deux températures, et il ne tourne pas
+avec la saison** : le graphe est sur le papier, qui ne tourne pas. Il a été
+mesuré, et corrigé sur mesure — la première valeur donnait 2,95:1 sur le papier,
+sous les 3:1 qu'un trait suivi à l'œil demande ; la retenue est à **3,44:1**. La
+force du remplissage vit dans un second jeton, parce que le témoin de la légende
+est en HTML et qu'un `span` ne peut pas emprunter un `fill` de SVG.
+
+**L'année est écrite sur le dessin, et cette ligne a élargi une règle.** Le test
+qui tient [Ce que l'interface ne calcule
+pas](#ce-que-linterface-ne-calcule-pas) refuse tout texte du graphe qui ne soit
+ni un titre, ni une graduation, ni un repère. Une année n'est rien de ce que la
+règle vise — ni total, ni moyenne, ni comptage, ni extrême de la plage : elle
+**nomme une marque**, comme l'étiquette de couture nomme un passage. La liste a
+donc gagné une entrée, et un test vérifie que rien d'autre n'est passé avec.
+L'étiquette est posée dans la marge au-dessus du panneau, la seule bande où
+aucune marque ne peut tomber, et ses chiffres prennent l'encre douce de la
+graduation : le gris tient pour un trait, pas pour du texte.
+
+#### Le bloc, et son équivalent accessible
+
+**Il est sur le papier du graphe, et le rendu l'a imposé.** Posé sur le dégradé
+il mesurait **1,1:1** — encre sombre sur un fond qui vire au noir en bas de page.
+Le basculer en encre pâle comme la provenance ne marchait pas : la provenance est
+tenue au pied par une marge automatique, ce bloc suit la fin du graphe, donc sur
+une fenêtre haute il retombe au milieu de l'orange. Le papier est le seul sol qui
+ne bouge pas, et c'est déjà l'argument qui met le graphe dessus. Les deux notes
+d'honnêteté en dépendent : un avertissement illisible équivaut à un avertissement
+absent.
+
+**Il est hors du cadre défilant**, `.chart-panel` défilant latéralement sous
+58 rem : un contrôle à l'intérieur quitterait l'écran avec le dessin.
+
+**L'équivalent accessible des courbes grises est une page de résultats, à un lien
+de distance.** La bande n'écrit qu'une année, et c'est le seul vrai trou de la
+fonction. L'année comparée étant une recherche ordinaire de ce site, un lien
+« Voir 1991 en détail » ouvre sa propre page, avec sa bande, ses cartes et chaque
+nombre en toutes lettres. Il est posé avant même que les données arrivent : il
+reste vrai qu'elles arrivent ou non.
 
 ---
 

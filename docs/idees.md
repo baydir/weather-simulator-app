@@ -4,6 +4,11 @@ Ce qui a été examiné puis écarté, et ce qui reste ouvert. **Rien ici n'est
 décidé.** Consigné pour que les constats de mesure ne se perdent pas et qu'on ne
 refasse pas deux fois le même raisonnement.
 
+Une piste qui finit par être retenue **quitte ce document** : ses constats
+partent où ils font foi, et il ne reste ici qu'une note disant où, et ce que la
+réalisation a démenti de ce qui avait été supposé. C'est arrivé une fois, à la
+comparaison à l'ancien climat.
+
 Tout ce qui touche aux données ou à la méthode relève de la validation
 scientifique → [`CLAUDE.md`](../CLAUDE.md).
 
@@ -67,57 +72,32 @@ doivent expliquer la méthode.
 
 ---
 
-## La comparaison à l'ancien climat
+## La comparaison à l'ancien climat — **faite**
 
-**Non retenu pour la première version.** Consigné parce que le dispositif s'y
-prête déjà et que plusieurs constats de mesure risqueraient sinon d'être perdus.
+**Elle n'est plus une idée.** Ce qui était consigné ici vit désormais dans
+[`application.md`](application.md), section *Comparer à une autre année* : les
+trois constats de mesure sur le choix de l'année, les deux exigences
+d'honnêteté, et ce que le dessin en fait. Un fait vit dans un seul fichier.
 
-L'application affiche « 14 juillet 2046 : 21 °C / 39 °C ». C'est plus parlant
-qu'une anomalie globale, mais **39 °C ne dit quelque chose qu'à qui sait ce
-qu'était un 14 juillet auparavant** — or c'est précisément ce que le lecteur
-vient chercher. La pédagogie est dans l'écart, pas dans la valeur.
+**Ce que la réalisation a démenti de ce qui était écrit ici.** La forme prévue
+était une seconde bande de quatre-vingt-dix cartes sous la première, doublée
+d'une ligne de synthèse — le même paragraphe concédant que deux bandes de
+quatre-vingt-dix cartes ne se comparent pas à l'œil. Elle est allée sur le
+graphe, où la superposition *est* la comparaison, et la ligne de synthèse est
+tombée avec le problème qu'elle devait résoudre : c'était une agrégation, que
+[`application.md`](application.md) refuse à l'interface.
 
-**Le principe envisagé.** Dès que la plage comporte un segment futur, un bouton
-affiche sous la bande initiale les **mêmes dates du calendrier** d'une année
-ancienne, dans le même format. Déclenchement : la règle qui gouverne déjà le
-refus hors grille, pour n'en avoir qu'une à retenir. **Année de référence codée
-en dur, par grande région** — une table figée lue en mémoire, aucun calcul à la
-requête. Le découpage régional n'est pas une commodité : **une année ne peut pas
-être ordinaire partout**, 1980 ayant été le plus froid des trente étés en France
-et le vingt-deuxième sur trente à Reykjavik.
+Deux autres suppositions sont tombées. Le déclenchement ne suit pas la règle du
+refus hors grille : une plage passée n'exige aucune correction, donc la
+comparaison marche partout dans le monde, y compris là où le futur est refusé.
+Et l'année n'est pas codée en dur par grande région : le menu s'ouvre sur celle
+qui a été mesurée comme ordinaire et laisse choisir.
 
-**Trois constats conditionnent le choix de l'année**
-(`scripts/model_selection/reference_year.py`, cinq sites français, écarts en
-écarts-types de la période) :
-
-- **Une année choisie d'intuition se trompe lourdement.** 1980 est à −2,00 en
-  été et −2,14 sur l'année : le plus froid des trente à Marseille, Strasbourg,
-  Pontarlier et Chamonix. La comparaison y ajouterait un écart artificiel
-  d'environ 2 °C, soit l'ordre de grandeur du réchauffement qu'elle prétend
-  montrer. Symétriquement, 2003 est à +3,25 en été.
-- **L'année doit être ordinaire sur plusieurs saisons à la fois.** Une moyenne
-  annuelle centrée peut recouvrir un été chaud compensé par un hiver doux. Sur
-  1979-1994, la plus ordinaire est **1991** (+0,49 été, −0,46 hiver, +0,03
-  année) ; sur 1979-2008, **2004** (+0,08 / −0,06 / −0,03).
-- **Une référence tardive dépense le signal avant de commencer.** Entre 1979-1988
-  et 1999-2008, les sites français se réchauffent de **+0,92 °C** : une année
-  prise dans les années 2000 escamote près d'un degré de ce qu'il s'agit de
-  montrer.
-
-À privilégier : **la plus ordinaire de la période la plus ancienne
-exploitable** — ERA5 avant 1979 étant l'extension arrière préliminaire.
-
-**Deux exigences d'honnêteté**, faute de quoi la fonctionnalité induit en
-erreur :
-
-- Le libellé doit dire que l'année a été **choisie pour être ordinaire** —
-  « 1991, une année sans particularité » et non « 1991 ». Le tirage futur, lui,
-  n'est pas sélectionné : il peut porter une canicule. Comparer un tirage libre à
-  un tirage choisi pour sa sagesse laisserait croire que le passé n'avait pas
-  d'extrêmes, alors que c'est la sélection qui les a écartés.
-- La sélection portant sur la seule température, **la pluie de l'année retenue
-  est quelconque**. Mieux vaut l'assumer que le découvrir.
-
-Enfin, deux bandes de quatre-vingt-dix cartes ne se comparent pas à l'œil : une
-ligne de synthèse au-dessus — journées à 30 °C ou plus de part et d'autre —
-porte ce que les bandes ne peuvent pas porter.
+**Ce qui reste ouvert ici.** Le constat qui motivait le découpage régional tient
+toujours — **une année ne peut pas être ordinaire partout**, 1980 ayant été le
+plus froid des trente étés en France et le vingt-deuxième sur trente à
+Reykjavik —, et la mesure n'a été faite que sur les cinq sites français.
+L'étendre aux cinq autres sites de `scripts/model_selection/config.py` ne coûte
+aucun réseau, le cache 1979-2014 étant sur disque ; c'est ce qui permettrait de
+faire varier le défaut par région. C'est une étape de mesure, donc une étape en
+soi, et elle relève de la validation scientifique.

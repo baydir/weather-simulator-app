@@ -393,6 +393,61 @@ remède touche la composition de la page et **reste à arbitrer**.
 
 ---
 
+## La comparaison à une autre année
+
+Hors numérotation : une addition à l'étape 6, comme le graphe. Un bouton sous le
+dessin pose les températures d'une année ancienne sur le même panneau — une bande
+grise que les deux courbes de l'année demandée traversent ou surmontent. Le menu
+s'ouvre sur **1991**, mesurée comme la plus ordinaire de la période la plus
+ancienne exploitable, et laisse choisir de 1950 à la dernière année entièrement
+passée.
+
+**Ce qu'elle a corrigé de ce que [`idees.md`](idees.md) supposait.** Trois
+suppositions sont tombées, et aucune n'était une erreur de raisonnement : c'était
+la forme envisagée qui les portait. La seconde bande de quatre-vingt-dix cartes a
+été remplacée par une superposition sur le graphe, ce qui a fait tomber avec elle
+la ligne de synthèse qui devait la sauver — laquelle était une agrégation. Le
+déclenchement ne suit pas la règle du refus hors grille : une plage passée
+n'exige aucune correction, donc la comparaison marche partout dans le monde, y
+compris là où le futur est refusé. Et l'année n'est pas figée par région, le
+défaut mesuré suffisant à écarter la lecture fausse.
+
+**Elle n'a rien coûté au serveur, et c'est le point le plus important.** Les
+mêmes dates dans une autre année repassent par `/api/plan` et `/api/days`, donc
+mêmes segments, mêmes seuils, même fonction de classe de ciel. La règle 2 est
+tenue sans une ligne de Python — deux requêtes d'archive, et pas de grille.
+
+**Ce que le rendu a attrapé, trois fois.** Le bloc de comparaison posé sur le
+dégradé mesurait **1,1:1** : encre sombre sur un fond qui vire au noir en bas de
+page. L'encre pâle de la provenance n'était pas la réponse — celle-ci est tenue
+au pied par une marge automatique quand ce bloc suit la fin du graphe, donc sur
+une fenêtre haute il retombe au milieu de l'orange. Il est passé sur le papier,
+seul sol qui ne bouge pas. Le gris des courbes, ensuite, mesurait 2,95:1, sous
+les 3:1 qu'un trait suivi à l'œil demande ; il est à 3,44:1. Et la bande a
+purement disparu le jour où sa force est passée dans un jeton : `.chart-ribbon`
+se posait à 0,07 d'opacité, que la règle ne remettait plus à 1, si bien que
+0,22 × 0,07 ne peignait rien. Invisible, silencieux, parfaitement plausible dans
+le code.
+
+**Une règle a été élargie sciemment.** Le test qui refuse tout texte du graphe
+n'étant ni un titre, ni une graduation, ni un repère a gagné une entrée pour
+l'année comparée. Une année nomme une marque, comme l'étiquette de couture nomme
+un passage ; ce que la règle vise — total, moyenne, comptage, extrême de la plage
+— reste refusé, et un test vérifie que rien d'autre n'est passé avec.
+
+**Ce que le dessin a gagné dans la foulée.** Les deux panneaux ont été agrandis
+dans leur rapport de 1,75, le 1ᵉʳ, le 10 et le 20 de chaque mois portent des
+repères au pied de **chacun** des deux panneaux, et le panneau des températures
+s'est fermé par un trait qui est un cadre et non un zéro. La page passe de 1212 à
+**1472 px** en 1440 × 960 ; toutes les tables de contraste ont été remesurées et
+le plancher est monté de 6,5 à **7,7:1**. Un test a par ailleurs attrapé une
+ligne supprimée par accident dans le gabarit du dessin — le panneau des pluies
+s'était effondré en silence, hauteur `NaN`, aucune barre.
+
+→ [`application.md`](application.md)
+
+---
+
 ## Ce qui reste calé sur une base mince
 
 Aucune décision scientifique n'est en attente, mais deux points méritent d'être
