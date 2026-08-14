@@ -78,7 +78,8 @@
         <input type="hidden" id="lon" name="lon" />
 
         <!--
-          Two ways of asking for one period, and one of them showing at a time.
+          Two ways of asking for one period, and neither panel showing until
+          one of them is picked.
 
           **Buttons, not a group of radios.** Radios only group by sharing a
           `name`, and a name is what a GET form puts in the URL: the address
@@ -86,8 +87,10 @@
           carry `type="button"`, so they are never submitted and never
           accidentally submit the form either.
 
-          Without script the dates panel is the visible one and the form works
-          exactly as it did before the season existed.
+          **The markup opens on the dates panel, and script closes it.** Left
+          the other way round, a visitor without JavaScript would meet a form
+          with no period at all and no way to reveal one. Here the page still
+          degrades to exactly what it was before the season existed.
         -->
         <div class="modes" role="group" data-attr-aria-label="form.modeLabel">
           <button
@@ -95,6 +98,7 @@
             id="mode-dates"
             class="mode"
             aria-pressed="true"
+            aria-controls="panel-dates"
             data-text="form.modeDates"
           ></button>
           <button
@@ -102,6 +106,7 @@
             id="mode-season"
             class="mode"
             aria-pressed="false"
+            aria-controls="panel-season"
             data-text="form.modeSeason"
           ></button>
         </div>
@@ -138,7 +143,13 @@
           </p>
         </div>
 
-        <p><button type="submit" data-text="form.submit"></button></p>
+        <!--
+          Hidden by script until a period has been asked for, and visible here
+          for the same reason the dates panel is: with no script, this is the
+          form as it always was. Left showing before a mode is picked, it would
+          run a search on default dates the visitor never saw.
+        -->
+        <p id="go"><button type="submit" data-text="form.submit"></button></p>
 
         <p id="status" class="status" aria-live="polite"></p>
       </form>

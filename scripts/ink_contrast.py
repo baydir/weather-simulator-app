@@ -307,18 +307,23 @@ def measure(page, season: str) -> dict:
 
 
 def measure_home(page, mode: str) -> dict:
-    """The accueil with one of its two panels showing.
+    """The accueil in one of its three states.
 
-    The switch changes the page's height, and the sunset is anchored to the
-    document — so every row below it lands on a different part of the gradient
-    depending on which panel is open. That is why this is two columns and not
-    one: they are two geometries, exactly as the two window sizes are.
+    **Three, because the page opens on neither panel.** Which one is open
+    changes the page's height, and the sunset is anchored to the document — so
+    every row below the switch lands on a different part of the gradient. They
+    are three geometries, exactly as the window sizes are, and the one the
+    visitor meets first is the one with nothing open.
     """
-    page.click("#mode-season" if mode == "saison entière" else "#mode-dates")
+    page.reload()
+    page.wait_for_function("() => document.getElementById('debut').min !== ''")
+    if mode != "rien d'ouvert":
+        page.click("#mode-season" if mode == "saison entière" else "#mode-dates")
+        page.wait_for_selector("#go:not([hidden])")
     return read_rows(page, HOME_ROWS, NOTHING)
 
 
-HOME_MODES = ["plage de dates", "saison entière"]
+HOME_MODES = ["rien d'ouvert", "plage de dates", "saison entière"]
 
 # The geometry each table was published at. The accueil's is shorter, and that is
 # not an oversight: it is the window the six figures in docs/application.md were

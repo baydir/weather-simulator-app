@@ -325,6 +325,13 @@ essuyer un refus parce qu'il en avait demandé 92 quand l'API en servait 90.
 L'accueil porte donc **deux modes exclusifs** : la plage de dates, inchangée, et
 une saison assortie d'une année.
 
+**Et il ne montre ni l'un ni l'autre avant qu'on ait choisi.** La page s'ouvre
+sur un lieu et deux bandes ; le panneau se déplie au clic, le bouton d'envoi avec
+lui. Une plage étalée d'emblée répondait avant qu'on ait posé la question, et
+laissait partir une quinzaine par défaut que personne n'avait regardée si le
+visiteur allait droit au bouton. Le repli est écrit dans le script et non dans le
+balisage : livrée ouverte, la page reste utilisable sans JavaScript.
+
 **Quatre arbitrages ont été rendus par le porteur du projet** avant d'écrire une
 ligne : deux modes exclusifs plutôt qu'un raccourci ; l'année est celle où la
 saison *commence*, ce qui ne se voit que sur l'hiver ; sous l'équateur la saison
@@ -359,22 +366,28 @@ comptage par « deux candidates au plus », l'hiver faisant exactement 90 jours.
 jamais compté que des journées, et c'est la justification qui avait pris une
 commodité pour une propriété.
 
-**L'accueil s'est fait mesurer pour la première fois par une commande.** Ses six
-contrastes avaient été relevés à la main une fois ; `ink_contrast.py` fait
-désormais les deux pages. La bascule coûte 52 px, le dégradé est ancré au
-document, et tout ce qui la suit glissait vers le bleu pâle — six dixièmes de
-rapport perdus sous elle. Les 52 px ont été repris sur les intervalles du
-formulaire, et les étiquettes prennent l'encre pleine : **la bande entre 50 % et
-65 % du dégradé ne porte aucune encre**, le noir pur y plafonnant à 4,0:1. C'est
-une hauteur, pas un ton.
+**L'accueil s'est fait mesurer pour la première fois par une commande**, et c'est
+elle qui a dessiné le formulaire. Ses six contrastes avaient été relevés à la
+main une fois ; `ink_contrast.py` fait désormais les deux pages, l'accueil en
+trois colonnes — un état par panneau, plus celui où rien n'est ouvert. Le dégradé
+étant ancré au document, la hauteur que les bandes ajoutent pousse les champs
+vers le bleu pâle, et **la bande entre 50 % et 65 % du dégradé ne porte aucune
+encre** : le noir pur y plafonne à 4,0:1. C'est une hauteur, pas un ton — et
+trois décisions de forme en sont sorties, qu'aucun jugement à l'œil n'aurait
+prises : bandes côte à côte plutôt qu'empilées (45 px contre 96), plus basses que
+le bouton d'envoi, et la respiration du haut de page ramenée de 10 vh à 6 vh. Une
+quatrième est venue du rendu et non du chiffre : à 45 % d'opacité les bandes
+lisaient comme des dalles collées sur la photographie, et elles sont passées à
+24 %, où elles gardent 7,7:1.
 
-**Deux constats consignés plutôt que recouverts.** Le bouton sort à 6,9:1 quand
+Plancher à **4,6:1** contre 4,2 avant ce travail.
+
+**Deux constats consignés plutôt que recouverts.** Le bouton sort à 7,0:1 quand
 le document publiait 7,5, sur une méthode dont la table de la page de résultats
 se reproduit sur ses quarante-huit cellules. Et **les autres tailles de fenêtre
 ne passent pas**, ce qui est antérieur à ce travail et n'avait jamais été mesuré :
-sur une fenêtre haute le plancher est l'avertissement de la règle 1, à 3,7:1. Rien
-n'a été dégradé, rien n'est réglé ; le remède touche la composition de la page et
-**reste à arbitrer**.
+sur une fenêtre haute le plancher est l'avertissement de la règle 1, à 3,7:1. Le
+remède touche la composition de la page et **reste à arbitrer**.
 
 → [`application.md`](application.md)
 

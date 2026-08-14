@@ -75,6 +75,10 @@ export const texts = {
     modeSeason: "Saison entière",
     season: "Saison",
     year: "Année",
+    // The submit band is hidden until a panel is open, so this is only ever
+    // reached by pressing Enter in the place field — which submits a form
+    // whether or not it has a button on screen.
+    periodRequired: "Choisissez une plage de dates ou une saison entière.",
 
     // Caught while the form is being filled in, so they are worded as
     // corrections rather than as refusals of a search that was really made.

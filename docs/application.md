@@ -360,24 +360,24 @@ le seul texte à tomber sur la bande claire quelle que soit la fenêtre.
 Contrastes mesurés sur le rendu, fenêtre 1440 × 900, par
 [`scripts/ink_contrast.py --page home`](../scripts/ink_contrast.py). **Le
 défilement n'entre plus dans la mesure** : la sonde lit les positions en
-coordonnées de document, comme le dégradé y est ancré. Une colonne par mode : le
-formulaire n'a pas la même hauteur selon celui qui est ouvert, et sur cette page
-la hauteur *est* la lisibilité.
+coordonnées de document, comme le dégradé y est ancré. **Trois colonnes, une par
+état du formulaire** : la page s'ouvre sans panneau, et la hauteur du formulaire
+change selon celui qu'on déplie. Sur cette page, la hauteur *est* la lisibilité.
 
-| Texte | plage de dates | saison entière |
-|---|---|---|
-| la question | 10,8:1 | 10,8:1 |
-| la promesse | 7,5:1 | 7,5:1 |
-| l'étiquette *Lieu* | 7,4:1 | 7,4:1 |
-| le champ *Lieu* | 6,6:1 | 6,6:1 |
-| la bascule choisie | 5,6:1 | 5,6:1 |
-| la bascule au repos | 5,6:1 | 5,6:1 |
-| l'étiquette *Du* | 5,1:1 | — |
-| le champ *Du* | 4,5:1 | — |
-| l'étiquette *Saison* | — | 5,1:1 |
-| le champ *Saison* | — | 4,5:1 |
-| le bouton | 6,9:1 | 6,9:1 |
-| l'avertissement | 5,9:1 | 5,9:1 |
+| Texte | rien d'ouvert | plage de dates | saison entière |
+|---|---|---|---|
+| la question | 11,2:1 | 11,2:1 | 11,2:1 |
+| la promesse | 7,8:1 | 7,8:1 | 7,8:1 |
+| l'étiquette *Lieu* | 7,8:1 | 7,8:1 | 7,8:1 |
+| le champ *Lieu* | 7,0:1 | 7,0:1 | 7,0:1 |
+| la bande choisie | — | 9,7:1 | 7,7:1 |
+| la bande au repos | 9,7:1 | 7,7:1 | 8,2:1 |
+| l'étiquette *Du* | — | 5,1:1 | — |
+| le champ *Du* | — | 4,6:1 | — |
+| l'étiquette *Saison* | — | — | 5,1:1 |
+| le champ *Saison* | — | — | 4,6:1 |
+| le bouton | — | 7,0:1 | 7,0:1 |
+| l'avertissement | 5,9:1 | 5,9:1 | 5,9:1 |
 
 **Ces chiffres se remesurent à chaque changement de mise en page**, et pas par
 excès de zèle : resserrer la page a fait glisser le formulaire sur du bleu plus
@@ -386,21 +386,31 @@ lisibilité sont la même question. La table est désormais **imprimée par une
 commande** et non relevée à la pipette, ce qui est ce qui a permis de la
 remesurer sérieusement pour la première fois.
 
-**Ce que la première mesure par commande a appris.** La bascule ajoute 52 px au
-formulaire, et le dégradé étant ancré au document, tout ce qui la suit glisse
-vers le bleu plus pâle : les rapports sous elle tombaient de six dixièmes. Ces
-52 px sont donc **repris sur les intervalles du formulaire** — l'air au-dessus
-de la colonne, la respiration du haut de page, les gaps qu'une étiquette sépare
-déjà — plutôt que payés en contraste. Toutes les lignes en sortent égales ou
-meilleures qu'avant la bascule.
+**Ce que la mesure par commande a arbitré, trois fois.** Les deux bandes de mode
+coûtent au formulaire une hauteur qu'il n'avait pas, et le dégradé étant ancré au
+document, tout ce qui les suit glisse vers le bleu pâle : les premiers essais
+faisaient tomber les champs de six dixièmes de rapport. Trois décisions en
+découlent, et aucune n'aurait été prise sans le chiffre.
 
-**Deux valeurs ont bougé sans que la mise en page l'explique**, et il faut le
-dire plutôt que de les recouvrir. Cinq des six lignes publiées se reproduisent au
-dixième ; le bouton sortait à 7,5:1 et la commande en lit **6,9**, dont 6,7 sur
-la géométrie d'avant la bascule. La méthode n'est pas en cause — la table de la
-page de résultats se reproduit sur ses quarante-huit cellules —, donc l'écart
-tient à une géométrie antérieure ou à un relevé manuel fait autrement. C'est la
-valeur mesurée qui est publiée.
+- **Côte à côte, non empilées.** Deux bandes pleine largeur coûtaient quelque
+  96 px, une paire en coûte 45.
+- **Plus basses que le bouton d'envoi** — 12 px de rembourrage contre 20. Elles
+  choisissent la question, lui la pose.
+- **Le reste est repris sur l'air du haut de page**, dont la respiration passe de
+  10 vh à 6 vh. C'est le seul endroit de la page où la hauteur n'achète rien
+  d'autre que du vide, et les champs étaient ce qui s'approchait le plus de la
+  bande pâle.
+
+Plancher à **4,6:1**, contre 4,2:1 avant ce travail, et toutes les lignes sont
+égales ou meilleures.
+
+**Une valeur a bougé sans que la mise en page l'explique**, et il faut le dire
+plutôt que la recouvrir. Le bouton sortait à 7,5:1 et la commande en lit
+**7,0**, dont 6,7 sur la géométrie d'avant les bandes. La méthode n'est pas en
+cause — les cinq autres lignes publiées se reproduisaient au dixième, et la table
+de la page de résultats se reproduit sur ses quarante-huit cellules —, donc
+l'écart tient à une géométrie antérieure ou à un relevé manuel fait autrement.
+C'est la valeur mesurée qui est publiée.
 
 **La bande située entre 50 % et 65 % du dégradé ne porte aucune encre.** Le fond
 y va de `#4b688b` à `#677390`, et à ces clartés le noir pur plafonne à 4,0:1
@@ -414,14 +424,16 @@ leur forme — onze pixels, capitales, interlettrage.
 travail.** La table n'a jamais été publiée que pour 1440 × 900, faute d'outil
 pour en mesurer d'autres. Planchers relevés, avant et après :
 
-| Fenêtre | avant la bascule | après |
+| Fenêtre | avant les bandes | après |
 |---|---|---|
-| 1440 × 900 | 4,2:1 | **4,5:1** |
-| 1280 × 720 | 3,2:1 | 3,2:1 |
+| 1440 × 900 | 4,2:1 | **4,6:1** |
+| 1280 × 720 | 3,2:1 | 3,1:1 |
 | 1440 × 1200 | 3,7:1 | 3,7:1 |
-| 390 × 844 | 2,9:1 | 3,2:1 |
+| 390 × 844 | 2,9:1 | 3,1:1 |
 
-Rien n'a été dégradé, mais rien n'est réglé non plus. Sur une fenêtre haute le
+Le seul déplacement est **un dixième perdu en 1280 × 720**, une géométrie qui
+échouait déjà et échoue encore : la seule fenêtre réglée est celle sur laquelle
+la table est publiée. Sur une fenêtre haute le
 plancher est **l'avertissement**, à 3,7:1 — la phrase que la règle 1 rend
 non négociable, portée par la seule ligne de la page qui ne puisse pas se
 déplacer. Le remède touche la composition de la page, documentée et arbitrée
@@ -495,6 +507,15 @@ seconde existe parce que la question que ce site pose porte le plus souvent sur
 une saison — « un été à Montpellier en 2050 » — et que la première obligeait à
 savoir que l'été ouvre le 21 juin.
 
+**La page s'ouvre sans aucun des deux, et c'est un troisième état de plein
+droit.** L'accueil montre un lieu et deux bandes ; le panneau ne se déplie qu'une
+fois l'une pressée. Étaler une plage que personne n'a demandée revenait à
+répondre avant d'avoir posé la question — et à laisser partir, si le visiteur
+allait droit au bouton, une quinzaine par défaut qu'il n'avait pas regardée.
+**Le bouton d'envoi est donc replié avec les panneaux.** La touche Entrée reste
+un chemin d'envoi qu'aucun bouton caché ne ferme, et le formulaire la refuse
+explicitement tant qu'aucune période n'a été choisie.
+
 **Le mode saison écrit dans les deux champs de date ; il ne les remplace pas.**
 C'est ce qui fait que la page de résultats n'a rien eu à apprendre : ni le
 sélecteur de saison ni celui d'année ne porte d'attribut `name`, donc aucun des
@@ -504,9 +525,23 @@ demandé d'autre.
 
 **La bascule est deux boutons, non un groupe de radios**, et pour la même raison
 en sens inverse : des radios ne se groupent qu'en partageant un `name`, et un
-`name` est précisément ce qu'un formulaire GET met dans l'adresse. Sans script,
-le panneau des dates est celui qui est visible et le formulaire fonctionne comme
-avant.
+`name` est précisément ce qu'un formulaire GET met dans l'adresse.
+
+**Deux bandes, dans la grammaire du bouton d'envoi et à un rang en dessous.**
+Elles portent un fond, jamais un filet seul — la variante transparente avait été
+mesurée à 3,7:1 sur le bouton d'envoi et écartée, un bouton sans fond héritant du
+contraste de ce qu'il y a derrière. Mais elles le portent **plus léger**, à 24 %
+contre 45 : à leur hauteur le brun se compose sur du bleu et non sur le couchant,
+et à 45 % elles lisaient comme deux dalles collées sur la photographie, ce que le
+bouton d'envoi avait justement renoncé à être. Choisir une bande l'approfondit
+jusqu'au fond du bouton et lui donne un filet d'encre pleine : le rapport monte
+en s'approchant et ne descend jamais, comme au survol du bouton.
+
+**Le repli est écrit dans le script, pas dans le balisage.** La page est livrée
+les deux panneaux ouverts et le bouton visible ; c'est `home.js` qui les ferme au
+chargement. Dans l'autre sens, un visiteur sans JavaScript rencontrerait un
+formulaire sans période et sans moyen d'en révéler une — là, il retrouve
+exactement le formulaire d'avant la saison.
 
 **L'année est celle où la saison commence**, pour les quatre. Cela ne se voit que
 sur l'hiver, seule saison à cheval sur deux années civiles : « hiver 2029 » va du

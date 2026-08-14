@@ -70,6 +70,14 @@
   --button: rgb(28 14 6 / 45%);
   --button-hover: rgb(28 14 6 / 62%);
   --button-edge: rgb(236 231 221 / 22%);
+  /* The mode bands, lighter than the submit one and deliberately so. At 45 %
+     they sit high enough on the sky to composite over blue rather than over the
+     sunset, and they read as two slabs pasted on the photograph — the very
+     thing the submit band gave up its opaque fill to avoid. At 24 % the sky
+     goes through them and they are still measured, not hoped for: 9,7:1 at
+     rest. Choosing one deepens it to the submit band's own fill, so the ratio
+     rises on the way in and the chosen band weighs what the action weighs. */
+  --mode: rgb(28 14 6 / 24%);
   --raised: #1e1a15;
   /* The candidate list is the one thing on the site that covers another
      control, and it covers it whole. Ninety-seven percent was tried and looks
@@ -557,12 +565,13 @@ body.home footer .tagline {
  * above the warning, growing with the screen, which is most of what pushed the
  * page past the window. */
 body.home > header.banner {
-  /* Eight vh rather than ten, and the last of the fifty-two pixels the mode
-     switch costs. The clamp's purpose is untouched — it still keeps a short
-     window from spending its height on emptiness and a tall one from pushing
-     the form off screen; it simply spends eighteen pixels fewer on a 900-pixel
-     window, which is where the form was closest to the sunset's pale band. */
-  padding-top: clamp(calc(var(--space) * 8), 8vh, calc(var(--space) * 36));
+  /* Six vh rather than ten, and that is where the mode bands are paid for. The
+     clamp's purpose is untouched — it still keeps a short window from spending
+     its height on emptiness and a tall one from pushing the form off screen;
+     it simply spends thirty-six pixels fewer on a 900-pixel window. This is the
+     one place on the page where height buys nothing but air, and the fields
+     below were the ones closest to the sunset's pale band. */
+  padding-top: clamp(calc(var(--space) * 8), 6vh, calc(var(--space) * 36));
 }
 
 /* The page is the window, and the warning sits at the foot of it.
@@ -768,6 +777,7 @@ footer.banner {
 .card-month,
 .card-sky,
 button[type="submit"],
+.mode,
 .seam span {
   font-family: var(--font);
   font-size: var(--label-size);
@@ -949,54 +959,55 @@ select:focus {
 }
 
 /*
- * The switch between the two ways of asking.
+ * The two ways of asking, as two bands side by side.
  *
- * **Not a segmented control in a box.** Two words side by side, the chosen one
- * underlined and in full ink, the other in the soft ink the labels use — the
- * same hierarchy the rest of the page carries by weight and form rather than by
- * a fill. Nothing here is opaque, so nothing here fights the sunset.
+ * **Side by side, and that is a measurement rather than a taste.** Stacked
+ * full-width they would cost the form some ninety-six pixels; paired they cost
+ * about forty-five, and on this page every pixel added above the fields slides
+ * them down the sunset toward the band where no ink reaches 4,5:1. Layout and
+ * legibility are the same question here, and the sheet says so twice already.
  *
- * The underline is the field hairline, borrowed: what is chosen sits on a rule
- * exactly as a field does, and the eye reads the two panels below as continuing
- * from it.
+ * **Both carry a fill, neither is a filet alone.** The variant with no ground
+ * was measured on the submit band at 3,7:1 and dropped for the reason the
+ * comment there gives: a transparent button inherits the contrast of whatever
+ * is behind it, and at this height on the sky that is lost in advance. So the
+ * chosen one is told apart by *deepening* — the same direction the submit band
+ * takes on hover, so the ratio only ever goes up — and by an edge in full ink
+ * rather than the ivory at 22 %.
+ *
+ * **Shorter than the submit band on purpose.** Sixteen pixels of padding
+ * against twenty: these choose the question, that one asks it, and the two
+ * should not read as the same rank.
  */
 .modes {
   display: flex;
   flex-wrap: wrap;
-  gap: calc(var(--space) * 6);
+  gap: calc(var(--space) * 3);
   margin: 0 0 calc(var(--space) * 4);
 }
 
-/*
- * **Both states carry the full ink, and the rule alone says which is chosen.**
- * The soft ink was tried on the one at rest and measured at 4,1:1 — this row
- * lands near 52% of the sunset, where the gradient has gone to a mid blue-grey
- * and no ink is comfortable. It is the argument the results page already makes
- * for its month marker: what separates a text from what it names is its form —
- * eleven pixels, capitals, letterspaced — as soon as tone can no longer pay for
- * it. Measured with the full ink: 5,0:1 in both states.
- */
 .mode {
-  padding: calc(var(--space) * 1) 0;
+  flex: 1 1 12ch;
+  padding: calc(var(--space) * 3);
   border: 0;
-  border-bottom: 1px solid transparent;
   border-radius: 0;
-  background: transparent;
+  background: var(--mode);
+  box-shadow: inset 0 0 0 1px var(--button-edge);
   color: var(--ink);
-  font: inherit;
-  font-size: 0.6875rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
   cursor: pointer;
-  transition: border-color 120ms ease;
+  transition:
+    background 120ms ease,
+    box-shadow 120ms ease;
 }
 
 .mode:hover {
-  border-bottom-color: var(--ink-soft);
+  background: var(--button);
+  box-shadow: inset 0 0 0 1px var(--ink-soft);
 }
 
 .mode[aria-pressed="true"] {
-  border-bottom-color: var(--rule-strong);
+  background: var(--button);
+  box-shadow: inset 0 0 0 1px var(--ink);
 }
 
 .dates {

@@ -46,6 +46,7 @@ const datesPanel = document.getElementById("panel-dates");
 const seasonPanel = document.getElementById("panel-season");
 const seasonPick = document.getElementById("saison");
 const yearPick = document.getElementById("annee");
+const go = document.getElementById("go");
 
 applyTexts();
 // After applyTexts, which fills every other slot: the heading is the one place
@@ -53,6 +54,9 @@ applyTexts();
 rotate(document.getElementById("prompt"), texts.home.questions);
 fillDefaultDates();
 fillSeasons();
+// Closed on arrival. The markup ships both panels open so the page works
+// without script; this is the line that turns it into a form that unfolds.
+show(null);
 
 let config = null;
 // Remembered across rebuilds of the list, which happen whenever the season or
@@ -170,8 +174,8 @@ function describe(candidate) {
 
 // --- asking for a season instead of two dates --------------------------------
 
-datesButton.addEventListener("click", () => showSeasonMode(false));
-seasonButton.addEventListener("click", () => showSeasonMode(true));
+datesButton.addEventListener("click", () => show("dates"));
+seasonButton.addEventListener("click", () => show("season"));
 
 seasonPick.addEventListener("change", fillYears);
 yearPick.addEventListener("change", () => {
@@ -180,18 +184,26 @@ yearPick.addEventListener("change", () => {
 });
 
 /**
- * Show one panel and hide the other, and say which through `aria-pressed`.
+ * Which period panel is open: `"dates"`, `"season"`, or none of them.
  *
- * Leaving the season mode does not put the dates back to their default: the
- * range a season produced is a perfectly good range to adjust by hand, and
- * wiping it would throw away the thing the visitor just asked for.
+ * **The third state is the one the page opens on**, and it is the whole point
+ * of the two buttons being buttons: the form asks for a place and offers two
+ * ways to go on, rather than laying out a range nobody asked for. The submit
+ * band goes with the panels — left showing, it would run a search on the
+ * default fortnight the visitor never saw.
+ *
+ * Leaving a mode does not put the dates back to their default: the range a
+ * season produced is a perfectly good range to adjust by hand, and wiping it
+ * would throw away the thing the visitor just asked for.
  */
-function showSeasonMode(wanted) {
-  seasonPanel.hidden = !wanted;
-  datesPanel.hidden = wanted;
-  seasonButton.setAttribute("aria-pressed", String(wanted));
-  datesButton.setAttribute("aria-pressed", String(!wanted));
-  if (wanted) applySeason();
+function show(mode) {
+  datesPanel.hidden = mode !== "dates";
+  seasonPanel.hidden = mode !== "season";
+  go.hidden = mode === null;
+  datesButton.setAttribute("aria-pressed", String(mode === "dates"));
+  seasonButton.setAttribute("aria-pressed", String(mode === "season"));
+  if (mode === "season") applySeason();
+  say("");
 }
 
 /** The four names, from the dictionary, in the order it lists them. */
@@ -263,6 +275,14 @@ function defaultYear(years) {
 // --- what leaves, and what does not ------------------------------------------
 
 form.addEventListener("submit", (event) => {
+  // Enter in the place field submits a form whether or not a submit button is
+  // on screen, and with both panels closed the dates leaving would be the
+  // defaults nobody has seen.
+  if (datesPanel.hidden && seasonPanel.hidden) {
+    event.preventDefault();
+    say(texts.form.periodRequired);
+    return;
+  }
   if (!latitude.value || !longitude.value) {
     event.preventDefault();
     say(texts.form.placeRequired);
