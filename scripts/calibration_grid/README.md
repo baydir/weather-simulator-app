@@ -1,8 +1,9 @@
 # Grille de correction de nébulosité — étape 4
 
 Ces scripts produisent la table embarquée comme ressource serveur. Ils
-établissent les chiffres de la section *La grille de correction* de
-`docs/application.md`.
+établissent le pas du réseau, son volume et son débit ; ce que l'application en
+fait ensuite est dans la section *La grille de correction* de
+[`docs/application.md`](../../docs/application.md).
 
 | Module | Rôle |
 |---|---|
@@ -45,18 +46,56 @@ pratique il passe l'essentiel de son temps à attendre le quota, mais une coupur
 pendant l'écriture laisserait un fichier tronqué : au moindre doute, relire tout
 le cache en JSON avant de reconstruire.
 
+## Le pas du réseau, et l'erreur qu'il laisse
+
+Réseau **mondial fixe au pas de 0,5°**, aux multiples exacts depuis −180° et
+−90°. Non négociable : caler l'origine sur la France imposerait de tout
+recalculer au premier élargissement.
+
+**Le demi-degré est confirmé par la mesure, contre le degré qui aurait coûté
+quatre fois moins.** Biais relevé tous les 0,25° le long de trois transects
+traversant la côte, puis erreur qu'une interpolation linéaire commettrait entre
+nœuds espacés d'un degré, puis d'un demi :
+
+| Transect | Erreur à 0,5° (moy / max) | à 1,0° (moy / max) |
+|---|---|---|
+| Atlantique (Landes) | 0,17 / 0,30 | 0,20 / 0,50 |
+| Méditerranée (Languedoc) | 0,32 / 0,73 | 0,39 / 1,02 |
+| Manche (Normandie) | 0,21 / 0,56 | 0,41 / 0,90 |
+
+**La côte n'y est pour rien.** Le franchissement terre-mer ne produit aucune
+rupture du biais — à −1,25° de longitude sur l'Atlantique, il vaut −10,59 des
+deux côtés. C'est le **relief** qui commande, et fortement : 5,52 points sur un
+seul degré à la montée vers les Cévennes, de 87 m à 1 147 m. Le champ de biais
+n'est lisse que là où le terrain l'est.
+
+**L'interpolation porte donc une erreur propre, à déclarer avec les autres :**
+0,3 point de nébulosité en moyenne, 0,7 au maximum sur relief, même à 0,5°.
+
 ## Deux passes, et pourquoi
 
 La **sonde d'altitude** demande un seul jour à chaque nœud de la boîte. ERA5
 renvoyant zéro en mer, l'altitude sépare la terre de l'eau pour un coût
-négligeable, et évite de collecter trente ans de données au large. Résultat :
-704 nœuds dans la boîte, 475 terrestres, 594 à collecter une fois ajoutée la
-couronne de mer touchant la terre.
+négligeable, et évite de collecter trente ans de données au large. Résultat, sur
+la boîte française **41,0-51,5 N, −5,5-10,0 E** : 704 nœuds dans la boîte, 475
+terrestres, 594 à collecter une fois ajoutée la couronne de mer touchant la
+terre.
 
 La **collecte** ne porte que sur ces 594. Deux requêtes chacun : la réanalyse sur
 1985-2014, et le modèle sur 1985-2050 d'un seul tenant — cette requête portant à
 la fois le passé du modèle, qui le rend comparable à la référence, et son futur,
 qui porte la tendance à ne pas écraser.
+
+La couronne de nœuds marins touchant la terre est conservée délibérément : une
+ville littorale a des nœuds en mer parmi les quatre qui l'entourent, et les
+omettre laisserait l'interpolation manchote là précisément où les gens habitent.
+
+**Le remplissage est ordonné par population desservie décroissante**, estimée en
+sommant les aires d'attraction françaises pondérées par l'inverse du carré de la
+distance. Ce n'est pas un confort : une première tentative collectait par
+latitude croissante et a passé ses premières heures sur le plateau ibérique. La
+collecte est ainsi interruptible, reprenable, et couvre l'essentiel des
+recherches réelles dès ses premières heures.
 
 ## Le débit, qui est la vraie contrainte
 

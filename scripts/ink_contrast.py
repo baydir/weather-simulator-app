@@ -1,11 +1,11 @@
 """Measure the contrast of every text on either page, on each of its grounds.
 
-Nothing here asserts. It prints the tables `docs/application.md` publishes — one
-column per season on the results page, one per panel on the accueil — so that a
-palette which moves is re-measured by a command rather than by hand. Four seasons
-of twelve lines is not a thing anyone checks twice with an eyedropper, and the
-accueil's six were checked by hand exactly once, which is how the *Lieu* label
-came to spend a while at 4,4:1 after the page was tightened.
+Nothing here asserts. It prints the tables `scripts/ink_contrast.md` publishes —
+one column per season on the results page, one per state of the form on the
+accueil — so that a palette which moves is re-measured by a command rather than by
+hand. Four seasons of thirteen lines is not a thing anyone checks twice with an
+eyedropper, and the accueil's were checked by hand exactly once, which is how the
+*Lieu* label came to spend a while at 4,4:1 after the page was tightened.
 
 **Both pages are anchored to the document, and that is what makes this a
 command.** A gradient fixed to the window would give every reader a different
@@ -23,7 +23,7 @@ colours. So the two halves of every ratio come from the page: one measured on
 the render, the other from the declaration that painted it.
 
 That is also the check on the method: run it on summer and the numbers must come
-back as docs/application.md already publishes them.
+back as scripts/ink_contrast.md already publishes them.
 
 **One geometry, four palettes.** The page measured is the ``results`` view —
 ten days back and forty ahead, which is what puts a warning at the top and a
@@ -341,7 +341,7 @@ def measure_home(page, mode: str) -> dict:
 HOME_MODES = ["rien d'ouvert", "plage de dates", "saison entière"]
 
 # The geometry each table was published at. The accueil's is shorter, and that is
-# not an oversight: it is the window the six figures in docs/application.md were
+# not an oversight: it is the window the figures in scripts/ink_contrast.md were
 # taken on, and a table remeasured at another size is not a correction of it.
 DEFAULT_SIZE = {"results": "1440x960", "home": "1440x900"}
 

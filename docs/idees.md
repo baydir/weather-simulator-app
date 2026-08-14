@@ -28,6 +28,15 @@ phénomène sous-maille, hors de portée d'un modèle à 20 km. La servir donner
 un chiffre juste de forme et faiblement fondé. Son adoption relèverait de la
 validation scientifique.
 
+**L'accueil ne passe qu'à une taille de fenêtre.** La table de contraste n'est
+publiée que pour 1440 × 900, où le plancher est de 4,6:1. Ailleurs il tombe à
+3,1:1 en 1280 × 720 et à 3,7:1 en 1440 × 1200 — et sur cette dernière le texte en
+cause est **l'avertissement**, la phrase que la règle 1 rend non négociable,
+portée par la seule ligne de la page qui ne puisse pas se déplacer. Le dégradé
+étant ancré au document, le remède touche la composition de la page elle-même :
+c'est un arbitrage de mise en page, et il **reste à rendre**.
+→ [`scripts/ink_contrast.md`](../scripts/ink_contrast.md)
+
 ---
 
 ## Classe de ciel apprise sur des observations réelles
