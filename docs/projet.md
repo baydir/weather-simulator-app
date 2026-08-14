@@ -11,10 +11,15 @@ Weather Simulator App est une application web restituant, jour par jour, les
 conditions météorologiques d'un lieu donné, **pour toute date comprise entre
 1950 et 2050**.
 
-L'utilisateur renseigne une localisation et une plage de dates. L'application
-retourne pour chaque journée les températures minimale et maximale, l'aspect du
-ciel et les précipitations, selon les modalités de présentation d'une
-application météorologique grand public.
+L'utilisateur renseigne une localisation et une période — **une plage de dates,
+ou une saison et une année**. L'application retourne pour chaque journée les
+températures minimale et maximale, l'aspect du ciel et les précipitations, selon
+les modalités de présentation d'une application météorologique grand public.
+
+La seconde façon de demander est venue de la finalité énoncée plus bas, non d'un
+besoin technique : elle ne produit rien qu'une plage de dates ne produise, mais
+la question qu'un lecteur se pose porte sur une saison — « un été à Montpellier
+en 2050 » — et non sur deux bornes qu'il faudrait connaître.
 
 ---
 

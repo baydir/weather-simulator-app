@@ -499,6 +499,31 @@ laquelle le couchant se termine, ramenée au premier plan. Cette valeur est
 lisent ; recopiée, le panneau garderait l'ancienne teinte le jour où la
 photographie serait rééchantillonnée.
 
+**Les champs de date ont dû rendre visible où l'on se trouve dans la date.** Le
+navigateur marque le segment que la frappe suivante changera, et il le marque
+avec une couleur système : dans Firefox un bleu, sur un champ posé sur un ciel
+bleu. Mesuré, ce marquage ne se détachait du champ qu'à **1,54:1** — assez peu
+pour que le défaut soit rapporté comme une impossibilité de remplir les dates,
+alors que le champ prenait chaque touche. **Rien n'était bloqué ; c'est le retour
+qui manquait**, et le symptôme ressemblait à s'y méprendre à une panne.
+
+La page ne peut pas choisir cette couleur, et deux tentatives sont consignées ici
+pour qu'elles ne soient pas refaites : `::selection` est inerte — Firefox ne fait
+pas passer un segment de date par là, deux rendus à profil neuf sortent
+identiques au pixel — et `accent-color` l'est également. Ce qui s'atteint, c'est
+ce qui entoure la marque. `color-scheme: light` sur ces champs demande au système
+sa marque claire, le bleu vif plutôt que le bleu-vert éteint ; et le champ prend
+un fond sombre **pendant l'édition seulement**. Ensemble : **4,3:1 dans Firefox,
+3,3:1 dans Chromium**. Au repos, une date reste ce qu'est tout champ de cette
+page, une ligne de texte sur un filet.
+
+**Deux conséquences se paient, et la seconde n'est pas réparable.** L'icône du
+calendrier de Chrome devient noire sous le schéma clair ; une inversion la rend à
+l'ivoire. Mais le calendrier natif, lorsqu'il s'ouvre, s'affiche désormais en
+clair : la marque de segment et le calendrier viennent du même réglage et ne se
+séparent pas. L'échange est assumé — le calendrier est un passage bref, le
+repérage dans la date un geste constant.
+
 #### Deux façons de poser la même question
 
 Le formulaire demande une période de deux manières, **exclusives et
@@ -559,31 +584,6 @@ ouvrirait une page peinte en hiver.
 **Quitter le mode saison ne remet pas les dates par défaut.** La plage qu'une
 saison vient de produire est une plage parfaitement bonne à ajuster à la main, et
 l'effacer jetterait ce que le visiteur vient de demander.
-
-**Les champs de date ont dû rendre visible où l'on se trouve dans la date.** Le
-navigateur marque le segment que la frappe suivante changera, et il le marque
-avec une couleur système : dans Firefox un bleu, sur un champ posé sur un ciel
-bleu. Mesuré, ce marquage ne se détachait du champ qu'à **1,54:1** — assez peu
-pour que le défaut soit rapporté comme une impossibilité de remplir les dates,
-alors que le champ prenait chaque touche. **Rien n'était bloqué ; c'est le retour
-qui manquait**, et le symptôme ressemblait à s'y méprendre à une panne.
-
-La page ne peut pas choisir cette couleur, et deux tentatives sont consignées ici
-pour qu'elles ne soient pas refaites : `::selection` est inerte — Firefox ne fait
-pas passer un segment de date par là, deux rendus à profil neuf sortent
-identiques au pixel — et `accent-color` l'est également. Ce qui s'atteint, c'est
-ce qui entoure la marque. `color-scheme: light` sur ces champs demande au système
-sa marque claire, le bleu vif plutôt que le bleu-vert éteint ; et le champ prend
-un fond sombre **pendant l'édition seulement**. Ensemble : **4,3:1 dans Firefox,
-3,3:1 dans Chromium**. Au repos, une date reste ce qu'est tout champ de cette
-page, une ligne de texte sur un filet.
-
-**Deux conséquences se paient, et la seconde n'est pas réparable.** L'icône du
-calendrier de Chrome devient noire sous le schéma clair ; une inversion la rend à
-l'ivoire. Mais le calendrier natif, lorsqu'il s'ouvre, s'affiche désormais en
-clair : la marque de segment et le calendrier viennent du même réglage et ne se
-séparent pas. L'échange est assumé — le calendrier est un passage bref, le
-repérage dans la date un geste constant.
 
 ### La saison de la page de résultats
 

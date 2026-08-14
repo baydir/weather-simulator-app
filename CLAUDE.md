@@ -88,6 +88,16 @@ double exemplaire, pas la frontière franchie : la bande et le graphe doivent
 marquer la même couture au même jour, et cette règle vit dans un module que les
 deux appellent, quoique le serveur n'en détienne aucune version.
 
+**Et elle vaut à l'intérieur d'un seul fichier.** `season.js` lit les bornes des
+saisons dans les deux sens — une date vers une saison pour peindre la page de
+résultats, une saison vers deux dates pour que le formulaire la demande par son
+nom. Écrire « 21 juin au 20 septembre » une seconde fois pour le second sens
+aurait été le double exemplaire, à deux fonctions de distance. Les bornes sont
+donc déclarées une fois, et **un test referme le cycle** : demander une saison
+puis relire ce qui revient doit rendre la même saison. C'est la forme la plus
+resserrée du même constat — le prototype avait fait diverger cinq comparaisons de
+seuils tenues à deux endroits ; ici deux fonctions voisines suffiraient.
+
 ### 4. Gouvernance : la science se valide, le développement s'autonomise
 
 **Domaine scientifique et traitement des données — validation obligatoire.** Le
