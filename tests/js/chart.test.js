@@ -25,6 +25,7 @@ const {
   chart,
   edgeOf,
   frame,
+  middleOf,
   rainCeiling,
   rainTicks,
   runs,
@@ -232,7 +233,7 @@ describe("the drawing as a whole", () => {
 
     assert.equal(node.tag, "svg");
     assert.equal(node.attrs.role, "img");
-    assert.equal(node.attrs["aria-label"], texts.chart.label);
+    assert.equal(node.attrs["aria-label"], texts.chart.label(null));
     assert.equal(node.attrs.viewBox, `0 0 ${BOX.width} ${frame(10).height}`);
   });
 
@@ -255,6 +256,96 @@ describe("the drawing as a whole", () => {
     // Over the plot, not in it: both sit above the panel they name.
     assert.ok(Number(titles[0].attrs.y) < frame(8).temperature.top);
     assert.ok(Number(titles[1].attrs.y) < frame(8).rain.top);
+  });
+
+  it("stands each panel on its own axis of dates", () => {
+    const geometry = frame(10);
+    const feet = byClass(chart(series(10), SCALE), "chart-baseline").map((line) =>
+      Number(line.attrs.y1),
+    );
+
+    // One under the temperatures, one under the rain, both spanning the plot.
+    assert.deepEqual(feet, [geometry.temperature.bottom, geometry.rain.base]);
+  });
+
+  it("writes no number on the temperature axis, which is a frame and not a zero", () => {
+    // The foot of that panel falls on whatever half-step the window snapped to.
+    // Numbering it would put a value on the drawing that names nothing.
+    const days = series(4, () => ({ temperature_min: 12.4, temperature_max: 28.9 }));
+    const written = byClass(chart(days, SCALE), "chart-axis").map((node) => node.textContent);
+
+    // The window runs 7,5 to 32,5; the lowest number on it is the first
+    // boundary inside, one hairline above the foot.
+    assert.equal(written[0], "10");
+    assert.ok(!written.includes("7,5"));
+  });
+
+  it("marks the 1st, the 10th and the 20th, and no other day", () => {
+    // Twenty-five days of August: three marks, in order, and nothing between —
+    // once under each panel, since both are dated at their own foot.
+    const node = chart(series(25), SCALE);
+    const written = byClass(node, "chart-date").map((mark) => mark.textContent);
+
+    assert.deepEqual(written, ["1", "10", "20", "1", "10", "20"]);
+    // One tick per number, carrying the eye up to the column it names.
+    assert.equal(byClass(node, "chart-tick").length, 6);
+  });
+
+  it("dates both panels at the same days and the same x", () => {
+    const geometry = frame(25);
+    const ticks = byClass(chart(series(25), SCALE), "chart-tick");
+    const [above, below] = [ticks.slice(0, 3), ticks.slice(3)];
+
+    // One axis read twice: the columns must line up exactly, or the two rows
+    // would be two different readings of the period.
+    assert.deepEqual(
+      above.map((tick) => tick.attrs.x1),
+      below.map((tick) => tick.attrs.x1),
+    );
+    // Each row hangs off its own panel's foot, never inside one.
+    assert.equal(Number(above[0].attrs.y1), geometry.temperature.bottom);
+    assert.equal(Number(below[0].attrs.y1), geometry.rain.base);
+  });
+
+  it("places a mark over the middle of its own day", () => {
+    const geometry = frame(25);
+    const [tick] = byClass(chart(series(25), SCALE), "chart-tick");
+
+    // The 1st is the first column; its dot sits at the middle, and so does this.
+    assert.ok(Math.abs(Number(tick.attrs.x1) - middleOf(geometry, 0)) < 0.01);
+  });
+
+  it("leaves a line of air between the temperature dates and the rain title", () => {
+    // The row lives in the gap between the panels, where the lower title also
+    // hangs, and not overlapping is not enough: a title that sits just under an
+    // axis reads as belonging to the axis. Measured on the render — at 36 the
+    // capitals landed on the digits' descenders, at 48 they cleared and still
+    // read as one block. Forty is a full line of text between the two baselines.
+    const geometry = frame(25);
+    const title = geometry.rain.top - 12;
+
+    assert.ok(title - geometry.temperature.dates >= 40, `${title - geometry.temperature.dates}`);
+  });
+
+  it("invents no day to carry a round number", () => {
+    // A range opening on the 21st has no 1st, no 10th and no 20th of that month.
+    const days = Array.from({ length: 8 }, (_, index) =>
+      day(`2026-08-${21 + index}`, "observed"),
+    );
+
+    assert.deepEqual(byClass(chart(days, SCALE), "chart-date"), []);
+  });
+
+  it("marks the same days again in the next month", () => {
+    const days = [
+      ...Array.from({ length: 3 }, (_, i) => day(`2026-08-${29 + i}`, "observed")),
+      ...Array.from({ length: 12 }, (_, i) =>
+        day(`2026-09-${String(i + 1).padStart(2, "0")}`, "observed"),
+      ),
+    ];
+    const written = byClass(chart(days, SCALE), "chart-date").map((mark) => mark.textContent);
+
+    assert.deepEqual(written, ["1", "10", "1", "10"]);
   });
 
   it("names the months where they turn, once each", () => {
@@ -282,10 +373,161 @@ describe("the drawing as a whole", () => {
       texts.chart.temperatures,
       texts.chart.precipitation,
       ...byClass(node, "chart-axis").map((child) => child.textContent),
+      ...byClass(node, "chart-date").map((child) => child.textContent),
       ...byClass(node, "chart-month").map((child) => child.textContent),
     ]);
     for (const text of written) {
       assert.ok(allowed.has(text), `unexpected text on the chart: "${text}"`);
     }
+  });
+});
+
+describe("the year laid under the one asked for", () => {
+  /** The same days, in another year, so the two can be compared slot by slot. */
+  const past = (count, extra = () => ({})) =>
+    Array.from({ length: count }, (_, index) =>
+      day(`1991-08-${String(index + 1).padStart(2, "0")}`, "observed", extra(index)),
+    );
+
+  it("frames one window over both years", () => {
+    // The compared year is colder than the drawn one at both ends. A window
+    // framed on the drawn year alone would put its curves outside the panel.
+    const days = series(10, () => ({ temperature_min: 18, temperature_max: 28 }));
+    const cold = past(10, () => ({ temperature_min: 2, temperature_max: 11 }));
+
+    const alone = temperatureWindow(days, SCALE.step);
+    const both = temperatureWindow([...days, ...cold], SCALE.step);
+
+    assert.ok(both.bottom < alone.bottom);
+    // And the drawing frames on the second, not the first.
+    const numbers = byClass(chart(days, SCALE, { compared: cold }), "chart-axis").map((node) =>
+      Number(node.textContent.replace(",", ".").replace(/[^\d.-]/g, "")),
+    );
+    assert.ok(Math.min(...numbers) <= 5);
+  });
+
+  it("draws two grey curves and not one dot", () => {
+    const node = chart(series(10), SCALE, { compared: past(10) });
+
+    // Paths only: the legend borrows the same class for its two sample edges,
+    // deliberately — one declaration of the colour and the width, not two — and
+    // those are `line` elements.
+    const lines = byClass(node, "chart-line").filter(
+      (mark) => mark.className.includes("past") && mark.tag === "path",
+    );
+    assert.equal(lines.length, 2, "a maximum and a minimum");
+
+    const dots = byClass(node, "chart-point").filter((mark) => mark.className.includes("past"));
+    assert.equal(dots.length, 0, "the dot is the mark of the year asked for");
+  });
+
+  it("leaves the drawn year its own dots, all of them", () => {
+    const plain = byClass(chart(series(10), SCALE), "chart-point").length;
+    const compared = byClass(chart(series(10), SCALE, { compared: past(10) }), "chart-point")
+      .length;
+
+    assert.equal(compared, plain);
+  });
+
+  it("breaks the grey curve where the compared year has no day", () => {
+    // The 29th of February, or any day the older year simply did not serve.
+    const compared = past(10);
+    compared[4] = null;
+
+    const lines = byClass(chart(series(10), SCALE, { compared }), "chart-line").filter((mark) =>
+      mark.className.includes("past high"),
+    );
+    // Two strokes rather than one line crossing a day that has no reading.
+    assert.equal(lines.length, 2);
+  });
+
+  it("fills the compared year, and nothing at all without one", () => {
+    // A panel showing one year shows two curves and the air between them. The
+    // one fill this drawing has left is reserved for saying *older year*, so a
+    // chart on its own carries none — the pale ribbon of the drawn year is gone.
+    assert.equal(byClass(chart(series(10), SCALE), "chart-past-band").length, 0);
+
+    const band = byClass(chart(series(10), SCALE, { compared: past(10) }), "chart-past-band");
+    // One on the panel and one in the legend: the sample is the same fill.
+    assert.equal(band.filter((mark) => mark.tag === "path").length, 1);
+  });
+
+  it("breaks the band where the compared year has no day", () => {
+    const compared = past(10);
+    compared[4] = null;
+
+    const shapes = byClass(chart(series(10), SCALE, { compared }), "chart-past-band").filter(
+      (mark) => mark.tag === "path",
+    );
+    // Two shapes rather than one spanning a day the older year never served.
+    assert.equal(shapes.length, 2);
+  });
+
+  it("fills between the two readings of the compared year, and only those", () => {
+    // The band has to be the compared year's own spread. A day carrying one
+    // reading and not the other cannot be filled at all.
+    const compared = past(10, (index) => (index === 3 ? { temperature_max: null } : {}));
+
+    const shapes = byClass(chart(series(10), SCALE, { compared }), "chart-past-band").filter(
+      (mark) => mark.tag === "path",
+    );
+    assert.equal(shapes.length, 2);
+  });
+
+  it("names the band on the drawing, in the margin above the plot", () => {
+    const node = chart(series(10), SCALE, { compared: past(10) });
+    const [written] = byClass(node, "chart-legend-year");
+
+    assert.equal(written.textContent, "1991");
+    // Above the panel, where the window guarantees no mark can be: a legend
+    // anchored to the band itself would have to dodge whichever curve is there.
+    assert.ok(Number(written.attrs.y) < frame(10).temperature.top);
+    // And right-anchored, clear of the title on the same line.
+    assert.ok(Number(written.attrs.x) > frame(10).plot.to - 60);
+
+    assert.equal(byClass(chart(series(10), SCALE), "chart-legend-year").length, 0);
+  });
+
+  it("names the compared year in its own label too", () => {
+    const node = chart(series(10), SCALE, { compared: past(10) });
+
+    assert.equal(node.attrs["aria-label"], texts.chart.label("1991"));
+    assert.match(node.attrs["aria-label"], /1991/);
+  });
+
+  it("adds the year to the drawing and nothing else with it", () => {
+    // The list of what may be written here gained one entry, and that was a
+    // deliberate act rather than a slip: a year names a mark, the way the seam
+    // label names a crossing. What the rule was written against — a total, an
+    // average, a count, an extreme of the range — is still refused, and this
+    // checks the widening did not let anything else through with it.
+    const node = chart(series(20), SCALE, { compared: past(20) });
+    const written = walk(node)
+      .map((child) => child.textContent)
+      .filter(Boolean);
+
+    const allowed = new Set([
+      texts.results.seam,
+      texts.chart.temperatures,
+      texts.chart.precipitation,
+      "1991",
+      ...byClass(node, "chart-axis").map((child) => child.textContent),
+      ...byClass(node, "chart-date").map((child) => child.textContent),
+      ...byClass(node, "chart-month").map((child) => child.textContent),
+    ]);
+    for (const text of written) {
+      assert.ok(allowed.has(text), `unexpected text on the chart: "${text}"`);
+    }
+  });
+
+  it("keeps the rain panel to the year asked for", () => {
+    // The compared year is soaked; its rain is never drawn, so the ceiling of
+    // the panel does not move. Its selection was made on temperature alone.
+    const days = series(10, () => ({ precipitation: 1 }));
+    const wet = past(10, () => ({ precipitation: 200 }));
+
+    assert.equal(rainCeiling(days), RAIN_FLOOR_MM);
+    const bars = byClass(chart(days, SCALE, { compared: wet }), "chart-bar");
+    assert.equal(bars.length, 10);
   });
 });

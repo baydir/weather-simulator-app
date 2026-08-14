@@ -298,6 +298,21 @@ def results_seam(page: Page, base: str) -> None:
     page.wait_for_timeout(300)
 
 
+def results_compare(page: Page, base: str) -> None:
+    """A summer of 2046 with 1991 laid under it, in grey.
+
+    A whole season rather than the crossing view: the comparison is about the
+    shape of a period, and ninety-two days is where two curves either separate
+    or do not. Waiting on the grey line and not on the click — the compared year
+    is a second search, and a shot taken as the button goes down catches the
+    chart before it is redrawn.
+    """
+    page.goto(results_url(base, PARIS, date(2046, 6, 21), date(2046, 9, 20)))
+    page.wait_for_selector("#compare:not([hidden])", timeout=90_000)
+    page.click("#compare-toggle")
+    page.wait_for_selector(".chart-line.past", timeout=90_000)
+
+
 def results_refused(page: Page, base: str) -> None:
     """Outside the grid, and far enough ahead to need it.
 
@@ -352,6 +367,7 @@ VIEWS = {
     "results-dark": (results, DESKTOP, "dark"),
     "results-seam": (results_seam, DESKTOP, "light"),
     "results-forecast": (results_forecast, DESKTOP, "light"),
+    "results-compare": (results_compare, DESKTOP, "light"),
     "results-narrow": (results, PHONE, "light"),
     "results-refused": (results_refused, DESKTOP, "light"),
     **{

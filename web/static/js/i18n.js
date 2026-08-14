@@ -104,9 +104,13 @@ export const texts = {
   // it draws is written out up there, which is what makes a drawing acceptable
   // to a reader who gets nothing from a drawing.
   chart: {
-    label:
+    // A function of one argument, and the argument is the compared year or
+    // nothing. Two separate sentences would be the same sentence written twice,
+    // to drift the day either is reworded.
+    label: (year) =>
       "Températures et précipitations de la période, jour par jour. " +
-      "Les valeurs sont écrites dans la bande de journées ci-dessus.",
+      "Les valeurs sont écrites dans la bande de journées ci-dessus." +
+      (year ? ` Les températures de ${year} y sont superposées en gris.` : ""),
 
     // What each panel plots, over it. The second says the same word as
     // `measure.precipitation` and is written twice on purpose: that one names a
@@ -114,6 +118,35 @@ export const texts = {
     // reworded the other has no reason to follow.
     temperatures: "Températures",
     precipitation: "Précipitations",
+  },
+
+  // The other year, and the two sentences that keep it honest.
+  //
+  // **`ordinary` is not a caption, it is a condition of the feature.** The
+  // default year was *selected* for being unremarkable, while the year on screen
+  // was not selected at all and may well carry a heatwave. Offering "1991" bare
+  // would let a reader take a chosen year for a drawn one, and conclude that the
+  // old climate had no extremes — when it is the selection that removed them.
+  //
+  // **`rainAside` says the second thing the measurement obliges.** The year was
+  // picked on temperature alone, so its rain is nobody's idea of typical. Rather
+  // than draw it and have to explain that, it is not drawn, and the note says so
+  // — better assumed than discovered.
+  compare: {
+    open: "Comparer avec une autre année",
+    close: "Masquer la comparaison",
+    year: "Année de comparaison",
+    loading: "Récupération de l'année comparée…",
+    legend: (year) => `Températures de ${year}`,
+    ordinaryLegend: (year) => `Températures de ${year}, une année sans particularité`,
+    ordinary:
+      "1991 est proposée parce qu'elle a été mesurée comme ordinaire : " +
+      "ni chaude ni froide pour sa période, sur cinq sites français. " +
+      "La période affichée, elle, n'a pas été choisie — elle peut porter une canicule.",
+    rainAside:
+      "Seules les températures sont superposées : l'année a été retenue sur la " +
+      "température, sa pluie n'a rien de typique.",
+    seeYear: (year) => `Voir ${year} en détail`,
   },
 
   // Folded, but there. A corrected series read without knowing which model was

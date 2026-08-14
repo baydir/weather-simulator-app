@@ -263,6 +263,29 @@ body.results {
   --warm: #d40000;
   --cool: #0044aa;
 
+  /* The compared year, and it sits here beside the other two for the reason
+     they do: it is a colour of the chart, and the chart is on paper that does
+     not turn with the season. Written as an ink that rotates it would be a
+     seventh seasonal variable, and the six are six.
+
+     Grey and only grey, because the compared year says nothing about warm or
+     cool: it is the ground the two saturated curves are read against. Dark
+     enough to be followed across ninety days at one pixel, light enough that
+     the eye never takes it for the subject.
+
+     **The first try was #9b948a and it measured 2,95:1 on the card's paper**,
+     just under the 3:1 a line meant to be followed needs — a curve is not text,
+     but it is not decoration either, and at one pixel it has nothing else to
+     hold it. This one is 3,44:1, and it stays subordinate by being thinner and
+     desaturated rather than by being faint. */
+  --past: #8f8880;
+
+  /* The band between its two readings, declared here rather than written as an
+     opacity on the shape — the legend beside the chart has to show the same
+     wash, and a 22 % kept in two places is the second copy this whole project
+     is organised against. It lands on #ebe8e2 over the card's paper. */
+  --past-fill: color-mix(in srgb, var(--past) 22%, transparent);
+
   /* Narrower than the dark card was, and narrower again since. The mock-up's
      are portrait, and a portrait card puts the two temperatures under the
      pictogram instead of beside it — which is what buys the room to set them
@@ -1518,11 +1541,28 @@ body.results [data-band="8"] { --band: #16100c; --band-ink: #fff; }
   color: var(--cool);
 }
 
-/* The spread between the two, as a thickness rather than as a number. Faint
-   enough that it reads as air between the curves and not as a third mark. */
-.chart-ribbon {
-  fill: var(--ink);
-  opacity: 0.07;
+/* The other year, under this one. It comes after `.high` and `.low` on purpose:
+   it carries both class names so that a maximum is still called a maximum in the
+   markup, and this is what takes back the warm and the cool they would otherwise
+   lend it. Thinner too — a line that is read against, not read. */
+.chart-line.past {
+  color: var(--past);
+  stroke-width: 1;
+}
+
+/* **The one fill on this panel, and it belongs to the compared year alone.** The
+   spread of the drawn year was filled here too, at `--ink` and 0,07, so that its
+   amplitude read as a thickness. That went out when the comparison came in: a
+   wash on this panel now says *older year* and nothing else, where two of them
+   left a reader working out which grey was whose.
+
+   It has to be seen and not merely sensed — it is the band the drawn curves are
+   checked against — while staying under the weight of a mark: it lands on a
+   shade of the paper rather than a colour on it. The strength lives in the token
+   rather than in an `opacity`, so the swatch in the page below can be painted
+   with the very same value; an HTML span cannot borrow an SVG `fill`. */
+.chart-past-band {
+  fill: var(--past-fill);
 }
 
 /* Quieter than a card's border, which is the same token at full strength: a
@@ -1532,6 +1572,14 @@ body.results [data-band="8"] { --band: #16100c; --band-ink: #fff; }
   stroke: var(--rule);
   stroke-width: 1;
   opacity: 0.5;
+}
+
+/* The date marks, under the baseline. Full strength unlike a gridline: this one
+   is read, not read past — it is what carries the eye from a number up to the
+   column it names, and it is four units long, so faint would be gone. */
+.chart-tick {
+  stroke: var(--rule);
+  stroke-width: 1;
 }
 
 .chart-bar {
@@ -1546,6 +1594,8 @@ body.results [data-band="8"] { --band: #16100c; --band-ink: #fff; }
 }
 
 .chart-axis,
+.chart-date,
+.chart-legend-year,
 .chart-month,
 .chart-seam-label,
 .chart-title {
@@ -1553,6 +1603,14 @@ body.results [data-band="8"] { --band: #16100c; --band-ink: #fff; }
   font-family: var(--font);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
+}
+
+/* The year beside its band. It takes the soft ink the graduation wears, not the
+   grey of the band it names: the band is a mark and clears 3:1, a four-digit
+   number is text and has to clear 4,5:1, which `--past` does not. What ties the
+   two together is the sample drawn next to it, not the colour of the digits. */
+.chart-legend-year {
+  color: var(--ink-soft);
 }
 
 /* The same small-capitals register the strip's own reading marks wear. Set in
@@ -1582,6 +1640,110 @@ body.results [data-band="8"] { --band: #16100c; --band-ink: #fff; }
 
 .chart-seam-label {
   color: var(--ink);
+}
+
+/* --- the other year --------------------------------------------------------
+   The one control on this page, and it borrows rather than invents: the toggle
+   is a `.link`, the notes are the small ink the cards already use. Nothing here
+   is a filled button — `--mode` and its neighbours are declared for the home
+   page's sky and would land brown on a light ground.
+
+   It sits outside `.chart-panel` and must stay there: that panel scrolls
+   sideways under 58 rem, and a control inside it would leave with the drawing.
+
+   **The whole block is on the chart's paper, and the render is what settled
+   that.** Left on the sky it measured 1,1:1 — dark ink on a gradient that is
+   heading for black by the time it gets here. Turning it pale like the
+   provenance was the other answer and it is the wrong one: the provenance is
+   pinned to the foot of the page, while this sits wherever the chart ends, which
+   on a tall window is the middle of the orange. Paper is the only ground that
+   does not move, and it is what the chart itself is drawn on for the same
+   reason. It also spares the two notes, which are the ones keeping the
+   comparison honest: a caveat that cannot be read is a caveat that is not there.
+   -------------------------------------------------------------------------- */
+
+.compare {
+  margin-top: calc(var(--space) * 4);
+  padding: calc(var(--space) * 4) calc(var(--space) * 6);
+  border: 1px solid var(--rule);
+  background: var(--raised);
+  color: var(--ink);
+  font-size: 0.875rem;
+}
+
+/* Divided from the toggle by a rule rather than by a second box: it is one
+   block that grows, not a panel that appears under a button. */
+.compare-panel {
+  margin-top: calc(var(--space) * 4);
+  padding-top: calc(var(--space) * 4);
+  border-top: 1px solid var(--rule);
+}
+
+.compare-field {
+  display: flex;
+  align-items: baseline;
+  gap: calc(var(--space) * 3);
+  margin: 0;
+}
+
+.compare-field label {
+  font-family: var(--font);
+  font-size: var(--label-size);
+  font-weight: 500;
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+}
+
+.compare-field select {
+  width: auto;
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+}
+
+/* The measure is the line, not the block: the paper runs the width of the page
+   under a chart that does, and a note running with it would be unreadable for
+   the other reason. */
+.compare-note,
+.compare-legend {
+  max-width: 46rem;
+  margin: calc(var(--space) * 3) 0 0;
+  line-height: 1.5;
+}
+
+/* Quieter than the legend, but on paper — the two notes are read once and have
+   to be readable that once. */
+.compare-note {
+  color: var(--ink-soft);
+}
+
+/* The legend of the grey curves, and the only place the page says which colour
+   means what. It is here rather than in the drawing because the chart writes no
+   text of its own — a name inside the viewBox would be the first thing on it
+   that is not a title, an axis or a reading mark. */
+.compare-legend {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--space) * 2);
+  color: var(--ink);
+}
+
+/* A band, because a band is what the panel now shows: two edges with the wash
+   between them, at the strength the drawing uses. A single rule here would name
+   the curves and say nothing about the fill, which is the part a reader is
+   actually reading the period against. */
+.compare-swatch {
+  display: inline-block;
+  width: 1.75rem;
+  height: 0.7rem;
+  border-top: 1px solid var(--past);
+  border-bottom: 1px solid var(--past);
+  background: var(--past-fill);
+}
+
+/* The wait line holds no room when it has nothing to say: it is announced by
+   aria-live, so it must stay in the document rather than be toggled hidden. */
+#compare-status:empty {
+  display: none;
 }
 
 /* --- where the days come from ---------------------------------------------- */

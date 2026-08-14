@@ -17,11 +17,19 @@
  * A refusal is shown as the server wrote it, word for word. The API answers in
  * French under a single `message` field whatever the cause, so an interface
  * that rewrote them would only be inventing a second, less accurate version.
+ *
+ * **The comparison is a second search of the same site**, not a second kind of
+ * request: the same dates in another year go back through /api/plan and
+ * /api/days, and come back cut, corrected and classified by the same functions.
+ * That is what makes the two curves comparable, and it is why nothing was added
+ * to the server for it. What this file adds is the wiring: which years may be
+ * asked for, one fetch per year at most, and a failure that stays in its corner.
  */
 
 import { loadConfig, search, SearchError } from "./fetch.js";
 import { sources, strip } from "./band.js";
 import { chart } from "./chart.js";
+import { ORDINARY_YEAR, alignByCalendar, selectableYears, shiftRange } from "./compare.js";
 import { applyTexts, el } from "./dom.js";
 import { texts } from "./i18n.js";
 import { fullDate } from "./present.js";
@@ -38,20 +46,33 @@ const chartPanel = document.getElementById("chart-panel");
 const provenance = document.getElementById("provenance");
 const provenanceGrid = document.getElementById("provenance-grid");
 
+const compare = document.getElementById("compare");
+const compareToggle = document.getElementById("compare-toggle");
+const comparePanel = document.getElementById("compare-panel");
+const compareYear = document.getElementById("compare-year");
+const compareStatus = document.getElementById("compare-status");
+const compareLegend = document.getElementById("compare-legend");
+const compareLegendText = document.getElementById("compare-legend-text");
+const compareLink = document.getElementById("compare-link");
+const compareFailure = document.getElementById("compare-failure");
+
 applyTexts();
 
 /**
- * The band ladder the chart graduates its axis on, asked for at once and waited
- * on at the end.
+ * The constants the API serves, asked for at once and waited on at the end.
  *
  * It is a second call, and deliberately not one the page hangs on: the chart is
  * a second reading of days the strip already carries in full, so a config that
  * does not arrive costs the drawing and not the results. Hence the failure
  * folded into `null` here rather than thrown — the search has its own refusals
  * to report, and none of them is this one.
+ *
+ * The whole answer is kept, not just the ladder: the comparison menu reads the
+ * covered period and the maximum range from it, which is the same reason
+ * bounds.js gives for taking its numbers from here rather than writing them.
  */
-const ladder = loadConfig().then(
-  (config) => ({ edges: config.temperature_band_edges, step: config.temperature_band_step }),
+const settings = loadConfig().then(
+  (config) => config,
   () => null,
 );
 
@@ -76,6 +97,23 @@ if (season) document.body.dataset.season = season;
 place.textContent = asked.place;
 range.textContent = texts.results.range(fullDate(asked.start), fullDate(asked.end));
 
+/** What the chart needs to graduate its axis, and the node it last drew. */
+let scale = null;
+let drawn = null;
+
+/** One fetch per year, at most. Toggling twice costs nothing after the first. */
+const kept = new Map();
+
+/**
+ * Which comparison is the current one.
+ *
+ * The menu can be changed faster than Open-Meteo answers, and two answers landing
+ * out of order would leave the panel showing one year and the legend naming
+ * another. Every request takes a number and only the latest one is allowed to
+ * draw.
+ */
+let asking = 0;
+
 run();
 
 async function run() {
@@ -97,10 +135,13 @@ async function show(series) {
 
   // After the strip, always: the days are what the visitor came for, and the
   // drawing waits on a call of its own.
-  const scale = await ladder;
-  if (scale) {
-    chartPanel.append(chart(series.days, scale));
+  const config = await settings;
+  if (config) {
+    scale = { edges: config.temperature_band_edges, step: config.temperature_band_step };
+    drawn = chart(series.days, scale);
+    chartPanel.append(drawn);
     chartPanel.hidden = false;
+    offer(series, config);
   }
 
   const pairs = sources(series.grid);
@@ -110,6 +151,114 @@ async function show(series) {
     provenanceGrid.append(...pairs);
   }
   provenance.hidden = false;
+}
+
+/**
+ * Fill the year menu and show the control — or leave it hidden.
+ *
+ * A year is offered only when its range has fully passed, so a range too near
+ * the far end of the covered period can leave nothing to compare with. The
+ * control then does not appear at all: a menu with no year in it would be an
+ * offer the page cannot keep.
+ */
+function offer(series, config) {
+  const years = selectableYears(asked, config, series.today);
+  if (years.length === 0) return;
+
+  compareYear.append(...years.map((year) => el("option", { text: String(year) })));
+  // The measured default, when the range allows it. `selectableYears` is walked
+  // rather than trusted: a range at the very start of the covered period could
+  // leave 1991 out.
+  compareYear.value = String(years.includes(ORDINARY_YEAR) ? ORDINARY_YEAR : years.at(-1));
+
+  compareToggle.addEventListener("click", () => toggle(series, config));
+  compareYear.addEventListener("change", () => {
+    if (!comparePanel.hidden) lay(series, config);
+  });
+  compare.hidden = false;
+}
+
+/** Open or close the panel, and put the other year on the chart or take it off. */
+function toggle(series, config) {
+  const opening = comparePanel.hidden;
+  comparePanel.hidden = !opening;
+  compareToggle.setAttribute("aria-expanded", String(opening));
+  compareToggle.textContent = opening ? texts.compare.close : texts.compare.open;
+
+  if (opening) {
+    lay(series, config);
+  } else {
+    asking += 1; // Anything still in flight has lost its turn.
+    redraw(series, null);
+  }
+}
+
+/**
+ * Fetch the chosen year if it has not been fetched, then redraw.
+ *
+ * The link is set before the fetch rather than after it: it points at an ordinary
+ * search of this site and stays true whether or not the data arrives. It is the
+ * accessible equivalent of the two grey curves — the strip on this page writes
+ * out one year, and the compared year's own page writes out its own.
+ */
+async function lay(series, config) {
+  const year = Number(compareYear.value);
+  const shifted = shiftRange(asked, year, config.max_days);
+  const turn = (asking += 1);
+
+  compareLink.href = url(shifted);
+  compareLink.textContent = texts.compare.seeYear(year);
+  compareFailure.hidden = true;
+
+  try {
+    if (!kept.has(year)) {
+      compareStatus.textContent = texts.compare.loading;
+      const answer = await search({ ...asked, ...shifted });
+      kept.set(year, answer.days);
+    }
+    if (turn !== asking) return;
+
+    redraw(series, alignByCalendar(series.days, kept.get(year)));
+    compareLegendText.textContent =
+      year === ORDINARY_YEAR ? texts.compare.ordinaryLegend(year) : texts.compare.legend(year);
+    compareLegend.hidden = false;
+  } catch (error) {
+    if (turn !== asking) return;
+    // The comparison failing is not the page failing: the days the visitor came
+    // for are already on screen, and this says so in its own corner.
+    redraw(series, null);
+    compareLegend.hidden = true;
+    compareFailure.hidden = false;
+    compareFailure.textContent =
+      error instanceof SearchError ? error.message : texts.transport.serviceFailed;
+  } finally {
+    if (turn === asking) compareStatus.textContent = "";
+  }
+}
+
+/**
+ * Draw the chart again, with the other year or without it.
+ *
+ * A whole new node rather than a patch: the temperature window is framed on both
+ * series at once, so adding or dropping a year moves the axis, its graduation
+ * and every mark on it. There is nothing in the old drawing worth keeping.
+ */
+function redraw(series, compared) {
+  const next = chart(series.days, scale, { compared });
+  drawn.replaceWith(next);
+  drawn = next;
+}
+
+/** The same search, on the compared year — this page's own URL, other dates. */
+function url({ start, end }) {
+  const query = new URLSearchParams({
+    lieu: asked.place,
+    lat: String(asked.latitude),
+    lon: String(asked.longitude),
+    debut: start,
+    fin: end,
+  });
+  return `${window.location.pathname}?${query}`;
 }
 
 function fail(message) {

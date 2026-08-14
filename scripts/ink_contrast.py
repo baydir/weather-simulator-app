@@ -86,22 +86,37 @@ ROWS = [
     ("les deux mesures", ".card-measure"),
     ("la couture", ".seam span"),
     # The chart is drawn on the card's own paper, so these come back the same on
-    # all four seasons — the same reason the ramp does. One row for the
-    # graduation and the months, which are one ink; the seam label is the page's
-    # own, a shade stronger.
+    # all four seasons — the same reason the ramp does. One row for everything
+    # the drawing writes in the soft ink — the graduation, the date marks, the
+    # months, the compared year's name — since they are one ink on one paper and
+    # four rows would print the same number four times; the seam label is the
+    # page's own, a shade stronger.
     ("les repères du graphe", ".chart-axis"),
     ("la couture du graphe", ".chart-seam-label"),
+    # The one control on this page, measured closed — which is how a reader
+    # meets it. What it opens is not a row here and does not need to be: the
+    # panel is on the card's own paper, for the reason the chart is, so its
+    # texts are read against an opaque ground and not against the sky. Opening
+    # it to measure would also make the page taller and slide every row above
+    # onto another part of the gradient, which would be measuring a page nobody
+    # is looking at.
+    ("comparer", "#compare-toggle"),
     ("la provenance", ".provenance summary"),
 ]
 
-# What each element sits on. Anything inside a card body — or on the chart, which
-# is the same paper — is on an opaque ground; everything else is on the sky, at
-# its own height.
+# What each element sits on. Anything inside a card body — or on the chart, or on
+# the comparison block, which are the same paper — is on an opaque ground;
+# everything else is on the sky, at its own height.
+#
+# The comparison block joined that list the day this script measured it at 1,1:1
+# on the gradient. It sits wherever the chart ends, which the window height
+# decides, so no fixed ink could have been right for it: it went onto paper, and
+# paper is a ground that does not move.
 #
 # The chart's own texts are SVG, where the ink is `fill` and not `color`. They
 # are written `fill: currentColor` in the stylesheet precisely so that the probe
 # below, which asks for `color`, reads the ink that is actually painted.
-ON_THE_CARD = ".card-body, .chart"
+ON_THE_CARD = ".card-body, .chart, .compare"
 
 # The accueil's rows, in page order, which is also the order its table prints.
 #

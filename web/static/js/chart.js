@@ -38,6 +38,14 @@
  * what the axis is graduated on. Writing the ladder out here would be the second
  * copy CLAUDE.md rule 3 is about.
  *
+ * **A second year may be laid under the first**, and it changes one thing about
+ * the drawing that is worth knowing before reading the code: the temperature
+ * window is then framed on **both** series at once. Two windows would put each
+ * year on its own scale, and two curves on two scales say nothing about each
+ * other — which is the same reason docs/application.md gives for refusing a
+ * fixed absolute axis, applied inside one panel instead of between two searches.
+ * The compared year contributes nothing to the rain panel: it is not drawn there.
+ *
  * Nothing in here fetches or holds state: a series and a scale go in, one node
  * comes out. Which is what lets `node --test` check the geometry.
  */
@@ -57,6 +65,15 @@ import { seamIndex } from "./series.js";
  * against a baseline where the other carries two curves and the spread between
  * them. It was a third of the temperature panel at first, which was too little
  * for its own graduation to breathe — three lines in fifty-six units.
+ *
+ * **The two panels were raised together, keeping their ratio at exactly 1,75.**
+ * They were 168 and 96. A season of ninety-two days over a window of thirty-five
+ * degrees gave a degree a little under five units, and once a compared year was
+ * laid underneath, the whole question — does the day sit inside the old band or
+ * above it — was being answered in three or four units of height. At 245 and 140
+ * a degree is seven, and the same reading is made at a glance. The margins did
+ * not follow: `top`, `gap` and `bottom` are room for titles and month names, so
+ * they are typographic and not measured in degrees.
  */
 export const BOX = {
   width: 1000,
@@ -66,10 +83,21 @@ export const BOX = {
   left: 56,
   right: 14,
   top: 30,
-  temperature: 168,
-  gap: 36,
-  rain: 96,
-  bottom: 26,
+  temperature: 245,
+  // **The gap stopped being empty, and that is what sets it.** It holds the
+  // temperature panel's own row of dates, fourteen below its foot, and the rain
+  // title, which hangs twelve above its panel. At 36 the capitals landed on the
+  // digits' descenders; at 48 they cleared by twenty-two, which the geometry
+  // called separate and the eye read as one block — a title has to belong
+  // visibly to the panel under it, not to the axis over it. At 72 there are
+  // forty-six units between the two lines, and the title has plainly crossed
+  // over to the panel it names.
+  gap: 72,
+  rain: 140,
+  // Room for two rows under the baseline — the days, then the months — where it
+  // used to hold one. At 26 the month names sat 18 below the baseline with eight
+  // to spare; the second row needs thirty and its descenders need the rest.
+  bottom: 40,
 };
 
 /** How far a panel's title sits above it. */
@@ -97,9 +125,20 @@ export function frame(count, box = BOX) {
     // Zero days would divide by zero. It cannot happen — a served series has at
     // least one day — but a column of zero width is a nicer failure than NaN.
     column: count === 0 ? 0 : (plot.to - plot.from) / count,
-    temperature,
+    // Each panel is dated at its own foot. **The two rows are one axis read
+    // twice, not two axes**: the same days, at the same x, from one function
+    // called twice — which is what CLAUDE.md rule 3 asks for and the opposite of
+    // what it forbids. Repeating them is the whole point. The temperature panel
+    // is 245 units tall, and dating a point on it meant carrying the eye down
+    // past the rain panel to find the row underneath.
+    temperature: { ...temperature, dates: temperature.bottom + 14 },
     rain: { top: rain.top, base: rain.top + box.rain },
-    months: rain.top + box.rain + 18,
+    // Under the lower panel the row is doubled by the months, numbers over
+    // words, in the order a French date is said. The months are named once
+    // where they turn and only here: repeated under both panels they would be
+    // four words too many, and a number above a name is already a date.
+    dates: rain.top + box.rain + 14,
+    months: rain.top + box.rain + 30,
   };
 }
 
@@ -211,8 +250,16 @@ const POINT = 1.8;
  *
  * A lone reading needs no special case for the same reason: it draws its dot
  * like every other, and simply has no segment to draw.
+ *
+ * **`points` is what tells the compared year apart from the one asked for.** The
+ * dot is the mark of a reading, and the reading this page is about is the one the
+ * visitor searched for; the older year is a ground to read it against. Drawn with
+ * its own dots it would claim the same standing, and two hundred marks on one
+ * panel stop being marks. The cost is that a lone compared day draws nothing at
+ * all — a segment needs two ends — which is the right silence: one grey dot in a
+ * season would be noise, not a reading.
  */
-function stroke(frame, run, y, className) {
+function stroke(frame, run, y, className, { points = true } = {}) {
   const at = ({ index, value }) => [round(middleOf(frame, index)), round(y(value))];
   const marks = [];
 
@@ -220,6 +267,7 @@ function stroke(frame, run, y, className) {
     const d = run.map((point, step) => `${step === 0 ? "M" : "L"}${at(point).join(" ")}`).join(" ");
     marks.push(svg("path", { className: `chart-line ${className}`, attrs: { d } }));
   }
+  if (!points) return marks;
   for (const point of run) {
     const [cx, cy] = at(point);
     marks.push(
@@ -230,15 +278,28 @@ function stroke(frame, run, y, className) {
 }
 
 /**
- * The spread between the two curves, on the days that carry both.
+ * The compared year as a band: the room between its two readings, filled.
  *
- * The amplitude of a day is a thickness here rather than a number — the one
- * thing the chart says that a card does not, and it says it without computing
- * anything: it is the room between two readings already drawn.
+ * **Only the compared year is ever filled, and that is a change from what this
+ * panel used to do.** The spread of the drawn year was filled too, very pale, as
+ * a way of making its amplitude a thickness. It was taken back out: a fill on
+ * this panel now means one thing and one thing only — *this is the older year* —
+ * and a second wash, however faint, made the reader ask which of the two a shade
+ * of grey belonged to. The amplitude of the drawn year is not lost, it is simply
+ * no longer painted: it is still the room between two curves both of which are
+ * on the panel, in colour, carrying their dots.
+ *
+ * What the band buys is the reading the whole feature exists for. The compared
+ * year stops being two lines to follow and becomes a ground: the question is
+ * whether the day sits inside what used to be ordinary or climbs out of it, and
+ * that is answered by looking, not by comparing two wiggles.
+ *
+ * A day the compared year has no counterpart for reads `undefined` here, and
+ * breaks the band exactly as it breaks the line.
  */
-function ribbon(frame, days, y) {
-  const paired = runs(days, (day) =>
-    missing(day.temperature_min) || missing(day.temperature_max) ? null : day,
+function pastBand(frame, compared, y) {
+  const paired = runs(compared, (day) =>
+    missing(day?.temperature_min) || missing(day?.temperature_max) ? null : day,
   );
 
   return paired
@@ -250,7 +311,7 @@ function ribbon(frame, days, y) {
       const back = [...run].reverse().map((point) => at(point, "temperature_min"));
 
       return svg("path", {
-        className: "chart-ribbon",
+        className: "chart-past-band",
         attrs: { d: `M${out.join(" L")} L${back.join(" L")} Z` },
       });
     });
@@ -260,11 +321,19 @@ function ribbon(frame, days, y) {
  * The chart, as one node.
  *
  * `scale` is what /api/config serves: the band boundaries and their step.
+ *
+ * `compared` is the other year, already laid alongside by `compare.js` — one slot
+ * per day drawn, `null` where that year has no such day. It is aligned before it
+ * arrives here, so this file never reads a date to place a mark.
  */
-export function chart(days, scale, box = BOX) {
+export function chart(days, scale, { compared = null, box = BOX } = {}) {
   const geometry = frame(days.length, box);
-  const span = temperatureWindow(days, scale.step);
+  // One window over both years, or the two curves would each be drawn on their
+  // own scale and the gap between them would be a picture of the framing.
+  const framed = compared ? [...days, ...compared.filter(Boolean)] : days;
+  const span = temperatureWindow(framed, scale.step);
   const ceiling = rainCeiling(days);
+  const year = comparedYear(compared);
 
   const y = (value) =>
     geometry.temperature.top +
@@ -272,17 +341,28 @@ export function chart(days, scale, box = BOX) {
   const height = (value) => (value / ceiling) * box.rain;
 
   // The order of this list is the stacking order: the graduation under
-  // everything, the ribbon over it, the two curves on top of the ribbon, and
-  // the seam last so that no mark crosses it.
+  // everything, then the compared year — its band, then its two edges — then the
+  // two curves of the year asked for, and the seam last so that no mark crosses
+  // it.
+  //
+  // **Nothing is filled unless a year is compared.** A panel showing one year
+  // shows two curves and the air between them, and that is all it needs to; the
+  // one fill this drawing has left is reserved for saying *older year*.
   const marks = [
     title(geometry, geometry.temperature.top, texts.chart.temperatures),
     title(geometry, geometry.rain.top, texts.chart.precipitation),
     ...(span ? [graduation(geometry, span, scale.edges, scale.step, y)] : []),
-    ...(span ? ribbon(geometry, days, y) : []),
+    ...(span && compared ? pastBand(geometry, compared, y) : []),
+    ...(span && compared ? pastCurves(geometry, compared, y) : []),
     ...(span ? curves(geometry, days, y) : []),
     rain(geometry, days, ceiling, height),
+    ...(span
+      ? [dates(geometry, days, geometry.temperature.bottom, geometry.temperature.dates)]
+      : []),
+    dates(geometry, days, geometry.rain.base, geometry.dates),
     months(geometry, days),
     seamMark(geometry, days),
+    year ? pastLegend(geometry, year) : null,
   ].filter(Boolean);
 
   return svg(
@@ -292,11 +372,73 @@ export function chart(days, scale, box = BOX) {
       attrs: {
         viewBox: `0 0 ${box.width} ${geometry.height}`,
         role: "img",
-        "aria-label": texts.chart.label,
+        // The one sentence, and it names the compared year when there is one:
+        // a reader who gets nothing from a drawing must at least be told what
+        // the drawing now holds.
+        "aria-label": texts.chart.label(year),
       },
     },
     marks,
   );
+}
+
+/** The year the compared series belongs to, read off its first real day. */
+function comparedYear(compared) {
+  return compared?.find(Boolean)?.date.slice(0, 4) ?? null;
+}
+
+/**
+ * The band's own name, on the drawing: a sample of it and the year beside.
+ *
+ * **This is the first text on this panel that is not a title, an axis or the
+ * seam, and putting it here was a deliberate widening of a rule.**
+ * docs/application.md forbids the chart writing anything above the days — no
+ * total, no average, no count, no extreme of the range — and a test enforces it
+ * by refusing every string on the drawing that is not on a short list. A year is
+ * none of those things: it names a mark, in the same way the seam label names a
+ * crossing. It computes nothing and it says nothing about the period. So the
+ * list gained an entry rather than the rule losing its point, and the test still
+ * catches the aggregate it was written for.
+ *
+ * **It is set in the margin above the plot**, on the title's own line and
+ * right-anchored, which is the one strip of the panel where no mark can ever be:
+ * the window is framed half a band clear of the warmest reading. Anchored to the
+ * band itself it would have to dodge a curve, and which curve depends on the
+ * weather.
+ */
+const LEGEND = { swatch: 18, gap: 6, year: 26 };
+
+function pastLegend(frame, year) {
+  const left = frame.plot.to - (LEGEND.swatch + LEGEND.gap + LEGEND.year);
+  const baseline = frame.temperature.top - TITLE_LIFT;
+  // The sample is centred on the text rather than sat on its baseline: a band
+  // hanging under the digits would read as an underline.
+  const top = baseline - 8;
+  const bottom = baseline - 1;
+  const edge = (at) =>
+    svg("line", {
+      className: "chart-line past",
+      attrs: { x1: round(left), x2: round(left + LEGEND.swatch), y1: at, y2: at },
+    });
+
+  return svg("g", { className: "chart-legend" }, [
+    svg("rect", {
+      className: "chart-past-band",
+      attrs: {
+        x: round(left),
+        y: top,
+        width: LEGEND.swatch,
+        height: bottom - top,
+      },
+    }),
+    edge(top),
+    edge(bottom),
+    svg("text", {
+      className: "chart-legend-year",
+      text: year,
+      attrs: { x: round(left + LEGEND.swatch + LEGEND.gap), y: round(baseline) },
+    }),
+  ]);
 }
 
 /**
@@ -312,6 +454,29 @@ function curves(frame, days, y) {
     ["temperature_min", "low"],
   ].flatMap(([key, className]) =>
     runs(days, (day) => day[key]).flatMap((run) => stroke(frame, run, y, className)),
+  );
+}
+
+/**
+ * The other year, under the one that was asked for.
+ *
+ * The same two readings and the same breaks, drawn without dots and in one
+ * colour: it is a ground, not a second subject. The classes carry `past` first
+ * so the stylesheet can override the warm and the cool it would otherwise
+ * inherit from `high` and `low` — the two names are kept because a reader who
+ * inspects the drawing should find the maximum called a maximum in both years.
+ *
+ * A slot the compared year has no day for reads `undefined`, which `runs` treats
+ * as a hole exactly as it treats a missing reading. Nothing is joined across it.
+ */
+function pastCurves(frame, compared, y) {
+  return [
+    ["temperature_max", "high"],
+    ["temperature_min", "low"],
+  ].flatMap(([key, className]) =>
+    runs(compared, (day) => day?.[key]).flatMap((run) =>
+      stroke(frame, run, y, `past ${className}`, { points: false }),
+    ),
   );
 }
 
@@ -332,10 +497,21 @@ function title(frame, top, text) {
 }
 
 /**
- * The graduation: a hairline at each step the window shows, numbered.
+ * The graduation: a hairline at each step the window shows, numbered, and the
+ * axis of dates the panel stands on.
  *
  * These are the same five degrees the cards are tinted by, which is what lets a
  * height on this panel and a colour on the strip be read as one thing.
+ *
+ * **The line along the foot is a frame, not a zero, and the difference is worth
+ * knowing before reading either panel.** The rain panel's baseline is the datum
+ * itself: bars stand on it and it is nought millimetres. This one falls on
+ * whatever half-step the window happened to snap to — 7,5 °C on a summer, −12,5
+ * on a frozen period — and the curves float clear of it. It is drawn because a
+ * panel closed on three sides reads as unfinished and the eye keeps looking for
+ * the fourth; it carries no number for the same reason it means nothing, the
+ * lowest value written on the axis being the lowest boundary the ladder has
+ * inside the window, one hairline above.
  */
 function graduation(frame, span, edges, step, y) {
   const inside = ticks(span, edges, step);
@@ -363,7 +539,17 @@ function graduation(frame, span, edges, step, y) {
     }),
   );
 
-  return svg("g", { className: "chart-graduation" }, [...rules, ...labels]);
+  const axis = svg("line", {
+    className: "chart-baseline",
+    attrs: {
+      x1: frame.plot.from,
+      x2: frame.plot.to,
+      y1: frame.temperature.bottom,
+      y2: frame.temperature.bottom,
+    },
+  });
+
+  return svg("g", { className: "chart-graduation" }, [...rules, axis, ...labels]);
 }
 
 /** The bars, ruled and numbered like the panel above them. */
@@ -443,6 +629,62 @@ function rain(frame, days, ceiling, height) {
     }),
     ...labels,
   ]);
+}
+
+/**
+ * The days a reader counts from: the 1st, the 10th and the 20th.
+ *
+ * **A month name says which month, and nothing about where inside it.** Over
+ * ninety-two days a month is three hundred units wide, and finding the second
+ * week of August meant measuring by eye against the two names either side. These
+ * are the marks that make a date on the drawing findable, and they are the fewest
+ * that do it: at three a month they never crowd, whatever the period — nine days
+ * apart at the closest, which is ninety units on a full season and still room
+ * for two digits on the shortest range the form allows.
+ *
+ * **Nothing is derived here.** A mark is placed on a day the series carries,
+ * read off its own date; no day is invented to hold a round number, and the
+ * first of a month the range does not reach simply has no mark. That is the same
+ * discipline the months follow, and the reason both walk the days rather than
+ * the calendar.
+ *
+ * **Drawn at the foot of each panel**, from one call apiece. The temperature
+ * panel is the taller of the two by far, and dating a point on it used to mean
+ * carrying the eye down past the whole rain panel to the only row that said
+ * which day was which. The two rows are the same days at the same x — one axis
+ * read twice, which is why it is one function called twice rather than a second
+ * set of marks.
+ *
+ * The number sits over the middle of its column, where the day's own dot is, so
+ * the mark and the reading it names are on one vertical. The month keeps the
+ * left edge: it names a turn, which is a boundary and not a day.
+ */
+const MILESTONES = [1, 10, 20];
+
+/** How far the tick reaches below the baseline, before the number. */
+const TICK = 4;
+
+function dates(frame, days, base, row) {
+  const marks = [];
+
+  for (const [index, day] of days.entries()) {
+    const number = Number(day.date.slice(8, 10));
+    if (!MILESTONES.includes(number)) continue;
+
+    const x = round(middleOf(frame, index));
+    marks.push(
+      svg("line", {
+        className: "chart-tick",
+        attrs: { x1: x, x2: x, y1: round(base), y2: round(base + TICK) },
+      }),
+      svg("text", {
+        className: "chart-date",
+        text: String(number),
+        attrs: { x, y: round(row), "text-anchor": "middle" },
+      }),
+    );
+  }
+  return svg("g", { className: "chart-dates" }, marks);
 }
 
 /** The months, named where they turn — the strip's own reading mark, under it. */

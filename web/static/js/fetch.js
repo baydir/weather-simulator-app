@@ -101,8 +101,13 @@ export async function geocode(name, config, { count = 5, language = "fr" } = {})
 /**
  * One search, end to end: ask what to fetch, fetch it, send it back.
  *
- * Returns the daily series exactly as the server built it. Every value in it
- * was computed there.
+ * Returns the daily series exactly as the server built it, plus the `today` the
+ * plan was cut on. Every value in it was computed there.
+ *
+ * `today` is passed through rather than dropped because the comparison menu has
+ * to know which years have finished, and a browser clock is the visitor's. It is
+ * the same date that already travels between the two calls; handing it on costs
+ * nothing and keeps the page from reading a clock of its own.
  *
  * `onProgress` is called with how many of the planned requests have come back,
  * so a caller can show something during the wait. It is told a count, not what
@@ -122,5 +127,6 @@ export async function search({ latitude, longitude, start, end }, onProgress = (
     onProgress(++done, plan.requests.length);
   }
 
-  return postJson("/api/days", { ...query, today: plan.today, payloads });
+  const series = await postJson("/api/days", { ...query, today: plan.today, payloads });
+  return { ...series, today: plan.today };
 }
