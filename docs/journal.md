@@ -271,7 +271,8 @@ qui vérifie J+3 et trouve juste peut reporter cette confiance sur 2046.
 Hors numérotation : une addition à l'étape 6, pas une étape. Sous la bande, les
 mêmes journées dessinées — deux courbes de températures, les précipitations en
 barres, toute la plage d'un seul regard. Deux panneaux partageant un axe de
-dates, jamais deux échelles verticales sur un tracé.
+dates, jamais deux échelles verticales sur un tracé. Ils sont trois depuis le
+cumul, et la règle n'a pas bougé : c'est elle qui lui a valu un panneau.
 
 **Ce qu'il a corrigé de ce que l'étape 6 supposait.** Deux phrases de
 [`application.md`](application.md) sont tombées, et aucune des deux n'était
@@ -283,7 +284,9 @@ ne survit pas à un bloc de 420 px : la page passe de 789 à 1212 px et défile.
 choix entre replier le graphe et laisser la page s'allonger a été tranché par le
 porteur du projet, en faveur du second.
 
-**Les deux axes sont les deux seules décisions du graphe**, et les deux ont été
+**Les deux axes sont alors les deux seules décisions du graphe** — un troisième
+panneau en a ajouté un depuis → [Le cumul des
+précipitations](#le-cumul-des-précipitations) —, et les deux ont été
 arbitrées comme des décisions de traitement, non de développement. La température
 se cale sur les bornes de l'échelle de couleur ; les précipitations sur la
 journée la plus arrosée de la période, avec un plancher de 10 mm — sans lequel
@@ -443,6 +446,54 @@ s'est fermé par un trait qui est un cadre et non un zéro. La page passe de 121
 le plancher est monté de 6,5 à **7,7:1**. Un test a par ailleurs attrapé une
 ligne supprimée par accident dans le gabarit du dessin — le panneau des pluies
 s'était effondré en silence, hauteur `NaN`, aucune barre.
+
+→ [`application.md`](application.md)
+
+---
+
+## Le cumul des précipitations
+
+Hors numérotation : une addition au graphe, demandée le 14 août 2026. **Un
+troisième panneau** sous celui des pluies porte une courbe montante, avec sa
+propre ligne de base et sa propre graduation.
+
+**Un interdit écrit a été levé, un autre a failli l'être.**
+[`application.md`](application.md) refusait « aucun cumul » parmi les
+agrégations, et « jamais deux échelles verticales sur un même tracé ». La
+première forme écrite posait la courbe sur les barres avec un axe à droite, et
+levait les deux ; le cumul a reçu un panneau, et seule l'agrégation a été
+arbitrée.
+
+**Ce que la forme superposée avait pour elle était réel** : même grandeur, même
+unité, même zéro que les barres, donc un facteur entre les deux échelles et
+jamais un décalage. Ce qui l'a emportée est qu'un lecteur devait tout de même
+savoir laquelle il regardait, et que rien ne le lui rappelait là où il posait les
+yeux. Le panneau coûte de la hauteur de page — arbitrage déjà rendu dans le même
+sens à l'arrivée du graphe — et ne demande rien.
+
+**Elle laisse deux traits au dessin.** La courbe ne porte aucun point, un point
+marquant une lecture et aucun pluviomètre ne relevant un cumul ; elle se coupe
+sur une journée manquante, faute de quoi le trou dessinerait ce que dessine une
+journée sèche. Écrits pour rendre la superposition honnête, ils valent tels quels
+dans un panneau à part.
+
+**La graduation des millimètres est devenue une fonction appelée deux fois**,
+filets, nombres et pied compris — recopiée, c'eût été cinq lignes évidentes
+tenues à deux endroits, ce que le prototype avait déjà produit sur cinq
+comparaisons de seuils.
+
+**Le rendu a de nouveau attrapé ce que les tests ne voyaient pas.** L'étiquette
+du cumul affichait « 00,0 mm » là où elle disait « 100,0 mm » : la marge gauche
+avait été mesurée sur « -10 °C », six caractères, et le total en demande huit.
+Elle passe de 56 à **68 unités**. Même défaut qu'à 42 sur l'axe des pluies, deux
+étapes plus tôt.
+
+**La page passe de 1472 à 1705 px** en 1440 × 960, tables de contraste
+remesurées. Le plancher monte de 7,7 à **7,9:1** et change de porteur :
+l'étiquette de couture en été, poussée plus bas sur le dégradé, passe à 8,6 et
+cède la place au dépliant de provenance. Rien à en conclure de général — un
+déplacement le long d'un dégradé se renverse au changement de mise en page
+suivant.
 
 → [`application.md`](application.md)
 

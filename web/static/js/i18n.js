@@ -108,7 +108,8 @@ export const texts = {
     // nothing. Two separate sentences would be the same sentence written twice,
     // to drift the day either is reworded.
     label: (year) =>
-      "Températures et précipitations de la période, jour par jour. " +
+      "Températures et précipitations de la période, jour par jour, " +
+      "puis le cumul des précipitations dans un troisième panneau. " +
       "Les valeurs sont écrites dans la bande de journées ci-dessus." +
       (year ? ` Les températures de ${year} y sont superposées en gris.` : ""),
 
@@ -118,6 +119,12 @@ export const texts = {
     // reworded the other has no reason to follow.
     temperatures: "Températures",
     precipitation: "Précipitations",
+
+    // The third panel, under the two above. It names the quantity in full
+    // rather than saying "Cumul" alone: the word on its own would be read
+    // against the panel it sits under, and there is more than one thing on this
+    // drawing a total could be adding up.
+    cumulative: "Cumul des précipitations",
   },
 
   // The other year, and the two sentences that keep it honest.

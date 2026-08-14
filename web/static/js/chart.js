@@ -7,16 +7,19 @@
  * column by column under the cards it would be perfectly aligned and useless,
  * since eight days of curve is exactly what the strip already shows.
  *
- * **Two panels sharing one axis of dates, never two vertical scales on one
- * plot.** Where the two scales meet is arbitrary, and a reader takes the
- * crossing of a curve and a bar for a fact about the weather. So the
- * temperatures are drawn above and the rain below, in a panel of its own with
- * its own baseline.
+ * **Three panels sharing one axis of dates, never two vertical scales on one
+ * plot.** Where two scales meet is arbitrary, and a reader takes the crossing of
+ * a curve and a bar for a fact about the weather. So each quantity gets a panel
+ * of its own with its own baseline: the temperatures on top, the daily rain
+ * under them, the running total under that. **The third panel is what keeps that
+ * rule whole** — the total was going to be a second scale over the bars, and
+ * giving it a floor of its own costs height and buys a drawing where nothing
+ * crosses anything.
  *
- * **Nothing here decides anything about the data.** No average, no count of
- * rainy days, no total: one mark per day and nothing above them, which is what
- * docs/application.md asks of the strip and asks of this. The two axes are the
- * one thing this file does settle, and both were arbitrated:
+ * **One mark per day, and one line that adds them up.** No average, no count of
+ * rainy days, no extreme of the range — the running total is the single computed
+ * quantity on this drawing, and it was arbitrated as such. What is left for this
+ * file to settle is the framing of the three axes, each arbitrated too:
  *
  * - *Temperatures* are framed on the served band ladder — the axis runs from the
  *   multiple of five below the coldest reading to the multiple above the
@@ -33,6 +36,10 @@
  *   when the period is drier than that. The floor is what keeps a drizzle from
  *   drawing the same bar as a downpour: without it, a period whose wettest day
  *   is 0,3 mm would fill the panel.
+ * - *The running total* is framed on where it ends, under the same floor and by
+ *   the same rule of interval. Without the floor a period totalling 3 mm would
+ *   draw a curve climbing the full height of its panel, which is the same
+ *   failure the bars are protected from and deserves the same answer.
  *
  * The boundaries themselves are served by /api/config and passed in: they are
  * what the axis is graduated on. Writing the ladder out here would be the second
@@ -77,10 +84,12 @@ import { seamIndex } from "./series.js";
  */
 export const BOX = {
   width: 1000,
-  // Wide enough for the longest thing the axis can say — "-10 °C", the unit
-  // riding on the topmost number. Measured on the rendering, not guessed: at 42
-  // the label began outside the viewBox and came out beheaded.
-  left: 56,
+  // Wide enough for the longest thing an axis can say. Measured on the
+  // rendering, not guessed, and it has been wrong twice: at 42 the rain axis
+  // came out beheaded, and 56 — the room "-10 °C" needs — printed the cumulative
+  // panel's "100,0 mm" as "00,0 mm", a number both wrong and perfectly legible.
+  // The widest label on the drawing is now the total's, at eight characters.
+  left: 68,
   right: 14,
   top: 30,
   temperature: 245,
@@ -94,6 +103,13 @@ export const BOX = {
   // over to the panel it names.
   gap: 72,
   rain: 140,
+  // **The same height as the rain panel, and that is the whole argument.** The
+  // two of them plot millimetres of the same water; giving them one height
+  // leaves the scale as the only difference between them, which is what a
+  // reader has to hold in mind anyway. A shorter panel would have said that the
+  // total is the lesser reading, and a taller one that it is the point — and it
+  // is neither, it is the other way of looking at the panel above.
+  cumul: 140,
   // Room for two rows under the baseline — the days, then the months — where it
   // used to hold one. At 26 the month names sat 18 below the baseline with eight
   // to spare; the second row needs thirty and its descenders need the rest.
@@ -112,33 +128,43 @@ const round = (value) => Math.round(value * 100) / 100;
 /** The one test for a hole in the series, written once. */
 const missing = (value) => value === null || value === undefined;
 
-/** What the panels sit in, once the number of days is known. */
+/**
+ * What the panels sit in, once the number of days is known.
+ *
+ * **Three panels, stacked, each with its own foot and its own row of dates.**
+ * They are laid out by walking down the drawing rather than by adding up the
+ * box for each one: a third panel arriving under the second would otherwise
+ * have meant three expressions of the same sum, and the fourth would have meant
+ * four.
+ */
 export function frame(count, box = BOX) {
   const plot = { from: box.left, to: box.width - box.right };
   const temperature = { top: box.top, bottom: box.top + box.temperature };
-  const rain = { top: temperature.bottom + box.gap };
+  const rain = { top: temperature.bottom + box.gap, base: temperature.bottom + box.gap + box.rain };
+  const cumul = { top: rain.base + box.gap, base: rain.base + box.gap + box.cumul };
 
   return {
     box,
-    height: box.top + box.temperature + box.gap + box.rain + box.bottom,
+    height: cumul.base + box.bottom,
     plot,
     // Zero days would divide by zero. It cannot happen — a served series has at
     // least one day — but a column of zero width is a nicer failure than NaN.
     column: count === 0 ? 0 : (plot.to - plot.from) / count,
-    // Each panel is dated at its own foot. **The two rows are one axis read
-    // twice, not two axes**: the same days, at the same x, from one function
-    // called twice — which is what CLAUDE.md rule 3 asks for and the opposite of
-    // what it forbids. Repeating them is the whole point. The temperature panel
-    // is 245 units tall, and dating a point on it meant carrying the eye down
-    // past the rain panel to find the row underneath.
+    // Each panel is dated at its own foot. **The three rows are one axis read
+    // three times, not three axes**: the same days, at the same x, from one
+    // function called once per panel — which is what CLAUDE.md rule 3 asks for
+    // and the opposite of what it forbids. Repeating them is the whole point.
+    // The temperature panel alone is 245 units tall, and dating a point on the
+    // bottom panel would otherwise mean carrying the eye up past two others.
     temperature: { ...temperature, dates: temperature.bottom + 14 },
-    rain: { top: rain.top, base: rain.top + box.rain },
-    // Under the lower panel the row is doubled by the months, numbers over
+    rain: { ...rain, dates: rain.base + 14 },
+    cumul: { ...cumul, dates: cumul.base + 14 },
+    // Under the lowest panel the row is doubled by the months, numbers over
     // words, in the order a French date is said. The months are named once
-    // where they turn and only here: repeated under both panels they would be
-    // four words too many, and a number above a name is already a date.
-    dates: rain.top + box.rain + 14,
-    months: rain.top + box.rain + 30,
+    // where they turn and only there: repeated under all three panels they
+    // would be eight words too many, and a number above a name is already a
+    // date.
+    months: cumul.base + 30,
   };
 }
 
@@ -199,14 +225,55 @@ export function ticks(span, edges, step) {
  * the smallest round step that leaves at most four intervals, which is what
  * keeps the labels to numbers a reader recognises: 5 and 10 on a quiet period,
  * 10 and 20 on a wet one.
+ *
+ * **The same function graduates the panel below**, which is why the ladder runs
+ * so far past anything a single day can bring: a season's total is an order of
+ * magnitude above its wettest day — 600 mm on a wet quarter in the mountains
+ * against 40 for the storm that fell in it. The tail of the list is reached only
+ * by the total, and the head only by the days, from one rule read twice.
  */
-const RAIN_STEPS = [1, 2, 5, 10, 20, 25, 50, 100, 200];
+const RAIN_STEPS = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500];
 
 export function rainTicks(ceiling) {
   const step = RAIN_STEPS.find((candidate) => ceiling / candidate <= 4) ?? RAIN_STEPS.at(-1);
   const values = [];
   for (let value = step; value <= ceiling; value += step) values.push(value);
   return values;
+}
+
+/**
+ * The running total, as stretches of consecutive days — one number per day, the
+ * rain that has fallen since the period opened.
+ *
+ * **This is the one thing on the drawing that is computed rather than read**, and
+ * it carries no dots for that reason: a dot is the mark of a measurement, and no
+ * gauge ever recorded 63,4 mm on the 12th. What it plots is said over its panel,
+ * as the two panels above say theirs.
+ *
+ * **A missing day breaks the curve instead of being stepped over.** Adding
+ * nothing and carrying on would draw the total flat across the hole, which is
+ * exactly what a genuinely dry day draws — the series would be saying "no rain"
+ * where it means "no reading". So the run stops and the next one opens at the
+ * height the last known day left it: after a hole the curve is a floor, and the
+ * notch under the baseline says why.
+ *
+ * The sum is left as it comes. Rounding it at each step would be a rule about
+ * millimetres invented here, where docs/application.md already settles how one
+ * is written — and what is written on the axis is its own round graduation, not
+ * this number.
+ */
+export function cumulative(days) {
+  let total = 0;
+  const totals = days.map((day) =>
+    missing(day.precipitation) ? null : (total += day.precipitation),
+  );
+  return runs(totals, (value) => value);
+}
+
+/** The top of the right-hand axis: where the total ends, or the floor. */
+export function cumulativeCeiling(days) {
+  const last = cumulative(days).at(-1)?.at(-1)?.value ?? 0;
+  return Math.max(RAIN_FLOOR_MM, last);
 }
 
 /**
@@ -351,15 +418,18 @@ export function chart(days, scale, { compared = null, box = BOX } = {}) {
   const marks = [
     title(geometry, geometry.temperature.top, texts.chart.temperatures),
     title(geometry, geometry.rain.top, texts.chart.precipitation),
+    title(geometry, geometry.cumul.top, texts.chart.cumulative),
     ...(span ? [graduation(geometry, span, scale.edges, scale.step, y)] : []),
     ...(span && compared ? pastBand(geometry, compared, y) : []),
     ...(span && compared ? pastCurves(geometry, compared, y) : []),
     ...(span ? curves(geometry, days, y) : []),
     rain(geometry, days, ceiling, height),
+    cumul(geometry, days),
     ...(span
       ? [dates(geometry, days, geometry.temperature.bottom, geometry.temperature.dates)]
       : []),
-    dates(geometry, days, geometry.rain.base, geometry.dates),
+    dates(geometry, days, geometry.rain.base, geometry.rain.dates),
+    dates(geometry, days, geometry.cumul.base, geometry.cumul.dates),
     months(geometry, days),
     seamMark(geometry, days),
     year ? pastLegend(geometry, year) : null,
@@ -552,8 +622,59 @@ function graduation(frame, span, edges, step, y) {
   return svg("g", { className: "chart-graduation" }, [...rules, axis, ...labels]);
 }
 
-/** The bars, ruled and numbered like the panel above them. */
+/**
+ * The graduation both millimetre panels share: the hairlines, the numbers, the
+ * foot they stand on.
+ *
+ * **One function, called twice** — the rain and the total are ruled by the same
+ * ladder, numbered in the same ink at the same offset, and closed by the same
+ * baseline. Written out in each panel it would have been five identical lines
+ * kept in two places, which is exactly the shape of thing CLAUDE.md rule 3 was
+ * written against: nobody re-reads five obvious lines, and they diverge anyway.
+ *
+ * It comes back in two pieces because a panel is drawn in three layers. The
+ * hairlines go under the marks, and the numbers and the foot over them — a bar
+ * standing on the baseline must not paint over it, and a number the marks can
+ * cross is a number that will be crossed on some period.
+ *
+ * The unit rides on the topmost number alone. The tenth is kept even though a
+ * gridline is round by construction: docs/application.md settles the rounding of
+ * millimetres, and an axis writing them one way while the cards write them
+ * another would be two rules for one quantity.
+ */
+function millimetres(frame, base, ceiling, height) {
+  const marks = rainTicks(ceiling);
+  const y = (value) => round(base - height(value));
+
+  return {
+    rules: marks.map((value) =>
+      svg("line", {
+        className: "chart-rule",
+        attrs: { x1: frame.plot.from, x2: frame.plot.to, y1: y(value), y2: y(value) },
+      }),
+    ),
+    foot: [
+      svg("line", {
+        className: "chart-baseline",
+        attrs: { x1: frame.plot.from, x2: frame.plot.to, y1: base, y2: base },
+      }),
+      ...marks.map((value, index) =>
+        svg("text", {
+          className: "chart-axis",
+          text:
+            index === marks.length - 1
+              ? `${present.precipitation(value)} ${texts.units.millimetres}`
+              : present.precipitation(value),
+          attrs: { x: frame.plot.from - 8, y: y(value) + 3, "text-anchor": "end" },
+        }),
+      ),
+    ],
+  };
+}
+
+/** The bars, on the graduation the panel below them shares. */
 function rain(frame, days, ceiling, height) {
+  const scale = millimetres(frame, frame.rain.base, ceiling, height);
   const bars = days.flatMap((day, index) => {
     if (missing(day.precipitation)) {
       // A missing reading and a dry day both draw no bar, so the missing one
@@ -584,51 +705,40 @@ function rain(frame, days, ceiling, height) {
     ];
   });
 
-  const marks = rainTicks(ceiling);
-  const rules = marks.map((value) =>
-    svg("line", {
-      className: "chart-rule",
-      attrs: {
-        x1: frame.plot.from,
-        x2: frame.plot.to,
-        y1: round(frame.rain.base - height(value)),
-        y2: round(frame.rain.base - height(value)),
-      },
-    }),
-  );
-  // The unit on the topmost only, as on the panel above. The tenth is kept even
-  // though a gridline is round by construction: docs/application.md settles the
-  // rounding of millimetres, and an axis writing them one way while the cards
-  // write them another would be two rules for one quantity.
-  const labels = marks.map((value, index) =>
-    svg("text", {
-      className: "chart-axis",
-      text:
-        index === marks.length - 1
-          ? `${present.precipitation(value)} ${texts.units.millimetres}`
-          : present.precipitation(value),
-      attrs: {
-        x: frame.plot.from - 8,
-        y: round(frame.rain.base - height(value) + 3),
-        "text-anchor": "end",
-      },
-    }),
+  return svg("g", { className: "chart-rain" }, [...scale.rules, ...bars, ...scale.foot]);
+}
+
+/**
+ * The third panel: the same rain, added up as the period goes.
+ *
+ * **It is a panel and not a second scale on the one above**, which is what keeps
+ * the drawing's oldest rule whole — two vertical scales never share a plot,
+ * because where they would meet is arbitrary and a reader takes the crossing of
+ * a curve and a bar for a fact about the weather. Here nothing crosses anything:
+ * the bars are up there against their ceiling, the total is down here against
+ * its own, and the two are read one after the other rather than one against the
+ * other.
+ *
+ * What it costs is height, and that was the arbitration. What it buys is that
+ * the panel needs no legend to be honest: a title says what is plotted, exactly
+ * as the two panels above it have always done.
+ *
+ * **The panel is drawn even when nothing rises in it.** A period whose every
+ * reading is missing gets its graduation and no curve, the way the rain panel
+ * gets its own and no bars. A drawing whose height depended on the holes in the
+ * series would be a drawing that changes shape for reasons the reader cannot
+ * see.
+ */
+function cumul(frame, days) {
+  const ceiling = cumulativeCeiling(days);
+  const height = (value) => (value / ceiling) * frame.box.cumul;
+  const scale = millimetres(frame, frame.cumul.base, ceiling, height);
+  const y = (value) => frame.cumul.base - height(value);
+  const curve = cumulative(days).flatMap((run) =>
+    stroke(frame, run, y, "cumulative", { points: false }),
   );
 
-  return svg("g", { className: "chart-rain" }, [
-    ...rules,
-    ...bars,
-    svg("line", {
-      className: "chart-baseline",
-      attrs: {
-        x1: frame.plot.from,
-        x2: frame.plot.to,
-        y1: frame.rain.base,
-        y2: frame.rain.base,
-      },
-    }),
-    ...labels,
-  ]);
+  return svg("g", { className: "chart-cumul" }, [...scale.rules, ...curve, ...scale.foot]);
 }
 
 /**
@@ -715,8 +825,10 @@ function months(frame, days) {
 /**
  * The same crossing the strip marks, at the same day.
  *
- * A rule across both panels, not a change of colour: it is the one mark on this
- * page that says the ground has changed under the numbers.
+ * A rule across all three panels, not a change of colour: it is the one mark on
+ * this page that says the ground has changed under the numbers. It runs from the
+ * top of the drawing to the last foot, which is what makes it one crossing and
+ * not three — the day the data changes source is the same day in every panel.
  */
 function seamMark(frame, days) {
   const index = seamIndex(days);
@@ -732,7 +844,7 @@ function seamMark(frame, days) {
         x1: round(x),
         x2: round(x),
         y1: frame.temperature.top,
-        y2: round(frame.rain.base),
+        y2: round(frame.cumul.base),
       },
     }),
     svg("text", {

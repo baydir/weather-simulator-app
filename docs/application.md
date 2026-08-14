@@ -244,8 +244,8 @@ seraient une divergence de plus.
 
 ### Ce que l'interface ne calcule pas
 
-Aucune moyenne de période, aucun comptage de journées de pluie, aucun cumul,
-aucun extrême de la plage. Ce sont des agrégations, et une agrégation faite à l'affichage relève
+Aucune moyenne de période, aucun comptage de journées de pluie, aucun extrême de
+la plage. Ce sont des agrégations, et une agrégation faite à l'affichage relève
 de la même validation que l'arrondi ci-dessus. **L'interface montre les journées,
 et rien au-dessus d'elles.**
 
@@ -253,19 +253,28 @@ La règle porte sur la bande comme sur le graphe. Une courbe est **une marque pa
 journée** et n'agrège rien : ce qu'elle ajoute est la forme de la période, que
 l'œil compose et que l'interface ne calcule pas.
 
+**Le cumul des précipitations est la seule exception, arbitrée le 14 août 2026.**
+Trois traits l'y autorisent, dont aucun ne se transporte à une moyenne ni à un
+comptage. Il **parcourt** la période au lieu de la résumer, une valeur par
+journée à sa date. Il ne **s'écrit** jamais : seule sa graduation porte des
+nombres, et le total ne se lit que comme une hauteur. Et il se **dit calculé** —
+aucun point, là où chaque lecture en porte un, et une coupure sur une journée
+manquante plutôt qu'un trait par-dessus. Il occupe **un panneau à lui** → [Le
+graphe sous la bande](#le-graphe-sous-la-bande).
+
 Un test refuse par défaut tout texte du graphe qui ne soit ni un titre, ni une
 graduation, ni un repère de lecture, **ni le nom de l'année comparée** — celle-ci
 nomme une marque, comme l'étiquette de couture nomme un passage, et n'est ni un
 total, ni une moyenne, ni un comptage, ni un extrême. Élargir cette liste est un
 acte, et le test vérifie que rien d'autre n'est passé avec.
 
-**Une ligne de synthèse reste écartée**, alors même que la comparaison au climat
-ancien est faite : « tant de journées à 30 °C d'un côté et de l'autre » est une
-agrégation, et le graphe rend inutile ce à quoi elle devait suppléer.
+Ce qu'une ligne de synthèse aurait dit — « tant de journées à 30 °C d'un côté et
+de l'autre » — reste écarté alors même que la comparaison au climat ancien est
+faite : le graphe rend inutile ce à quoi elle devait suppléer.
 
-**Le cadrage des deux axes est la seule chose que le graphe décide**, et les deux
-relèvent de la validation qu'exige la règle 4 → [Les deux
-axes](#les-deux-axes).
+**Le cadrage des trois axes est la seule autre chose que le graphe décide**, et
+les trois relèvent de la validation qu'exige la règle 4 → [Les trois
+axes](#les-trois-axes).
 
 **Tout écran affichant une journée simulée porte un avertissement explicite et
 visible** → [`projet.md`](projet.md). Une recherche qui ne dépasse pas la
@@ -492,7 +501,8 @@ Elle ne tient plus *dans* la fenêtre, en revanche, et c'est un arbitrage rendu 
 le graphe est la seconde lecture de la recherche et non une note, donc la page
 défile plutôt que de le replier.
 
-**Plancher de contraste : 7,7:1**, porté par l'étiquette de couture en été. Les
+**Plancher de contraste : 7,9:1**, porté par le dépliant de provenance au
+printemps — le dernier texte de la page, donc le plus bas sur le dégradé. Les
 quatre tables, les deux géométries et la méthode →
 [`scripts/ink_contrast.md`](../scripts/ink_contrast.md).
 
@@ -549,11 +559,15 @@ tient, quelle quinzaine est humide. C'est ce que le graphe ajoute, et ce qui rè
 sa largeur : dessiné colonne par colonne sous les cartes, il serait aligné et
 inutile. Il prend la largeur de la page et porte la plage entière.
 
-**Deux panneaux partageant un axe de dates, jamais deux échelles verticales sur un
-même tracé** — un lecteur prend le croisement d'une courbe et d'une barre pour un
-fait météorologique. Les températures sont au-dessus, les précipitations en
-dessous, dans un panneau à elles avec leur propre ligne de base. Chacun porte son
-titre.
+**Trois panneaux partageant un axe de dates, jamais deux échelles verticales sur
+un même tracé** — un lecteur prend le croisement d'une courbe et d'une barre pour
+un fait météorologique. Les températures sont au-dessus, les précipitations
+ensuite, leur cumul en bas, chacun dans un panneau à lui avec sa propre ligne de
+base et son titre.
+
+**Le troisième panneau est ce qui garde la règle entière** : posé sur les barres
+avec un axe à droite, le cumul l'aurait levée. Il coûte de la hauteur de page et
+ne demande rien en échange — plus rien ne croise rien.
 
 **Chaque journée porte sa marque, et les segments sont droits.** La donnée est
 l'agrégat journalier ; une courbe lissée inventerait un mardi après-midi dont la
@@ -565,10 +579,10 @@ panneau dise une seule chose — *ceci est l'année ancienne*. L'amplitude entre
 deux températures reste la place entre deux courbes toutes deux présentes, en
 couleur, portant leurs points.
 
-### Les deux axes
+### Les trois axes
 
-Ce sont les deux seules décisions du graphe, et toutes deux relèvent de la
-validation.
+Ce sont, avec le cumul lui-même, les seules décisions du graphe, et toutes
+relèvent de la validation.
 
 **En température, l'axe se cale sur les bornes de l'échelle de couleur** : bas au
 multiple de cinq sous la lecture la plus froide, haut au multiple au-dessus de la
@@ -604,9 +618,25 @@ graduer ce panneau, l'intervalle se choisit sur la hauteur qu'il a : le plus pet
 pas rond laissant au plus quatre intervalles — 5 et 10 sur une période calme, 10
 et 20 sur une période humide.
 
-**Aucun nombre portant sur la période n'est écrit.** Le plafond dépend du maximum,
-mais il n'est pas affiché → [Ce que l'interface ne calcule
-pas](#ce-que-linterface-ne-calcule-pas).
+**En cumul, l'axe prend le total de la période**, sous le même plancher de 10 mm
+et gradué par la même règle — **une seule fonction, appelée une fois par panneau
+de millimètres**, filets, nombres et pied compris ; recopiée, elle aurait été
+cinq lignes évidentes tenues à deux endroits. Si l'échelle des pas va jusqu'à
+500, c'est que le total d'une saison est d'un ordre de grandeur au-dessus de sa
+journée la plus arrosée : la queue de la liste n'est atteinte que par le total,
+la tête que par les journées.
+
+**Un panneau garde sa graduation quand il n'a rien à tracer** — filets et aucune
+courbe, comme le panneau des pluies en reçoit sans barre. Un dessin dont la forme
+suivrait les trous de la série changerait pour une raison que le lecteur ne voit
+pas.
+
+**La marge de gauche vaut 68 unités**, mesurée sur le « 100,0 mm » du cumul, qui
+est désormais le plus large nombre du dessin.
+
+**Aucun nombre portant sur la période n'est écrit.** Les plafonds dépendent du
+maximum et du total, mais ni l'un ni l'autre n'est affiché → [Ce que l'interface
+ne calcule pas](#ce-que-linterface-ne-calcule-pas).
 
 ### Où l'on est dans la période
 
@@ -621,22 +651,22 @@ Aucune journée n'est inventée pour porter un nombre rond : une plage ouvrant l
 n'a ni 1ᵉʳ, ni 10, ni 20 dans ce mois-là et n'en reçoit aucun. Les deux rangées
 parcourent les journées pour cette raison, et non le calendrier.
 
-**Chaque panneau est daté à son propre pied**, par une seule fonction appelée deux
-fois — le panneau des températures est le plus haut de loin, et y dater un point
-obligerait à descendre l'œil jusque sous les pluies. Ce sont les mêmes journées
-aux mêmes abscisses, un axe lu deux fois et non deux axes, et un test vérifie que
-les colonnes coïncident.
+**Chaque panneau est daté à son propre pied**, par une seule fonction appelée une
+fois par panneau — le panneau des températures fait à lui seul 245 unités, et
+dater un point du panneau du bas obligerait à remonter l'œil par-dessus deux
+autres. Ce sont les mêmes journées aux mêmes abscisses, un axe lu trois fois et
+non trois axes, et un test vérifie que les colonnes coïncident.
 
 **Les mois ne sont nommés que sous le panneau du bas**, où les nombres les
 surmontent, dans l'ordre où une date française se dit. Le nombre est centré sur sa
 colonne, là où se trouve le point de la journée ; le nom de mois garde le bord
 gauche, parce qu'il nomme un basculement et non une journée.
 
-**L'écart entre les deux panneaux tient la rangée du haut** : titre du bas à douze
-unités au-dessus de son panneau, rangée de dates à quatorze sous le sien. Il faut
-une ligne de texte entière entre les deux — un titre posé juste sous un axe
-appartient à l'axe —, ce que le test exige au lieu de la seule absence de
-chevauchement.
+**Chaque écart entre deux panneaux tient la rangée du haut** : titre du bas à
+douze unités au-dessus de son panneau, rangée de dates à quatorze sous le sien.
+Il faut une ligne de texte entière entre les deux — un titre posé juste sous un
+axe appartient à l'axe —, ce que le test exige au lieu de la seule absence de
+chevauchement, **et dans les deux écarts** — le second casserait en silence.
 
 ### Ce que le graphe emprunte
 
@@ -647,7 +677,7 @@ le sol : posée sur le dégradé, une courbe rouge tomberait vers les deux tiers
 le rouge de l'été, où elle cesse d'exister.
 
 **Il porte la même couture que la bande, au même jour** — une verticale traversant
-les deux panneaux, sous la même étiquette. Où elle tombe est une règle partagée
+les trois panneaux, sous la même étiquette. Où elle tombe est une règle partagée
 par un seul module, `series.js`, et non recopiée dans chacune des deux vues.
 
 **Son équivalent accessible est la bande elle-même**, qui porte déjà chaque valeur
@@ -655,6 +685,11 @@ en toutes lettres. Le dessin est annoncé par un nom qui renvoie à elle, et ne
 réénonce aucun nombre : une infobulle serait un second exemplaire de la carte. La
 bande ne montrant qu'une année, l'équivalent des courbes grises est ailleurs →
 [Comparer à une autre année](#comparer-à-une-autre-année).
+
+**Le cumul n'en demande pas un autre** : il est calculé sur des millimètres que
+la bande écrit tous, et ce qu'il ajoute est une forme, comme les courbes en
+ajoutent une. Le nom du dessin gagne une phrase disant que le panneau existe ; le
+total n'est écrit nulle part, pour aucun lecteur.
 
 **Sous 58 rem, il défile latéralement au lieu de rétrécir.** Le dessin est un
 `viewBox` unique et se met à l'échelle en entier, sa typographie comprise : à la

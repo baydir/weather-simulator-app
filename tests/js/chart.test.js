@@ -23,6 +23,8 @@ const {
   BOX,
   RAIN_FLOOR_MM,
   chart,
+  cumulative,
+  cumulativeCeiling,
   edgeOf,
   frame,
   middleOf,
@@ -153,6 +155,135 @@ describe("the rain axis", () => {
   });
 });
 
+describe("the running total", () => {
+  /** The `y` of a point, read off the `d` of the path that drew it. */
+  const heights = (node) =>
+    byClass(node, "cumulative")
+      .filter((mark) => mark.tag === "path")
+      .flatMap((path) =>
+        path.attrs.d.split(/[ML]/).filter(Boolean).map((pair) => Number(pair.trim().split(" ")[1])),
+      );
+
+  it("adds each day to the ones before it", () => {
+    const days = series(4, (index) => ({ precipitation: [2, 0, 5, 1][index] }));
+
+    assert.deepEqual(
+      cumulative(days).map((run) => run.map(({ value }) => value)),
+      [[2, 2, 7, 8]],
+    );
+  });
+
+  it("breaks at a missing day rather than stepping over it", () => {
+    // Carrying on would draw the total flat across the hole, which is exactly
+    // what a dry day draws: the curve would be saying "no rain" where the series
+    // means "no reading". The next run opens where the last known day left it.
+    const days = series(4, (index) => ({ precipitation: [2, null, 5, 1][index] }));
+
+    assert.deepEqual(
+      cumulative(days).map((run) => run.map(({ index, value }) => [index, value])),
+      [
+        [[0, 2]],
+        [
+          [2, 7],
+          [3, 8],
+        ],
+      ],
+    );
+  });
+
+  it("has nothing to draw when not one day carries a reading", () => {
+    assert.deepEqual(cumulative(series(3, () => ({ precipitation: null }))), []);
+  });
+
+  it("frames its panel on where it ends, under the same floor as the bars", () => {
+    const wet = series(4, () => ({ precipitation: 30 }));
+    const dry = series(4, () => ({ precipitation: 0.2 }));
+
+    assert.equal(cumulativeCeiling(wet), 120);
+    assert.equal(cumulativeCeiling(dry), RAIN_FLOOR_MM);
+  });
+
+  it("stands on its own baseline, which is nought and not a frame", () => {
+    const days = series(4, (index) => ({ precipitation: [0, 0, 0, 12][index] }));
+    const node = chart(days, SCALE);
+    const geometry = frame(4);
+
+    // The first three days total nothing, so the curve opens on the foot of its
+    // own panel — not on the rain panel's, which is a whole gap higher up.
+    assert.equal(heights(node)[0], geometry.cumul.base);
+  });
+
+  it("climbs to the top of its panel on the last day it knows", () => {
+    const days = series(3, () => ({ precipitation: 20 }));
+    const geometry = frame(3);
+
+    // Sixty millimetres in three days: the ceiling is the total, so the curve
+    // ends on the panel's own top.
+    assert.equal(heights(chart(days, SCALE)).at(-1), geometry.cumul.base - BOX.cumul);
+  });
+
+  it("is drawn against its own ceiling, never against the bars'", () => {
+    // Twelve millimetres a day for ten days: the bars are framed on 12 and the
+    // total on 120. Drawn on the bars' scale the curve would leave the drawing
+    // ten times over — the failure this panel exists to make impossible.
+    const days = series(10, () => ({ precipitation: 12 }));
+    const geometry = frame(10);
+    const y = (value) => geometry.cumul.base - (value / 120) * BOX.cumul;
+
+    assert.deepEqual(heights(chart(days, SCALE)).slice(0, 2), [y(12), y(24)]);
+  });
+
+  it("carries no dots, being arithmetic and not a reading", () => {
+    // A dot on this drawing marks something a gauge recorded. No gauge ever
+    // recorded a running total.
+    const node = chart(series(20, () => ({ precipitation: 3 })), SCALE);
+    const dots = byClass(node, "chart-point").filter((m) => m.className.includes("cumulative"));
+
+    assert.equal(dots.length, 0);
+  });
+});
+
+describe("the third panel", () => {
+  it("is graduated by the same function as the rain, on its own ceiling", () => {
+    // 120 mm of total against a wettest day of 12: the two panels are ruled by
+    // one rule read twice — 5 and 10 up there, 50 and 100 down here.
+    const node = chart(series(10, () => ({ precipitation: 12 })), SCALE);
+    const written = (name) => byClass(byClass(node, name)[0], "chart-axis").map((m) => m.textContent);
+
+    assert.deepEqual(written("chart-rain"), ["5,0", `10,0 ${texts.units.millimetres}`]);
+    assert.deepEqual(written("chart-cumul"), ["50,0", `100,0 ${texts.units.millimetres}`]);
+  });
+
+  it("writes its numbers where the two panels above write theirs", () => {
+    // One ladder of hairlines per panel, all spanning the plot, all numbered at
+    // the same offset off the left edge: nothing here is a second scale hanging
+    // off the side of another panel.
+    const node = chart(series(10, () => ({ precipitation: 12 })), SCALE);
+    const geometry = frame(10);
+
+    for (const label of byClass(node, "chart-axis")) {
+      assert.equal(label.attrs["text-anchor"], "end");
+      assert.equal(Number(label.attrs.x), geometry.plot.from - 8);
+    }
+    for (const rule of byClass(node, "chart-rule")) {
+      assert.equal(Number(rule.attrs.x1), geometry.plot.from);
+      assert.equal(Number(rule.attrs.x2), geometry.plot.to);
+    }
+  });
+
+  it("keeps its graduation when the period has nothing to add up", () => {
+    // The rain panel draws its own ladder and no bars in that case; this one
+    // draws its ladder and no curve. A drawing whose height followed the holes
+    // in the series would change shape for a reason no reader can see.
+    const blank = chart(series(3, () => ({ precipitation: null })), SCALE);
+    const [panel] = byClass(blank, "chart-cumul");
+
+    assert.equal(byClass(panel, "chart-line").length, 0);
+    assert.equal(byClass(panel, "chart-rule").length, 2);
+    assert.equal(byClass(blank, "chart-title").length, 3);
+  });
+});
+
 describe("a hole in the series", () => {
   it("breaks a curve in two rather than drawing across it", () => {
     const days = series(5, (index) => (index === 2 ? { temperature_max: null } : {}));
@@ -251,11 +382,12 @@ describe("the drawing as a whole", () => {
 
     assert.deepEqual(
       titles.map((node) => node.textContent),
-      [texts.chart.temperatures, texts.chart.precipitation],
+      [texts.chart.temperatures, texts.chart.precipitation, texts.chart.cumulative],
     );
-    // Over the plot, not in it: both sit above the panel they name.
+    // Over the plot, not in it: each sits above the panel it names.
     assert.ok(Number(titles[0].attrs.y) < frame(8).temperature.top);
     assert.ok(Number(titles[1].attrs.y) < frame(8).rain.top);
+    assert.ok(Number(titles[2].attrs.y) < frame(8).cumul.top);
   });
 
   it("stands each panel on its own axis of dates", () => {
@@ -264,8 +396,8 @@ describe("the drawing as a whole", () => {
       Number(line.attrs.y1),
     );
 
-    // One under the temperatures, one under the rain, both spanning the plot.
-    assert.deepEqual(feet, [geometry.temperature.bottom, geometry.rain.base]);
+    // One under each panel, all three spanning the plot.
+    assert.deepEqual(feet, [geometry.temperature.bottom, geometry.rain.base, geometry.cumul.base]);
   });
 
   it("writes no number on the temperature axis, which is a frame and not a zero", () => {
@@ -282,29 +414,33 @@ describe("the drawing as a whole", () => {
 
   it("marks the 1st, the 10th and the 20th, and no other day", () => {
     // Twenty-five days of August: three marks, in order, and nothing between —
-    // once under each panel, since both are dated at their own foot.
+    // once under each of the three panels, each dated at its own foot.
     const node = chart(series(25), SCALE);
     const written = byClass(node, "chart-date").map((mark) => mark.textContent);
 
-    assert.deepEqual(written, ["1", "10", "20", "1", "10", "20"]);
+    assert.deepEqual(written, ["1", "10", "20", "1", "10", "20", "1", "10", "20"]);
     // One tick per number, carrying the eye up to the column it names.
-    assert.equal(byClass(node, "chart-tick").length, 6);
+    assert.equal(byClass(node, "chart-tick").length, 9);
   });
 
-  it("dates both panels at the same days and the same x", () => {
+  it("dates the three panels at the same days and the same x", () => {
     const geometry = frame(25);
     const ticks = byClass(chart(series(25), SCALE), "chart-tick");
-    const [above, below] = [ticks.slice(0, 3), ticks.slice(3)];
+    const rows = [ticks.slice(0, 3), ticks.slice(3, 6), ticks.slice(6)];
 
-    // One axis read twice: the columns must line up exactly, or the two rows
-    // would be two different readings of the period.
-    assert.deepEqual(
-      above.map((tick) => tick.attrs.x1),
-      below.map((tick) => tick.attrs.x1),
-    );
+    // One axis read three times: the columns must line up exactly, or the rows
+    // would be three different readings of the period.
+    for (const row of rows) {
+      assert.deepEqual(
+        row.map((tick) => tick.attrs.x1),
+        rows[0].map((tick) => tick.attrs.x1),
+      );
+    }
     // Each row hangs off its own panel's foot, never inside one.
-    assert.equal(Number(above[0].attrs.y1), geometry.temperature.bottom);
-    assert.equal(Number(below[0].attrs.y1), geometry.rain.base);
+    assert.deepEqual(
+      rows.map((row) => Number(row[0].attrs.y1)),
+      [geometry.temperature.bottom, geometry.rain.base, geometry.cumul.base],
+    );
   });
 
   it("places a mark over the middle of its own day", () => {
@@ -315,16 +451,24 @@ describe("the drawing as a whole", () => {
     assert.ok(Math.abs(Number(tick.attrs.x1) - middleOf(geometry, 0)) < 0.01);
   });
 
-  it("leaves a line of air between the temperature dates and the rain title", () => {
-    // The row lives in the gap between the panels, where the lower title also
+  it("leaves a line of air in every gap, between a row of dates and a title", () => {
+    // A row lives in the gap between two panels, where the lower title also
     // hangs, and not overlapping is not enough: a title that sits just under an
     // axis reads as belonging to the axis. Measured on the render — at 36 the
     // capitals landed on the digits' descenders, at 48 they cleared and still
     // read as one block. Forty is a full line of text between the two baselines.
+    //
+    // Checked in both gaps: a third panel means a second place this can go
+    // wrong, and it would go wrong invisibly in the one nobody re-measured.
     const geometry = frame(25);
-    const title = geometry.rain.top - 12;
+    const gaps = [
+      [geometry.temperature.dates, geometry.rain.top],
+      [geometry.rain.dates, geometry.cumul.top],
+    ];
 
-    assert.ok(title - geometry.temperature.dates >= 40, `${title - geometry.temperature.dates}`);
+    for (const [row, top] of gaps) {
+      assert.ok(top - 12 - row >= 40, `${top - 12 - row}`);
+    }
   });
 
   it("invents no day to carry a round number", () => {
@@ -345,7 +489,9 @@ describe("the drawing as a whole", () => {
     ];
     const written = byClass(chart(days, SCALE), "chart-date").map((mark) => mark.textContent);
 
-    assert.deepEqual(written, ["1", "10", "1", "10"]);
+    // Two marks a panel, three panels: the 1st and the 10th of September, the
+    // three days of August the range opens on carrying none.
+    assert.deepEqual(written, ["1", "10", "1", "10", "1", "10"]);
   });
 
   it("names the months where they turn, once each", () => {
@@ -365,13 +511,15 @@ describe("the drawing as a whole", () => {
       .map((child) => child.textContent)
       .filter(Boolean);
 
-    // What is written on the chart is the two titles, the axes, the months and
-    // the seam. Any other number would be an aggregate, which
-    // docs/application.md refuses.
+    // What is written on the chart is the two titles, the axes, the months, the
+    // seam and the name of the cumulative curve. Any other number would be an
+    // aggregate, which docs/application.md refuses — and the running total is
+    // now the one it admits, on the arbitration recorded there.
     const allowed = new Set([
       texts.results.seam,
       texts.chart.temperatures,
       texts.chart.precipitation,
+      texts.chart.cumulative,
       ...byClass(node, "chart-axis").map((child) => child.textContent),
       ...byClass(node, "chart-date").map((child) => child.textContent),
       ...byClass(node, "chart-month").map((child) => child.textContent),
@@ -510,6 +658,7 @@ describe("the year laid under the one asked for", () => {
       texts.results.seam,
       texts.chart.temperatures,
       texts.chart.precipitation,
+      texts.chart.cumulative,
       "1991",
       ...byClass(node, "chart-axis").map((child) => child.textContent),
       ...byClass(node, "chart-date").map((child) => child.textContent),

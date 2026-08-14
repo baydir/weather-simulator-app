@@ -87,47 +87,53 @@ mesure.
 
 | Texte | hiver | printemps | été | automne |
 |---|---|---|---|---|
-| le lieu | 15,9:1 | 14,6:1 | 15,8:1 | 15,9:1 |
-| la plage | 13,4:1 | 11,7:1 | 12,8:1 | 13,5:1 |
-| nouvelle recherche | 15,1:1 | 14,2:1 | 13,8:1 | 15,1:1 |
-| l'avertissement | 14,2:1 | 13,6:1 | 11,6:1 | 14,2:1 |
-| le scénario | 11,9:1 | 10,9:1 | 9,4:1 | 12,0:1 |
-| le mois | 11,1:1 | 10,6:1 | 8,4:1 | 11,1:1 |
-| le jour | 12,7:1 | 12,8:1 | 9,4:1 | 12,4:1 |
+| le lieu | 15,9:1 | 14,7:1 | 16,1:1 | 16,0:1 |
+| la plage | 13,5:1 | 11,8:1 | 13,1:1 | 13,6:1 |
+| nouvelle recherche | 15,3:1 | 14,3:1 | 14,2:1 | 15,3:1 |
+| l'avertissement | 14,5:1 | 13,8:1 | 12,3:1 | 14,5:1 |
+| le scénario | 12,3:1 | 11,1:1 | 10,1:1 | 12,4:1 |
+| le mois | 11,7:1 | 10,8:1 | 9,1:1 | 11,7:1 |
+| le jour | 13,3:1 | 13,1:1 | 10,2:1 | 13,2:1 |
 | les deux mesures | 16,9:1 | 15,3:1 | 18,1:1 | 17,4:1 |
-| la couture | 11,2:1 | 12,1:1 | **7,7:1** | 10,8:1 |
+| la couture | 12,0:1 | 12,5:1 | 8,6:1 | 11,7:1 |
 | les repères du graphe | 14,6:1 | 12,5:1 | 15,7:1 | 15,1:1 |
 | la couture du graphe | 16,9:1 | 15,3:1 | 18,1:1 | 17,4:1 |
 | comparer | 14,6:1 | 12,5:1 | 15,7:1 | 15,1:1 |
-| la provenance | 8,5:1 | 7,7:1 | 9,7:1 | 9,0:1 |
+| la provenance | 8,6:1 | **7,9:1** | 9,8:1 | 9,2:1 |
 
 ### 1280 × 720
 
 Le dégradé étant ancré au document, une page raccourcie fait glisser chaque bloc
-sur une autre portion. La page fait 1404 px au lieu de 1472, et tout se desserre
+sur une autre portion. La page fait 1637 px au lieu de 1705, et tout se desserre
 d'un cran :
 
 | Texte | hiver | printemps | été | automne |
 |---|---|---|---|---|
-| le lieu | 16,0:1 | 14,7:1 | 16,2:1 | 16,0:1 |
-| la plage | 13,4:1 | 11,8:1 | 13,0:1 | 13,5:1 |
-| nouvelle recherche | 15,2:1 | 14,2:1 | 13,9:1 | 15,2:1 |
-| l'avertissement | 14,4:1 | 13,7:1 | 12,0:1 | 14,4:1 |
-| le scénario | 12,1:1 | 11,0:1 | 9,7:1 | 12,2:1 |
-| le mois | 11,5:1 | 10,7:1 | 8,8:1 | 11,4:1 |
-| le jour | 13,0:1 | 13,0:1 | 9,8:1 | 12,9:1 |
+| le lieu | 16,0:1 | 14,7:1 | 16,4:1 | 16,1:1 |
+| la plage | 13,6:1 | 11,9:1 | 13,3:1 | 13,7:1 |
+| nouvelle recherche | 15,3:1 | 14,3:1 | 14,4:1 | 15,4:1 |
+| l'avertissement | 14,7:1 | 13,9:1 | 12,7:1 | 14,7:1 |
+| le scénario | 12,4:1 | 11,2:1 | 10,4:1 | 12,5:1 |
+| le mois | 12,0:1 | 11,0:1 | 9,5:1 | 12,1:1 |
+| le jour | 13,6:1 | 13,3:1 | 10,7:1 | 13,6:1 |
 | les deux mesures | 16,9:1 | 15,3:1 | 18,1:1 | 17,4:1 |
-| la couture | 11,5:1 | 12,2:1 | **8,0:1** | 11,1:1 |
+| la couture | 12,3:1 | 12,6:1 | 9,0:1 | 12,0:1 |
 | les repères du graphe | 14,6:1 | 12,5:1 | 15,7:1 | 15,1:1 |
 | la couture du graphe | 16,9:1 | 15,3:1 | 18,1:1 | 17,4:1 |
 | comparer | 14,6:1 | 12,5:1 | 15,7:1 | 15,1:1 |
-| la provenance | 8,8:1 | 8,1:1 | 10,0:1 | 9,3:1 |
+| la provenance | 8,9:1 | **8,2:1** | 10,1:1 | 9,4:1 |
 
-**Plancher : 7,7:1 sur la fenêtre haute, 8,0 sur la courte**, porté par
-l'étiquette de couture en été — le seul texte que la géométrie pousse sur la
-partie sombre du dégradé, et l'été le seul sol où cela coûte quelque chose. C'est
-**la fenêtre courte qui donne les meilleurs rapports**, la page y étant
-proportionnellement plus haute que le dégradé qu'elle traverse.
+**Plancher : 7,9:1 sur la fenêtre haute, 8,2 sur la courte**, porté par le
+dépliant *d'où viennent ces journées*, au printemps — le dernier texte de la
+page, donc le plus bas sur le dégradé. C'est **la fenêtre courte qui donne les
+meilleurs rapports**, la page y étant proportionnellement plus haute que le
+dégradé qu'elle traverse.
+
+**Il a changé de porteur en montant**, quand le troisième panneau du graphe a
+allongé la page de 1472 à 1705 px : l'étiquette de couture, qui le tenait à 7,7:1
+en été, est poussée plus bas et passe à 8,6. Rien à en conclure de général — un
+déplacement le long d'un dégradé se renverse au changement de mise en page
+suivant.
 
 **L'été est le plus sombre des quatre sols, et donc le plus tendu.** Les trois
 autres descendent moins vite et laissent partout plus de marge ; c'est la page

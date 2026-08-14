@@ -88,9 +88,9 @@ ROWS = [
     # The chart is drawn on the card's own paper, so these come back the same on
     # all four seasons — the same reason the ramp does. One row for everything
     # the drawing writes in the soft ink — the graduation, the date marks, the
-    # months, the compared year's name — since they are one ink on one paper and
-    # four rows would print the same number four times; the seam label is the
-    # page's own, a shade stronger.
+    # months, the compared year's name, the name of the cumulative curve — since
+    # they are one ink on one paper and five rows would print the same number
+    # five times; the seam label is the page's own, a shade stronger.
     ("les repères du graphe", ".chart-axis"),
     ("la couture du graphe", ".chart-seam-label"),
     # The one control on this page, measured closed — which is how a reader

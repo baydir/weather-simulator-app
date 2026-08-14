@@ -244,7 +244,7 @@ body.home {
  * screen is near-white and the last near-black, on all four seasons. No single
  * ink serves both ends, so the ink is dark by default and turns pale where the
  * ground goes dark, at the provenance. Every figure is measured on the render;
- * the table is in docs/application.md.
+ * the tables are in scripts/ink_contrast.md.
  *
  * What this block holds is what does not touch the ground. What the season
  * changes is six tokens, below.
@@ -365,7 +365,7 @@ body.results {
  * capitalised — exactly as on the home page. Hierarchy carried by form when tone
  * can no longer afford it.
  *
- * The full table is in docs/application.md, and `scripts/ink_contrast.py`
+ * The full table is in scripts/ink_contrast.md, and `scripts/ink_contrast.py`
  * re-measures it on the render whenever one of these numbers moves.
  */
 
@@ -1056,7 +1056,7 @@ select:focus {
  * border adds two pixels to the height, and on this page a taller button pushes
  * the warning down onto a different part of the gradient. Layout and legibility
  * are the same question here — the sheet says so above, and every figure in
- * docs/application.md was measured at one geometry.
+ * scripts/ink_contrast.md was measured at one geometry.
  *
  * Measured on the render, ink against the fill as composited over the sky:
  * 7.5:1, where the opaque slab gave 7.8. Hovering deepens the fill rather than
@@ -1585,6 +1585,19 @@ body.results [data-band="8"] { --band: #16100c; --band-ink: #fff; }
 .chart-bar {
   fill: var(--cool);
   opacity: 0.75;
+}
+
+/* The running total, in the panel under the bars it totals. **The same colour as
+   them**, which is the one honest choice available: a second hue would make the
+   curve a second quantity, and it is the same water measured twice. Full
+   strength against their 0,75, the difference between a line followed by the eye
+   and an area read as a block.
+
+   No seasonal token is added here, and none may be: `docs/application.md`
+   settles that the chart borrows the sheet's colours and the six that rotate
+   stay six. */
+.chart-line.cumulative {
+  color: var(--cool);
 }
 
 /* A day whose rain is missing, which would otherwise draw exactly what a dry
