@@ -3,9 +3,9 @@
  *
  * Three decisions are checked here rather than described: the astronomical
  * bounds and their eve, the season the count settles on when a range straddles
- * two, and the reversal below the equator. The ninety-day limit is what keeps
- * the third candidate out of the count, so a range longer than any search can be
- * is checked too — the URL is typed by hand often enough.
+ * two, and the reversal below the equator. A third candidate is reachable since
+ * the bound went to ninety-two, and was reachable by a hand-typed URL before
+ * that, so the three-season range is checked either way.
  */
 
 import assert from "node:assert/strict";
@@ -92,11 +92,11 @@ describe("the season a range belongs to", () => {
     assert.equal(dominantSeason({ start: "2046-06-01", end: "2046-08-01", ...south }), "winter");
   });
 
-  it("still answers on a range no search could ask for", () => {
-    // Three seasons at once cannot come out of the form — ninety days is the
-    // limit and the shortest season is ninety days long — but it can be typed
-    // into the address bar, and the count holds: 92 summer, 91 autumn, 90
-    // winter.
+  it("still answers on a range longer than any search", () => {
+    // Nine months, which no form offers. The count holds all the same: 92
+    // summer, 91 autumn, 90 winter. A shorter three-season range *is* now
+    // reachable — a day of autumn, a whole winter, a day of spring is 92 — and
+    // the same tally settles that one.
     assert.equal(dominantSeason({ start: "2046-06-21", end: "2047-03-20", ...north }), "summer");
   });
 

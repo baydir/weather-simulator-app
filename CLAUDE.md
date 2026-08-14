@@ -79,7 +79,7 @@ une règle triviale tenue à deux endroits diverge aussi sûrement qu'une règle
 savante, et moins visiblement — personne ne relit cinq lignes évidentes.
 
 Une constante partagée est **servie, jamais recopiée** ; un contrôle, lui, peut
-s'exercer des deux côtés — la borne de 90 jours vient de `/api/config` et se
+s'exercer des deux côtés — la borne de 92 jours vient de `/api/config` et se
 vérifie dans l'interface comme dans l'API. Les bornes de l'échelle de température
 suivent le même chemin depuis que le graphe gradue son axe dessus.
 

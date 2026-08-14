@@ -50,15 +50,23 @@ class RangeTooLong(ApiError):
 
     The bound is enforced here as well as in the interface. A limit only the
     browser applies is not a limit.
+
+    **The number is handed in, not written here.** It stood twice in this file,
+    once in English and once in French, and that is the second copy CLAUDE.md
+    rule 3 is about: the day the bound moved, both sentences went on saying
+    ninety while the API served ninety-two. ``validation`` cannot be imported
+    here — it imports this module — so the caller passes its own constant at the
+    moment it raises, which is the one place that cannot fall out of step.
     """
 
-    def __init__(self, days: int) -> None:
+    def __init__(self, days: int, maximum: int) -> None:
         super().__init__(
-            f"{days} days requested, at most 90 are served",
-            "Une recherche porte sur 90 jours au plus, soit une saison. "
+            f"{days} days requested, at most {maximum} are served",
+            f"Une recherche porte sur {maximum} jours au plus, soit une saison. "
             "Réduisez la plage de dates.",
         )
         self.days = days
+        self.maximum = maximum
 
 
 class OutOfGrid(ApiError):

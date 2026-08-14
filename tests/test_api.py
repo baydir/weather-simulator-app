@@ -15,6 +15,7 @@ from conftest import DEFAULT_LAG, payload
 from fastapi.testclient import TestClient
 
 from weather_simulator.api import plan as planning
+from weather_simulator.api import validation
 from weather_simulator.api.app import app, get_grid, load_grid
 from weather_simulator.calibration.grid import CorrectionGrid
 from weather_simulator.calibration.table import CorrectionTable, Metadata
@@ -195,7 +196,7 @@ def test_the_planned_urls_carry_the_forced_model_and_the_timezone(client, frozen
         (date(2020, 6, 30), date(2020, 6, 1), "précède"),
         (date(1949, 12, 31), date(1950, 1, 10), "1950"),
         (date(2050, 12, 25), date(2051, 1, 5), "1950"),
-        (date(2020, 1, 1), date(2020, 6, 1), "90 jours"),
+        (date(2020, 1, 1), date(2020, 6, 1), "92 jours"),
     ],
 )
 def test_an_impossible_range_is_refused_in_french(
@@ -206,15 +207,15 @@ def test_an_impossible_range_is_refused_in_french(
     assert fragment in response.json()["message"]
 
 
-def test_the_ninety_day_bound_counts_both_ends(client, frozen_today) -> None:
+def test_the_season_bound_counts_both_ends(client, frozen_today) -> None:
     start = date(2020, 1, 1)
 
     def status(span: int) -> int:
         search = _search(start, start + timedelta(days=span))
         return client.post("/api/plan", json=search).status_code
 
-    assert status(89) == 200  # ninety days inclusive
-    assert status(90) == 400
+    assert status(validation.MAX_DAYS - 1) == 200  # ninety-two days inclusive
+    assert status(validation.MAX_DAYS) == 400
 
 
 @pytest.mark.parametrize(
@@ -411,7 +412,7 @@ def test_the_real_table_loads(tmp_path) -> None:
 def test_the_config_carries_the_bounds_the_api_enforces(client) -> None:
     body = client.get("/api/config").json()
 
-    assert body["max_days"] == 90
+    assert body["max_days"] == 92
     assert body["coverage_start"] == "1950-01-01"
     assert body["coverage_end"] == "2050-12-31"
     assert body["geocoding_url"] == openmeteo.GEOCODING_URL

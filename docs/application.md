@@ -77,7 +77,7 @@ l'horloge du serveur, et la recherche est refusée sinon : au passage de minuit,
 la coupure entre ce qui a eu lieu et ce qui pourrait avoir lieu s'est déplacée.
 
 `/api/config` existe pour que la plage maximale soit **servie et non recopiée** :
-la borne de 90 jours s'applique dans l'interface comme dans l'API, et une
+la borne de 92 jours s'applique dans l'interface comme dans l'API, et une
 seconde copie divergerait. **Les huit bornes de l'échelle de température y sont
 passées pour le même motif** : le graphe gradue son axe dessus, et l'échelle
 écrite une seconde fois en JavaScript est exactement la duplication que la
@@ -94,7 +94,7 @@ construire le plan. Plutôt qu'un second aller-retour, ou qu'une latence codée 
 dur que [`donnees.md`](donnees.md) proscrit, IFS est demandé sur toute la portion
 de la plage postérieure à 2017, et **la réanalyse l'emporte à l'assemblage
 partout où elle a servi**. La série produite est identique ; le coût est une
-requête de plus, de 90 jours au plus, sur toute plage touchant 2017.
+requête de plus, de 92 jours au plus, sur toute plage touchant 2017.
 
 ---
 
@@ -165,9 +165,17 @@ journée.
 ## Affichage
 
 Une bande journalière, une carte par jour, défilant horizontalement lorsqu'elle
-excède la largeur de l'écran. **Plage bornée à 90 jours**, soit une saison —
+excède la largeur de l'écran. **Plage bornée à 92 jours**, soit une saison —
 contrainte appliquée à la fois dans l'interface et dans l'API, jamais dans le
 seul navigateur.
+
+**Le nombre est mesuré, non arrondi.** Aux bornes astronomiques que l'interface
+propose — le 21 —, l'hiver fait 90 jours, l'automne 91, le printemps et l'été 92.
+La borne valait 90 et disait « une saison » par approximation : elle amputait de
+deux jours les deux plus longues, ce qui n'était sans conséquence que tant qu'on
+ne pouvait pas demander une saison par son nom. La valeur ne s'écrit qu'à un
+endroit, `MAX_DAYS`, et voyage par `/api/config` — jusqu'au libellé du refus, qui
+l'a écrite en dur jusqu'ici et aurait continué d'annoncer 90.
 
 Chaque journée porte un pictogramme, les températures minimale et maximale, le
 cumul de précipitations et la vitesse de vent maximale.
@@ -434,9 +442,8 @@ désormais **le sol de la saison sur laquelle porte la recherche**. L'été vien
 en dérivent.
 
 **La saison se compte, elle ne se lit pas à une extrémité.** Le navigateur
-parcourt la plage jour par jour et retient celle qui en tient le plus. La borne
-de 90 jours garantit qu'il n'y a jamais plus de deux candidates : la plus courte
-saison, l'hiver, fait exactement 90 jours. Trois arbitrages complètent la règle :
+parcourt la plage jour par jour et retient celle qui en tient le plus. Trois
+arbitrages complètent la règle :
 
 - **Bornes astronomiques**, 21 décembre au 20 mars et ainsi de suite — les dates
   sur lesquelles le visiteur a été interrogé. Elles glissent d'un jour selon
@@ -447,6 +454,14 @@ saison, l'hiver, fait exactement 90 jours. Trois arbitrages complètent la règl
   l'hémisphère nord — le calendrier, plutôt qu'une erreur.
 - **À égalité parfaite, la saison où la plage se termine.** Une plage se lit vers
   l'avant.
+
+**La règle tenait un raccourci qu'elle a perdu, et le comptage n'en dépendait
+pas.** À 90 jours, une plage ne pouvait toucher que deux saisons, l'hiver — la
+plus courte — en faisant exactement 90. À 92, elle peut en toucher trois : un
+jour d'automne, un hiver entier, un jour de printemps. Aucune ligne n'a changé,
+parce que le comptage n'a jamais compté que des journées ; c'est la justification
+qui avait fait de cette borne une propriété du calcul, alors qu'elle n'en était
+qu'une commodité.
 
 **Ce comptage se fait dans le navigateur, et la règle 3 n'y voit rien à redire** :
 le serveur n'en détient aucune version, il n'y a donc pas de second exemplaire.

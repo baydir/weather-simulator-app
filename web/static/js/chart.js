@@ -196,7 +196,7 @@ export function runs(days, read) {
   return found;
 }
 
-/** The radius of a day's mark, small enough that ninety of them do not touch. */
+/** The radius of a day's mark, small enough that a whole season does not touch. */
 const POINT = 1.8;
 
 /**

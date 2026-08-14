@@ -75,7 +75,7 @@ def test_api_still_answers(client: TestClient) -> None:
     """The pages are mounted alongside the API, not in front of it."""
     config = client.get("/api/config")
     assert config.status_code == 200
-    assert config.json()["max_days"] == 90
+    assert config.json()["max_days"] == 92
 
 
 def test_every_season_the_page_can_name_has_a_palette() -> None:

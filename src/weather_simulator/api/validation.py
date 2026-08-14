@@ -2,9 +2,9 @@
 
 Two rules are worth stating out loud, the rest being bounds checks.
 
-**Ninety days at most.** One season, and docs/application.md asks for the bound
-in the interface *and* in the API, never in the browser alone — a limit only the
-browser enforces is not a limit.
+**Ninety-two days at most.** One whole season, and docs/application.md asks for
+the bound in the interface *and* in the API, never in the browser alone — a limit
+only the browser enforces is not a limit.
 
 **The refusal outside the grid depends on the range, not on the place.** A
 request touching the future needs a correction and is refused where there is
@@ -29,9 +29,12 @@ from weather_simulator.api import errors
 from weather_simulator.calibration.grid import CorrectionGrid
 from weather_simulator.sources import openmeteo
 
-# One season. The bound is on the number of days shown, not on the span asked
+# One season, and the number is measured rather than rounded: at the astronomical
+# bounds the interface offers — the 21st — winter runs 90 days, autumn 91, spring
+# and summer 92. Ninety was one season only by approximation, and it cut the two
+# longest short. The bound is on the number of days shown, not on the span asked
 # for, so both ends count.
-MAX_DAYS = 90
+MAX_DAYS = 92
 
 
 class Search(BaseModel):
@@ -50,7 +53,7 @@ class Search(BaseModel):
             raise errors.OutsideCoverageDates(self.start, self.end)
         days = (self.end - self.start).days + 1
         if days > MAX_DAYS:
-            raise errors.RangeTooLong(days)
+            raise errors.RangeTooLong(days, MAX_DAYS)
         return self
 
 

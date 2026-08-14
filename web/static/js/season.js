@@ -78,9 +78,11 @@ function* days(start, end) {
 /**
  * The season the range spends most of its days in, or null if there is no range.
  *
- * **A search touches two seasons at most.** The shortest season is winter, at
- * ninety days, and a search is ninety days at most — so the count never has more
- * than two candidates, whatever it is asked.
+ * **It counts days, and nothing else, which is why the bound moving cost it
+ * nothing.** At ninety days a range could touch two seasons at most — winter,
+ * the shortest, being exactly ninety. At ninety-two it can touch three: a day of
+ * autumn, a whole winter, a day of spring. The walk was never relying on that,
+ * and the tally settles it either way.
  *
  * **Ties go to the season the range ends in.** The walk runs forward and `>=`
  * lets a later season take the lead on equal footing, so forty-five days of

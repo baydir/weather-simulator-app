@@ -111,7 +111,7 @@ def config() -> Config:
     """The bounds and the geocoding address, so the browser holds no Open-Meteo
     knowledge of its own and applies the same limits the API does.
 
-    The band boundaries are here for the same reason the ninety-day limit is: a
+    The band boundaries are here for the same reason the season limit is: a
     chart drawn in the browser has to graduate its temperature axis on them, and
     a ladder written out a second time in JavaScript is the duplication rule 3 is
     about. What travels is the scale, not the colours — those stay in the
