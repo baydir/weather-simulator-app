@@ -91,16 +91,18 @@
           the other way round, a visitor without JavaScript would meet a form
           with no period at all and no way to reveal one. Here the page still
           degrades to exactly what it was before the season existed.
+
+          **The season comes first, and the order is the markup's own.** It is
+          the question the site exists to answer — an été à Montpellier en 2050
+          — where two dates are the way out for someone who wants a fortnight in
+          particular. Reordering with CSS would leave the reading order and the
+          tab order on the old arrangement, which is the arrangement nobody sees
+          any more; a screen reader and a keyboard have to meet them in the same
+          order an eye does. The panels below are left as they are: only one is
+          ever open, so their order is not read, and the one showing when there
+          is no script has to stay the one the markup does not hide.
         -->
         <div class="modes" role="group" data-attr-aria-label="form.modeLabel">
-          <button
-            type="button"
-            id="mode-dates"
-            class="mode"
-            aria-pressed="true"
-            aria-controls="panel-dates"
-            data-text="form.modeDates"
-          ></button>
           <button
             type="button"
             id="mode-season"
@@ -108,6 +110,14 @@
             aria-pressed="false"
             aria-controls="panel-season"
             data-text="form.modeSeason"
+          ></button>
+          <button
+            type="button"
+            id="mode-dates"
+            class="mode"
+            aria-pressed="true"
+            aria-controls="panel-dates"
+            data-text="form.modeDates"
           ></button>
         </div>
 
