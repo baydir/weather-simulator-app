@@ -1,9 +1,17 @@
-"""Measure the contrast of every text on the results page, on each of its grounds.
+"""Measure the contrast of every text on either page, on each of its grounds.
 
-Nothing here asserts. It prints the table `docs/application.md` publishes, one
-column per season, so that a palette which moves is re-measured by a command
-rather than by hand — four seasons of twelve lines is not a thing anyone checks
-twice with an eyedropper.
+Nothing here asserts. It prints the tables `docs/application.md` publishes — one
+column per season on the results page, one per panel on the accueil — so that a
+palette which moves is re-measured by a command rather than by hand. Four seasons
+of twelve lines is not a thing anyone checks twice with an eyedropper, and the
+accueil's six were checked by hand exactly once, which is how the *Lieu* label
+came to spend a while at 4,4:1 after the page was tightened.
+
+**Both pages are anchored to the document, and that is what makes this a
+command.** A gradient fixed to the window would give every reader a different
+ground; fixed to the document it gives one, and a page that grows by a row of
+buttons slides every text below it onto another part of the sunset. Layout and
+legibility are one question here, so a change to either is a reason to run this.
 
 **Where each number comes from.** The *positions* are read off a real render:
 the page is served, driven by a real Chromium and asked where each element
@@ -36,6 +44,7 @@ whether the weather behind them is invented or not.
     ./venv/bin/python scripts/ink_contrast.py --offline
     ./venv/bin/python scripts/ink_contrast.py --offline --season winter
     ./venv/bin/python scripts/ink_contrast.py --offline --size 1280x720
+    ./venv/bin/python scripts/ink_contrast.py --offline --page home
 """
 
 from __future__ import annotations
@@ -56,6 +65,7 @@ from screenshots import (  # noqa: E402
     serve,
     stub_openmeteo,
 )
+from screenshots import home as accueil  # noqa: E402
 
 # The rows of the published table, in its order. The label is French because it
 # is what the table prints; the selector is what the page calls the thing.
@@ -92,6 +102,32 @@ ROWS = [
 # are written `fill: currentColor` in the stylesheet precisely so that the probe
 # below, which asks for `color`, reads the ink that is actually painted.
 ON_THE_CARD = ".card-body, .chart"
+
+# The accueil's rows, in page order, which is also the order its table prints.
+#
+# **Two of them are new and one is a pair**, because the form now asks its
+# question two ways: the switch between them is measured in both its states, and
+# each panel's label and field is measured in the panel that shows it. A row
+# whose panel is hidden measures nothing and prints an em dash — the probe drops
+# a box of zero height rather than reporting it at the top of the page.
+HOME_ROWS = [
+    ("la question", "#prompt"),
+    ("la promesse", "header.banner .tagline"),
+    ("l'étiquette Lieu", 'label[for="lieu"]'),
+    ("le champ Lieu", "#lieu"),
+    ("la bascule choisie", '.mode[aria-pressed="true"]'),
+    ("la bascule au repos", '.mode[aria-pressed="false"]'),
+    ("l'étiquette Du", 'label[for="debut"]'),
+    ("le champ Du", "#debut"),
+    ("l'étiquette Saison", 'label[for="saison"]'),
+    ("le champ Saison", "#saison"),
+    ("le bouton", 'button[type="submit"]'),
+    ("l'avertissement", "footer .tagline"),
+]
+
+# The accueil has no card and no chart; nothing on it is on an opaque ground.
+# A selector that matches nothing is what says so.
+NOTHING = ":not(*)"
 
 
 def channel(value: float) -> float:
@@ -183,6 +219,12 @@ PROBE = """
       colour: getComputedStyle(node).color,
       middle: (box.top + window.scrollY + box.height / 2) / sky.offsetHeight,
       card: card ? getComputedStyle(card).backgroundColor : null,
+      // The element's *own* fill, which on the accueil is the whole question for
+      // one row: the button is a translucent brown the sunset shows through, so
+      // its ink sits neither on the sky nor on an opaque slab but on the two
+      // composited. Every other field there is transparent and this reads as
+      // zero alpha, which lays the ink straight back onto the gradient.
+      fill: getComputedStyle(node).backgroundColor,
     });
   }
   return {
@@ -237,23 +279,79 @@ def measure_ramp(page) -> list[tuple[int, str, str, float]]:
     return rows
 
 
-def measure(page, season: str) -> dict:
-    """The page as it stands, repainted in one season and read."""
-    page.evaluate("(season) => { document.body.dataset.season = season; }", season)
-    read = page.evaluate(PROBE, [ROWS, ON_THE_CARD])
+def read_rows(page, rows, on_the_card: str) -> dict:
+    """Every row's ratio against whatever it actually sits on.
 
+    Three grounds, and which one applies is read off the page rather than
+    decided here: an opaque card wins outright; failing that, the element's own
+    fill is composited over the gradient at its height, which for a transparent
+    field is the gradient itself and for the accueil's button is the brown the
+    sunset shows through.
+    """
+    read = page.evaluate(PROBE, [rows, on_the_card])
     stops = parse_stops(read["gradient"])
     measured = {}
     for row in read["rows"]:
-        ground = parse_colour(row["card"])[0] if row["card"] else ground_at(stops, row["middle"])
+        if row["card"]:
+            ground = parse_colour(row["card"])[0]
+        else:
+            ground = over(parse_colour(row["fill"]), ground_at(stops, row["middle"]))
         measured[row["label"]] = ratio(over(parse_colour(row["colour"]), ground), ground)
     return {"height": read["height"], "rows": measured}
 
 
+def measure(page, season: str) -> dict:
+    """The results page as it stands, repainted in one season and read."""
+    page.evaluate("(season) => { document.body.dataset.season = season; }", season)
+    return read_rows(page, ROWS, ON_THE_CARD)
+
+
+def measure_home(page, mode: str) -> dict:
+    """The accueil with one of its two panels showing.
+
+    The switch changes the page's height, and the sunset is anchored to the
+    document — so every row below it lands on a different part of the gradient
+    depending on which panel is open. That is why this is two columns and not
+    one: they are two geometries, exactly as the two window sizes are.
+    """
+    page.click("#mode-season" if mode == "saison entière" else "#mode-dates")
+    return read_rows(page, HOME_ROWS, NOTHING)
+
+
+HOME_MODES = ["plage de dates", "saison entière"]
+
+# The geometry each table was published at. The accueil's is shorter, and that is
+# not an oversight: it is the window the six figures in docs/application.md were
+# taken on, and a table remeasured at another size is not a correction of it.
+DEFAULT_SIZE = {"results": "1440x960", "home": "1440x900"}
+
+
+def table(rows, columns, measured) -> None:
+    """The published shape, and the floor under it."""
+    print("\n| Texte | " + " | ".join(columns) + " |")
+    print("|---|" + "---|" * len(columns))
+    floor = (None, 99.0)
+    for label, _ in rows:
+        cells = []
+        for column in columns:
+            value = measured[column]["rows"].get(label)
+            cells.append("—" if value is None else f"{value:.1f}:1".replace(".", ","))
+            if value is not None and value < floor[1]:
+                floor = (f"{label}, {column}", value)
+        print(f"| {label} | " + " | ".join(cells) + " |")
+    print(f"\nplancher : {floor[0]}, à {floor[1]:.1f}:1".replace(".", ","))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--page",
+        choices=sorted(DEFAULT_SIZE),
+        default="results",
+        help="la page mesurée : results (quatre saisons) ou home (deux modes)",
+    )
     parser.add_argument("--season", choices=sorted(SEASON_RANGES), help="one of the four")
-    parser.add_argument("--size", default="1440x960", help="the window, as WIDTHxHEIGHT")
+    parser.add_argument("--size", help="the window, as WIDTHxHEIGHT")
     parser.add_argument(
         "--offline",
         action="store_true",
@@ -262,13 +360,15 @@ def main() -> None:
     parser.add_argument("--lag", type=int, default=6, help="retard des réanalyses, avec --offline")
     chosen = parser.parse_args()
 
-    width, _, height = chosen.size.partition("x")
+    width, _, height = (chosen.size or DEFAULT_SIZE[chosen.page]).partition("x")
     size = {"width": int(width), "height": int(height)}
-    wanted = [chosen.season] if chosen.season else list(SEASON_RANGES)
+    home = chosen.page == "home"
+    columns = HOME_MODES if home else ([chosen.season] if chosen.season else list(SEASON_RANGES))
 
     port = free_port()
     server = serve(port)
     base = f"http://127.0.0.1:{port}"
+    ramp = None
     try:
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch(args=["--lang=fr-FR"])
@@ -276,30 +376,30 @@ def main() -> None:
             page = context.new_page()
             if chosen.offline:
                 stub_openmeteo(page, date.today(), chosen.lag)
-            # The reference geometry, and the same call the screenshots make: a
-            # range spanning today, so the warning and the seam are both there.
-            results(page, base)
-            measured = {season: measure(page, season) for season in wanted}
-            ramp = measure_ramp(page)
+            if home:
+                # The form as it comes up, both panels in turn. No place is
+                # chosen: the field then shows its placeholder, which is the ink
+                # the published row is about.
+                accueil(page, base)
+                measured = {mode: measure_home(page, mode) for mode in columns}
+            else:
+                # The reference geometry, and the same call the screenshots make:
+                # a range spanning today, so the warning and the seam are both
+                # there.
+                results(page, base)
+                measured = {season: measure(page, season) for season in columns}
+                ramp = measure_ramp(page)
             browser.close()
     finally:
         server.terminate()
 
     heights = {reading["height"] for reading in measured.values()}
-    print(f"\nfenêtre {size['width']} × {size['height']}, page {max(heights)} px")
-    print("\n| Texte | " + " | ".join(wanted) + " |")
-    print("|---|" + "---|" * len(wanted))
-    floor = (None, 99.0)
-    for label, _ in ROWS:
-        cells = []
-        for season in wanted:
-            value = measured[season]["rows"].get(label)
-            cells.append("—" if value is None else f"{value:.1f}:1".replace(".", ","))
-            if value is not None and value < floor[1]:
-                floor = (f"{label}, {season}", value)
-        print(f"| {label} | " + " | ".join(cells) + " |")
-    print(f"\nplancher : {floor[0]}, à {floor[1]:.1f}:1".replace(".", ","))
+    sizes = " / ".join(str(h) for h in sorted(heights))
+    print(f"\nfenêtre {size['width']} × {size['height']}, page {sizes} px")
+    table(HOME_ROWS if home else ROWS, columns, measured)
 
+    if ramp is None:
+        return
     # The two temperatures are no longer one colour each, so they cannot be one
     # row each: what has to hold is the whole ramp, on both papers a card takes.
     print("\nLa rampe des températures : le chiffre sur son aplat\n")

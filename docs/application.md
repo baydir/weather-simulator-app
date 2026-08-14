@@ -333,21 +333,75 @@ mauvaise monnaie. La lisibilité se paie en encre — l'encre secondaire est
 éclaircie sur cette page, et l'avertissement passe en brun brûlé parce qu'il est
 le seul texte à tomber sur la bande claire quelle que soit la fenêtre.
 
-Contrastes mesurés sur le rendu, page défilée en bas, fenêtre 1440 × 900 :
+Contrastes mesurés sur le rendu, fenêtre 1440 × 900, par
+[`scripts/ink_contrast.py --page home`](../scripts/ink_contrast.py). **Le
+défilement n'entre plus dans la mesure** : la sonde lit les positions en
+coordonnées de document, comme le dégradé y est ancré. Une colonne par mode : le
+formulaire n'a pas la même hauteur selon celui qui est ouvert, et sur cette page
+la hauteur *est* la lisibilité.
 
-| Texte | Rapport |
-|---|---|
-| la question | 10,3:1 |
-| la promesse | 7,3:1 |
-| l'étiquette *Lieu* | 5,6:1 |
-| le champ *Lieu* | 6,1:1 |
-| le bouton | 7,5:1 |
-| l'avertissement | 5,9:1 |
+| Texte | plage de dates | saison entière |
+|---|---|---|
+| la question | 10,8:1 | 10,8:1 |
+| la promesse | 7,5:1 | 7,5:1 |
+| l'étiquette *Lieu* | 7,4:1 | 7,4:1 |
+| le champ *Lieu* | 6,6:1 | 6,6:1 |
+| la bascule choisie | 5,6:1 | 5,6:1 |
+| la bascule au repos | 5,6:1 | 5,6:1 |
+| l'étiquette *Du* | 5,1:1 | — |
+| le champ *Du* | 4,5:1 | — |
+| l'étiquette *Saison* | — | 5,1:1 |
+| le champ *Saison* | — | 4,5:1 |
+| le bouton | 6,9:1 | 6,9:1 |
+| l'avertissement | 5,9:1 | 5,9:1 |
 
 **Ces chiffres se remesurent à chaque changement de mise en page**, et pas par
 excès de zèle : resserrer la page a fait glisser le formulaire sur du bleu plus
 clair et emporté l'étiquette *Lieu* à 4,4:1, sous le seuil. Ici, mise en page et
-lisibilité sont la même question.
+lisibilité sont la même question. La table est désormais **imprimée par une
+commande** et non relevée à la pipette, ce qui est ce qui a permis de la
+remesurer sérieusement pour la première fois.
+
+**Ce que la première mesure par commande a appris.** La bascule ajoute 52 px au
+formulaire, et le dégradé étant ancré au document, tout ce qui la suit glisse
+vers le bleu plus pâle : les rapports sous elle tombaient de six dixièmes. Ces
+52 px sont donc **repris sur les intervalles du formulaire** — l'air au-dessus
+de la colonne, la respiration du haut de page, les gaps qu'une étiquette sépare
+déjà — plutôt que payés en contraste. Toutes les lignes en sortent égales ou
+meilleures qu'avant la bascule.
+
+**Deux valeurs ont bougé sans que la mise en page l'explique**, et il faut le
+dire plutôt que de les recouvrir. Cinq des six lignes publiées se reproduisent au
+dixième ; le bouton sortait à 7,5:1 et la commande en lit **6,9**, dont 6,7 sur
+la géométrie d'avant la bascule. La méthode n'est pas en cause — la table de la
+page de résultats se reproduit sur ses quarante-huit cellules —, donc l'écart
+tient à une géométrie antérieure ou à un relevé manuel fait autrement. C'est la
+valeur mesurée qui est publiée.
+
+**La bande située entre 50 % et 65 % du dégradé ne porte aucune encre.** Le fond
+y va de `#4b688b` à `#677390`, et à ces clartés le noir pur plafonne à 4,0:1
+quand l'ivoire de la page atteint 4,2. Ce n'est donc pas un choix de ton, c'est
+une hauteur : le seul remède est que le formulaire n'y descende pas. C'est ce qui
+avait déjà fait éclaircir l'encre secondaire deux fois ; les étiquettes du
+formulaire prennent maintenant l'encre pleine, leur hiérarchie restant portée par
+leur forme — onze pixels, capitales, interlettrage.
+
+**Les autres tailles de fenêtre ne passent pas, et c'est antérieur à ce
+travail.** La table n'a jamais été publiée que pour 1440 × 900, faute d'outil
+pour en mesurer d'autres. Planchers relevés, avant et après :
+
+| Fenêtre | avant la bascule | après |
+|---|---|---|
+| 1440 × 900 | 4,2:1 | **4,5:1** |
+| 1280 × 720 | 3,2:1 | 3,2:1 |
+| 1440 × 1200 | 3,7:1 | 3,7:1 |
+| 390 × 844 | 2,9:1 | 3,2:1 |
+
+Rien n'a été dégradé, mais rien n'est réglé non plus. Sur une fenêtre haute le
+plancher est **l'avertissement**, à 3,7:1 — la phrase que la règle 1 rend
+non négociable, portée par la seule ligne de la page qui ne puisse pas se
+déplacer. Le remède touche la composition de la page, documentée et arbitrée
+ailleurs dans ce fichier : **il reste à décider.**
 
 **Et le rapport ne suffit pas.** L'avertissement était mesuré à 5,9:1 en italique
 et restait pénible à lire : un rapport compare les couleurs de deux surfaces et

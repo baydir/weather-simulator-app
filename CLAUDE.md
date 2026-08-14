@@ -140,8 +140,8 @@ Les chiffres restent attachés au script qui les mesure : chaque `README.md` de
 | `scripts/forecast_seam/` | la couture analyse / prévision, étape 7 |
 | `scripts/temperature_scale/` | les bornes de l'échelle de couleur des températures |
 | `scripts/inspect_seam.py` | lecture des coutures sur requête réelle |
-| `scripts/screenshots.py` | photographie l'interface, treize vues — et `--offline`, qui invente les données pour travailler sans quota |
-| `scripts/ink_contrast.py` | les contrastes de la page de résultats, sur les quatre saisons |
+| `scripts/screenshots.py` | photographie l'interface, quatorze vues — et `--offline`, qui invente les données pour travailler sans quota |
+| `scripts/ink_contrast.py` | les contrastes des deux pages : les résultats sur les quatre saisons, l'accueil sur ses deux modes |
 
 Les trois premiers ne se ressemblent pas, et c'est délibéré. `verification/` date
 de la conception : aucune dépendance, `urllib` seul, chaque script isolé. Les

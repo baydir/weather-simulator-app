@@ -258,6 +258,19 @@ def home_candidates(page: Page, base: str) -> None:
     page.wait_for_selector(".candidate")
 
 
+def home_season(page: Page, base: str) -> None:
+    """The other way of asking: a season and a year instead of two dates.
+
+    Waiting on the panel and not on the click: the year list is built from
+    `/api/config`, so a shot taken the instant the switch is pressed catches an
+    empty select.
+    """
+    home(page, base)
+    page.click("#mode-season")
+    page.wait_for_selector("#panel-season:not([hidden])")
+    page.wait_for_function("() => document.getElementById('annee').value !== ''")
+
+
 def results(page: Page, base: str) -> None:
     # Wide enough to clear the forecast horizon, so the seam falls inside the
     # strip: ten days back plus a fortnight ahead would end on the last forecast
@@ -333,6 +346,7 @@ def season_view(start: date, end: date):
 VIEWS = {
     "home": (home, DESKTOP, "light"),
     "home-candidates": (home_candidates, DESKTOP, "light"),
+    "home-season": (home_season, DESKTOP, "light"),
     "home-dark": (home, DESKTOP, "dark"),
     "results": (results, DESKTOP, "light"),
     "results-dark": (results, DESKTOP, "dark"),

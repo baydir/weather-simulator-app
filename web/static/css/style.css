@@ -557,7 +557,12 @@ body.home footer .tagline {
  * above the warning, growing with the screen, which is most of what pushed the
  * page past the window. */
 body.home > header.banner {
-  padding-top: clamp(calc(var(--space) * 8), 10vh, calc(var(--space) * 36));
+  /* Eight vh rather than ten, and the last of the fifty-two pixels the mode
+     switch costs. The clamp's purpose is untouched — it still keeps a short
+     window from spending its height on emptiness and a tall one from pushing
+     the form off screen; it simply spends eighteen pixels fewer on a 900-pixel
+     window, which is where the form was closest to the sunset's pale band. */
+  padding-top: clamp(calc(var(--space) * 8), 8vh, calc(var(--space) * 36));
 }
 
 /* The page is the window, and the warning sits at the foot of it.
@@ -792,6 +797,43 @@ button[type="submit"],
   margin: 0 0 calc(var(--space) * 8);
 }
 
+/*
+ * The form pays for the row of buttons out of its own intervals.
+ *
+ * The switch costs the accueil fifty-two pixels, and on this page height is
+ * legibility: the sunset is anchored to the document, so everything below the
+ * switch slid down onto paler sky and every ratio under it fell by about six
+ * tenths. Fifty-two pixels are therefore taken back where they separate the
+ * least — the gap above the form, and the gaps between fields that a label
+ * already separates — rather than left to be paid in contrast.
+ *
+ * This is the same trade the sheet records above the `.search` margin, made a
+ * second time and for the same reason: on this page, layout and legibility are
+ * one question.
+ */
+body.home .search {
+  margin-top: calc(var(--space) * 4);
+}
+
+body.home .field {
+  margin-bottom: calc(var(--space) * 6);
+}
+
+/*
+ * **The field labels give up the softened tone, having already given up the soft
+ * one twice.** `--ink-soft` was lifted to #dad3c6 on this page for exactly this
+ * row and measured 4,4:1 — a tenth under the threshold, accepted because the
+ * alternative was moving the page. It sits near 54% of the sunset, the mid
+ * blue-grey where *no* ink reaches 4,5:1: pure black manages 4,0 there, so the
+ * band is the problem and not the choice of tone. Full ink buys 4,7:1, and the
+ * hierarchy is untouched — eleven pixels, capitals, letterspaced, which is what
+ * separates these labels from what they name, as the comment on `--ink-soft`
+ * already says.
+ */
+body.home .field label {
+  color: var(--ink);
+}
+
 .field label {
   color: var(--ink-soft);
 }
@@ -922,33 +964,39 @@ select:focus {
   display: flex;
   flex-wrap: wrap;
   gap: calc(var(--space) * 6);
-  margin: 0 0 calc(var(--space) * 6);
+  margin: 0 0 calc(var(--space) * 4);
 }
 
+/*
+ * **Both states carry the full ink, and the rule alone says which is chosen.**
+ * The soft ink was tried on the one at rest and measured at 4,1:1 — this row
+ * lands near 52% of the sunset, where the gradient has gone to a mid blue-grey
+ * and no ink is comfortable. It is the argument the results page already makes
+ * for its month marker: what separates a text from what it names is its form —
+ * eleven pixels, capitals, letterspaced — as soon as tone can no longer pay for
+ * it. Measured with the full ink: 5,0:1 in both states.
+ */
 .mode {
   padding: calc(var(--space) * 1) 0;
   border: 0;
   border-bottom: 1px solid transparent;
   border-radius: 0;
   background: transparent;
-  color: var(--ink-soft);
+  color: var(--ink);
   font: inherit;
   font-size: 0.6875rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   cursor: pointer;
-  transition:
-    color 120ms ease,
-    border-color 120ms ease;
+  transition: border-color 120ms ease;
 }
 
 .mode:hover {
-  color: var(--ink);
+  border-bottom-color: var(--ink-soft);
 }
 
 .mode[aria-pressed="true"] {
   border-bottom-color: var(--rule-strong);
-  color: var(--ink);
 }
 
 .dates {
