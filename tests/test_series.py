@@ -1,4 +1,16 @@
-"""The seams: where three sources meet, and must read as one series."""
+"""The seams: where three sources meet, and must read as one series.
+
+`fetch_series` runs a plan and assembles what comes back — the same plan the
+browser is handed, the same assembly the API performs on the way in. So what is
+checked here is checked on the served code path, not on an offline twin of it:
+the twin is what this file used to exercise, and it had begun to drift.
+
+**Two of these tests read the plan and the series apart, and that is the point.**
+A segment is *asked for* in overlap, because neither seam's position is knowable
+while the plan is being built; where the handover actually lands is settled on
+the answers. A test that only watched the request would pass while the series
+grew a hole.
+"""
 
 from __future__ import annotations
 
@@ -7,11 +19,12 @@ from datetime import date, timedelta
 import pytest
 from conftest import fake_openmeteo
 
+from weather_simulator.api.plan import fetch_series
 from weather_simulator.domain.records import Origin
 from weather_simulator.sources import openmeteo
 from weather_simulator.sources.errors import CoverageError, MissingVariableError
 from weather_simulator.sources.parse import DailyColumns
-from weather_simulator.sources.series import fetch_series, resume_after, split_range
+from weather_simulator.sources.series import resume_after, split_range
 
 TODAY = date(2026, 8, 2)
 LAG = 6  # the reanalyses stop here, at 2026-07-27
@@ -20,12 +33,18 @@ POINT = (43.30, 5.37)  # Marseille
 
 
 def models_called(calls):
-    return [params["models"][0] for _, params in calls]
+    return [params["models"][0] for params in calls]
 
 
 def span(calls, model):
-    params = next(p for _, p in calls if p["models"][0] == model)
+    """The window a model was *asked* for — not the days it ends up serving."""
+    params = next(p for p in calls if p["models"][0] == model)
     return date.fromisoformat(params["start_date"]), date.fromisoformat(params["end_date"])
+
+
+def served_by(series):
+    """Which dataset answered for each day, by date."""
+    return {record.date: record.source for record in series}
 
 
 class TestSplitRange:
@@ -105,10 +124,20 @@ class TestFourSegments:
             openmeteo.DEFAULT_MODEL,
         ]
 
-    def test_ifs_resumes_the_day_the_reanalyses_stop(self):
-        first, last = span(self.calls, openmeteo.RECENT_MODEL)
-        assert first == TODAY - timedelta(days=LAG - 1)  # 2026-07-28
-        assert last == TODAY  # the archive side carries through to tonight
+    def test_ifs_is_asked_in_overlap_and_trimmed_on_return(self):
+        """Where the reanalyses stop is not knowable while the plan is built.
+
+        So IFS is asked for the whole post-2017 stretch of the range — here from
+        the first day of it — and the reanalyses win wherever they served. The
+        handover lands on the answers, never on a number of days: a constant
+        would be wrong as often as right.
+        """
+        assert span(self.calls, openmeteo.RECENT_MODEL) == (date(2026, 6, 15), TODAY)
+
+        by_date = served_by(self.series)
+        assert by_date[TODAY - timedelta(days=LAG)] == "reanalysis"
+        assert by_date[TODAY - timedelta(days=LAG - 1)] == openmeteo.RECENT_MODEL  # 2026-07-28
+        assert by_date[TODAY] == openmeteo.RECENT_MODEL  # through to tonight
 
     def test_the_forecast_runs_from_tomorrow_to_the_horizon(self):
         assert span(self.calls, openmeteo.FORECAST_MODEL) == (TODAY + timedelta(days=1), HORIZON)
@@ -164,9 +193,20 @@ class TestFourSegments:
 class TestSeamPlacement:
     @pytest.mark.parametrize("lag", [3, 6, 9])
     def test_the_seam_follows_the_data_rather_than_a_constant(self, lag):
+        """Three latencies, one request, three different handovers.
+
+        The request does not move — it covers the whole stretch whatever the
+        reanalyses turn out to reach — and the seam still lands on the right day
+        each time, which is the whole claim.
+        """
         fetch, calls = fake_openmeteo(today=TODAY, lag=lag)
-        fetch_series(*POINT, TODAY - timedelta(days=30), TODAY, today=TODAY, fetch=fetch)
-        assert span(calls, openmeteo.RECENT_MODEL)[0] == TODAY - timedelta(days=lag - 1)
+        series = fetch_series(*POINT, TODAY - timedelta(days=30), TODAY, today=TODAY, fetch=fetch)
+
+        assert span(calls, openmeteo.RECENT_MODEL) == (TODAY - timedelta(days=30), TODAY)
+
+        by_date = served_by(series)
+        assert by_date[TODAY - timedelta(days=lag)] == "reanalysis"
+        assert by_date[TODAY - timedelta(days=lag - 1)] == openmeteo.RECENT_MODEL
 
     @pytest.mark.parametrize("served", [5, 10, 14])
     def test_the_model_takes_over_where_the_forecast_actually_stopped(self, served):
@@ -227,16 +267,22 @@ class TestSingleSegment:
 
 class TestRequestShape:
     def test_the_source_is_always_forced(self):
-        """Left to itself the archive endpoint switches reanalysis in 2017."""
+        """Left to itself the archive endpoint switches reanalysis in 2017.
+
+        Exactly one model per request, never none and never several: a plain
+        request lets the endpoint choose per variable, and several at once
+        changes the spelling of every key in the answer.
+        """
         fetch, calls = fake_openmeteo(today=TODAY, lag=LAG)
         fetch_series(*POINT, date(2015, 1, 1), date(2015, 3, 31), today=TODAY, fetch=fetch)
-        assert all("models" in params for _, params in calls)
+        assert calls
+        assert all(len(params["models"]) == 1 for params in calls)
 
     def test_days_are_local_days(self):
         """A daily maximum spanning 09:00 to 09:00 would mean nothing in Tokyo."""
         fetch, calls = fake_openmeteo(today=TODAY, lag=LAG)
         fetch_series(*POINT, date(2047, 9, 1), date(2047, 9, 30), today=TODAY, fetch=fetch)
-        assert all(params["timezone"] == "auto" for _, params in calls)
+        assert all(params["timezone"] == "auto" for params in calls)
 
     def test_the_model_is_a_parameter_never_a_hard_coded_value(self):
         fetch, calls = fake_openmeteo(today=TODAY, lag=LAG)

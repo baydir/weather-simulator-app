@@ -23,14 +23,12 @@ from __future__ import annotations
 
 import argparse
 import statistics as st
-import sys
 from datetime import timedelta
 
-sys.path.insert(0, "src")
-
-from weather_simulator.domain.records import Origin  # noqa: E402
-from weather_simulator.sources import openmeteo  # noqa: E402
-from weather_simulator.sources.series import fetch_series, today_in_reference_zone  # noqa: E402
+from weather_simulator.api.plan import fetch_series
+from weather_simulator.domain.records import Origin
+from weather_simulator.sources import openmeteo
+from weather_simulator.sources.series import today_in_reference_zone
 
 SITES = {
     "Pontarlier": (46.90, 6.35),

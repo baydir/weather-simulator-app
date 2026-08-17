@@ -34,19 +34,29 @@ Same series either way, and the overlap costs nothing — one request covers it.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Any
 
 from weather_simulator.domain.records import DailyRecord, Origin
 from weather_simulator.sources import openmeteo
+from weather_simulator.sources.client import get_json
+from weather_simulator.sources.errors import FetchError
 from weather_simulator.sources.parse import DailyColumns, merge_columns, parse_daily
 from weather_simulator.sources.series import (
     build_series,
     forecast_overlap,
     resume_after,
     split_range,
+    today_in_reference_zone,
 )
+
+# What an offline caller has to supply to run a plan: a finished URL in, the
+# decoded payload out. The browser's own contract, which is the point — the
+# segment carries a URL and nothing else, so nothing downstream can ask for a
+# request that was not planned.
+Fetcher = Callable[[str], dict[str, Any]]
 
 TEMPERATURE = "reanalysis_temperature"
 SURFACE = "reanalysis_surface"
@@ -228,3 +238,49 @@ def assemble(plan: Plan, payloads: dict[str, dict[str, Any]]) -> list[DailyRecor
         (forecast, Origin.FORECAST, openmeteo.FORECAST_MODEL),
         (projected, Origin.SIMULATED, plan.model),
     )
+
+
+def fetch_series(
+    latitude: float,
+    longitude: float,
+    start: date,
+    end: date,
+    *,
+    model: str = openmeteo.DEFAULT_MODEL,
+    timezone: str = openmeteo.DEFAULT_TIMEZONE,
+    today: date | None = None,
+    fetch: Fetcher = get_json,
+) -> list[DailyRecord]:
+    """Retrieve ``[start, end]`` at one point as a single homogeneous series.
+
+    **The offline path, and it is the online one with the round trip closed
+    here.** It used to be a second implementation living in ``sources.series``:
+    the same range split the same way, the same models chosen, the same two
+    seams settled — written out twice, once for the browser to execute and once
+    for a script. They had already begun to drift where nothing yet depended on
+    it. CLAUDE.md rule 3 asks for one live version of a rule, and this is what
+    that costs: three lines instead of seventy.
+
+    **It fetches the plan's own URLs**, not requests rebuilt from the same
+    arguments, so there is no second spelling either. What a script gets is
+    therefore exactly what a visitor gets, down to the query string.
+
+    ``fetch`` is injected so the assembly can be tested without a network, and
+    so a caller doing bulk collection can slot in its own pacing. It receives a
+    finished URL and returns the decoded payload — the browser's contract.
+
+    The requests are run in order and one at a time, as the browser runs them:
+    three or four of them landing at once from a single address is what
+    Open-Meteo's rate limiter watches for.
+    """
+    built = build(
+        latitude, longitude, start, end, today or today_in_reference_zone(),
+        model=model, timezone=timezone,
+    )
+    series = assemble(built, {segment.id: fetch(segment.url) for segment in built.segments})
+    if not series:
+        # Not reachable through the API, which raises earlier and in French.
+        # Kept for the caller that has no visitor to answer to: a script asking
+        # for a range every source declined should say so, not print nothing.
+        raise FetchError(f"no source returned any day for {start}..{end}")
+    return series

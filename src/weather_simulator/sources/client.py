@@ -40,15 +40,23 @@ RATE_LIMITED = (429, 503)
 
 def get_json(
     url: str,
-    params: dict[str, object],
+    params: dict[str, object] | None = None,
     *,
     timeout: int = DEFAULT_TIMEOUT,
     retries: int = DEFAULT_RETRIES,
     backoff: int = DEFAULT_BACKOFF,
     sleep: Callable[[float], None] = time.sleep,
 ) -> dict[str, Any]:
-    """GET ``url`` with ``params`` and return the decoded payload."""
-    target = openmeteo.encode(url, params)
+    """GET ``url`` with ``params`` and return the decoded payload.
+
+    ``params`` may be left out, and then ``url`` is fetched as it stands. That
+    is the form a planned segment carries: the plan spells its requests out as
+    finished URLs, because the browser is handed the very same strings and can
+    do nothing else with them. An offline caller running a plan therefore has
+    nothing to encode, and encoding it again would be a second spelling of a
+    request — which is what :func:`openmeteo.encode` exists to prevent.
+    """
+    target = url if params is None else openmeteo.encode(url, params)
 
     last: Exception | None = None
     for attempt in range(retries):
