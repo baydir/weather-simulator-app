@@ -12,10 +12,15 @@ the emoji lives on the display side alone, so that moving to a drawn icon set
 touches nothing but the rendering.
 
 **It carries the temperature band, never the colour.** The same division, one
-step further: which of twenty-two steps a temperature falls in is a rule, and
-docs/application.md sends every rule a displayed quantity depends on to the
-server. Which hue that step is drawn in is a stylesheet's business, and repainting
-the ramp must touch nothing else.
+step further: which band of the shared scale a temperature falls in is a rule,
+and docs/application.md sends every rule a displayed quantity depends on to the
+server. Which hue that band is drawn in is a stylesheet's business, and
+repainting the ramp must touch nothing else.
+
+How many bands there are is not written here, nor anywhere else that is not
+``thresholds``: it stood in this file as twenty-two long after the ladder had
+been settled at nine, which is the second copy CLAUDE.md rule 3 is about,
+wearing prose rather than code.
 
 **It carries ``origin`` on every day, and ``has_simulated`` on the response.**
 The interface must warn wherever the series stops being weather and becomes a
@@ -110,10 +115,10 @@ class Day(BaseModel):
     temperature_min_band: int | None = Field(
         default=None,
         description=(
-            "0 to 21, the step of the shared temperature scale this minimum falls "
-            "in — null when the temperature is. The interface turns it into a "
-            "colour; the colour itself is no more part of this contract than the "
-            "pictogram is."
+            f"0 to {temperature.BAND_COUNT - 1}, the band of the shared temperature "
+            "scale this minimum falls in — null when the temperature is. The "
+            "interface turns it into a colour; the colour itself is no more part of "
+            "this contract than the pictogram is."
         ),
     )
     temperature_max_band: int | None = Field(

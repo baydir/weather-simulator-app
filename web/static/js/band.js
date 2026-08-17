@@ -129,8 +129,9 @@ function value(shown, raw, className) {
  */
 function degrees(raw, className, unit, band) {
   // The band arrives decided by the server and is written as an attribute, never
-  // as a colour: the twenty-two hues live in the stylesheet, exactly as the
-  // pictogram lives here rather than in the JSON.
+  // as a colour: the hues live in the stylesheet, exactly as the pictogram lives
+  // here rather than in the JSON. How many of them there are is not this file's
+  // to know — it said twenty-two here for as long as the ladder had nine.
   //
   // An attribute rather than a class so that the sheet can say *any band* in one
   // selector — which is what carries the white ink and the tint. A day with no
