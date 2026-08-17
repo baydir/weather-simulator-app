@@ -246,6 +246,43 @@ def test_the_same_place_is_served_for_the_past(client, frozen_today) -> None:
     assert response.status_code == 200
 
 
+def test_the_same_place_is_served_for_the_fortnight_ahead(client, frozen_today) -> None:
+    """The forecast is ECMWF IFS, which needs no debiasing.
+
+    docs/application.md: a search that does not reach the climate model is
+    served everywhere in the world. This is the case that regressed when the
+    forecast became a segment — the refusal still turned on "does the range pass
+    today", which is one fortnight too early.
+    """
+    response = client.post(
+        "/api/plan",
+        json=_search(TODAY + timedelta(days=1), TODAY + timedelta(days=10), SANTIAGO),
+    )
+    assert response.status_code == 200, response.json()
+    assert [r["id"] for r in response.json()["requests"]] == [planning.FORECAST]
+
+
+def test_a_range_reaching_past_the_forecast_is_refused_there(client, frozen_today) -> None:
+    """One day beyond the horizon is one simulated day, and that needs the grid."""
+    horizon = TODAY + timedelta(days=openmeteo.FORECAST_DAYS)
+    response = client.post(
+        "/api/plan", json=_search(TODAY + timedelta(days=1), horizon + timedelta(days=1), SANTIAGO)
+    )
+    assert response.status_code == 400
+    assert "pas encore couvert" in response.json()["message"]
+
+
+def test_the_past_and_the_forecast_come_back_together_off_the_grid(client, frozen_today) -> None:
+    """A range straddling today, uncovered: served whole, and nothing simulated."""
+    response = _run(client, _search(TODAY - timedelta(days=10), TODAY + timedelta(days=5), SANTIAGO))
+    assert response.status_code == 200, response.json()
+    body = response.json()
+
+    assert body["has_simulated"] is False
+    assert body["grid"] is None
+    assert {day["origin"] for day in body["days"]} == {"observed", "forecast"}
+
+
 def test_payloads_that_do_not_match_the_plan_are_refused(client, frozen_today) -> None:
     search = _search(date(2020, 6, 1), date(2020, 6, 30))
     response = client.post(
