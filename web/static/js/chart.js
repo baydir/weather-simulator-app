@@ -125,8 +125,12 @@ export const RAIN_FLOOR_MM = 10;
 /** Two decimals is more than a coordinate needs, and keeps the markup small. */
 const round = (value) => Math.round(value * 100) / 100;
 
-/** The one test for a hole in the series, written once. */
-const missing = (value) => value === null || value === undefined;
+// What a hole *is* is `present.isMissing`, borrowed under a shorter name rather
+// than restated: it stood here as a private one-liner and in present.js as an
+// exported one, which is CLAUDE.md rule 3 exactly — two obvious lines, in two
+// files, that nobody would think to re-read. What this file decides *about* a
+// hole — break the curve, notch the baseline — stays here.
+const missing = present.isMissing;
 
 /**
  * What the panels sit in, once the number of days is known.
@@ -399,13 +403,11 @@ export function chart(days, scale, { compared = null, box = BOX } = {}) {
   // own scale and the gap between them would be a picture of the framing.
   const framed = compared ? [...days, ...compared.filter(Boolean)] : days;
   const span = temperatureWindow(framed, scale.step);
-  const ceiling = rainCeiling(days);
   const year = comparedYear(compared);
 
   const y = (value) =>
     geometry.temperature.top +
     ((span.top - value) / (span.top - span.bottom)) * box.temperature;
-  const height = (value) => (value / ceiling) * box.rain;
 
   // The order of this list is the stacking order: the graduation under
   // everything, then the compared year — its band, then its two edges — then the
@@ -421,9 +423,9 @@ export function chart(days, scale, { compared = null, box = BOX } = {}) {
     title(geometry, geometry.cumul.top, texts.chart.cumulative),
     ...(span ? [graduation(geometry, span, scale.edges, scale.step, y)] : []),
     ...(span && compared ? pastBand(geometry, compared, y) : []),
-    ...(span && compared ? pastCurves(geometry, compared, y) : []),
+    ...(span && compared ? curves(geometry, compared, y, { tone: "past", points: false }) : []),
     ...(span ? curves(geometry, days, y) : []),
-    rain(geometry, days, ceiling, height),
+    rain(geometry, days),
     cumul(geometry, days),
     ...(span
       ? [dates(geometry, days, geometry.temperature.bottom, geometry.temperature.dates)]
@@ -512,40 +514,46 @@ function pastLegend(frame, year) {
 }
 
 /**
- * The two curves, each broken wherever its own readings are.
+ * The two readings a temperature panel draws, in the order it draws them.
  *
- * The maximum is drawn first and the minimum over it, which only matters where
- * they meet: a day whose two readings are equal shows the cool mark, and the
- * cards say the same thing in the same order.
+ * The maximum first and the minimum over it, which only matters where they
+ * meet: a day whose two readings are equal shows the cool mark, and the cards
+ * say the same thing in the same order.
  */
-function curves(frame, days, y) {
-  return [
-    ["temperature_max", "high"],
-    ["temperature_min", "low"],
-  ].flatMap(([key, className]) =>
-    runs(days, (day) => day[key]).flatMap((run) => stroke(frame, run, y, className)),
-  );
-}
+const READINGS = [
+  ["temperature_max", "high"],
+  ["temperature_min", "low"],
+];
 
 /**
- * The other year, under the one that was asked for.
+ * The two curves of one year, each broken wherever its own readings are.
  *
- * The same two readings and the same breaks, drawn without dots and in one
- * colour: it is a ground, not a second subject. The classes carry `past` first
- * so the stylesheet can override the warm and the cool it would otherwise
- * inherit from `high` and `low` — the two names are kept because a reader who
- * inspects the drawing should find the maximum called a maximum in both years.
+ * **One function for both years, called twice.** It was two — the year asked for
+ * and the compared year had a function each — and the two differed by a class
+ * prefix, a flag and an optional chain, around an identical walk of an identical
+ * table of readings. That is the second copy CLAUDE.md rule 3 is about: the day
+ * a third reading joined the panel, or the pair changed order, one of the two
+ * would have been edited and the other would have gone on drawing the old thing
+ * in grey.
+ *
+ * `tone` is what tells the compared year apart. Its classes carry `past` first
+ * so the stylesheet can override the warm and the cool they would otherwise
+ * inherit from `high` and `low` — the two names are kept either way, because a
+ * reader who inspects the drawing should find the maximum called a maximum in
+ * both years.
+ *
+ * `points` goes with it: the compared year is a ground, not a second subject,
+ * and the reasoning for withholding its dots is at :func:`stroke`.
  *
  * A slot the compared year has no day for reads `undefined`, which `runs` treats
- * as a hole exactly as it treats a missing reading. Nothing is joined across it.
+ * as a hole exactly as it treats a missing reading. Nothing is joined across it,
+ * and the optional chain is what lets one walk serve a dense array and a sparse
+ * one alike.
  */
-function pastCurves(frame, compared, y) {
-  return [
-    ["temperature_max", "high"],
-    ["temperature_min", "low"],
-  ].flatMap(([key, className]) =>
-    runs(compared, (day) => day?.[key]).flatMap((run) =>
-      stroke(frame, run, y, `past ${className}`, { points: false }),
+function curves(frame, days, y, { tone = "", points = true } = {}) {
+  return READINGS.flatMap(([key, className]) =>
+    runs(days, (day) => day?.[key]).flatMap((run) =>
+      stroke(frame, run, y, [tone, className].filter(Boolean).join(" "), { points }),
     ),
   );
 }
@@ -672,8 +680,18 @@ function millimetres(frame, base, ceiling, height) {
   };
 }
 
-/** The bars, on the graduation the panel below them shares. */
-function rain(frame, days, ceiling, height) {
+/**
+ * The bars, on the graduation the panel below them shares.
+ *
+ * It frames itself, exactly as :func:`cumul` does: the ceiling and the height
+ * used to be worked out in :func:`chart` and handed down, which left two panels
+ * plotting millimetres by two different arrangements. A panel owns its own
+ * vertical scale — that is the whole rule this drawing is built on — so it is
+ * the panel that computes it.
+ */
+function rain(frame, days) {
+  const ceiling = rainCeiling(days);
+  const height = (value) => (value / ceiling) * frame.box.rain;
   const scale = millimetres(frame, frame.rain.base, ceiling, height);
   const bars = days.flatMap((day, index) => {
     if (missing(day.precipitation)) {

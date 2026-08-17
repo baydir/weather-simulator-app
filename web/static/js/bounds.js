@@ -16,6 +16,7 @@
  * caught mid-form, not refusals of a search that was actually made.
  */
 
+import { span } from "./calendar.js";
 import { texts } from "./i18n.js";
 
 /**
@@ -38,15 +39,4 @@ export function refuse({ start, end }, config) {
   const days = span(start, end);
   if (days > config.max_days) return texts.form.rangeTooLong(config.max_days, days);
   return null;
-}
-
-/**
- * How many days a range shows, both ends counted.
- *
- * Read at noon UTC rather than midnight: the two dates are then 24 hours apart
- * whatever daylight saving does between them, and the division stays exact.
- */
-export function span(start, end) {
-  const day = 24 * 60 * 60 * 1000;
-  return Math.round((Date.parse(`${end}T12:00:00Z`) - Date.parse(`${start}T12:00:00Z`)) / day) + 1;
 }

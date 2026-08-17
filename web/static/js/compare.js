@@ -24,7 +24,7 @@
  * world, including where the future is refused.
  */
 
-import { span } from "./bounds.js";
+import { DAY, at, iso, span } from "./calendar.js";
 
 /**
  * The year the menu opens on, and it was measured rather than picked.
@@ -46,12 +46,6 @@ import { span } from "./bounds.js";
  * default buys is that nobody lands on 1980 without meaning to.
  */
 export const ORDINARY_YEAR = 1991;
-
-const DAY = 24 * 60 * 60 * 1000;
-
-/** Noon UTC, for the reason `bounds.js` gives: 24 hours apart whatever the zone. */
-const at = (date) => Date.parse(`${date}T12:00:00Z`);
-const iso = (stamp) => new Date(stamp).toISOString().slice(0, 10);
 
 /**
  * One date moved to another year, the 29th of February included.

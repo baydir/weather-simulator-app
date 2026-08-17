@@ -47,9 +47,23 @@ const TENTH = new Intl.NumberFormat("fr-FR", {
   maximumFractionDigits: 1,
 });
 
+/**
+ * The one test for a hole in the series.
+ *
+ * Both spellings, because both arrive: the JSON contract sends `null` for a day
+ * a source left empty, and `undefined` is what an array reads back where the
+ * compared year has no such day at all. Every caller that draws or writes a
+ * value asks here — `band.js` for the label it owes a missing number, `chart.js`
+ * to break a curve rather than join across the hole — and it is exported for
+ * that reason rather than kept private to the formatting below.
+ */
+export function isMissing(value) {
+  return value === null || value === undefined;
+}
+
 /** A gap stays a gap. Filling it would be a data-treatment decision. */
 function present(value, format) {
-  return value === null || value === undefined ? texts.measure.missing : format.format(value);
+  return isMissing(value) ? texts.measure.missing : format.format(value);
 }
 
 export function temperature(value) {
@@ -67,10 +81,6 @@ export function decimal(value) {
 
 export function wind(value) {
   return present(value, WHOLE);
-}
-
-export function isMissing(value) {
-  return value === null || value === undefined;
 }
 
 // Dates arrive as "2046-07-14" and are read in UTC, deliberately. Left to the
