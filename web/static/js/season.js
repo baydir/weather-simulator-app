@@ -29,6 +29,8 @@
  * would be a picture of the calendar rather than of the weather the range holds.
  */
 
+import { eachDay, pad } from "./calendar.js";
+
 /** Winter first, and it is the one that wraps: December belongs to January's. */
 const OPPOSITE = {
   winter: "summer",
@@ -62,21 +64,21 @@ const SEASONS = [
 /** A month and a day as one comparable number: 21 June is 621. */
 const stampOf = ([month, day]) => month * 100 + day;
 
-/** Two digits, so a month and a day sit in an ISO date the way they must. */
-const pad = (n) => String(n).padStart(2, "0");
-
 /**
  * The northern season of a month and a day, read as one number.
  *
  * `month * 100 + day` orders dates inside a year without parsing one, in the
  * same spirit as `bounds.js` comparing ISO strings: nothing here can slide a day
- * by reading it in the wrong zone, because nothing here reads a zone.
+ * by reading it in the wrong zone, because nothing here reads a zone. Both sides
+ * of the comparison go through `stampOf`, the date being read and the boundary
+ * alike — written out here it would be the same expression twice, two lines
+ * apart, which is the shape this file's own header argues against.
  *
  * The walk starts on the last entry — winter — because a date before the first
  * boundary is in the season that began in the year before.
  */
 function northern(month, day) {
-  const stamp = month * 100 + day;
+  const stamp = stampOf([month, day]);
   let found = SEASONS.at(-1);
   for (const season of SEASONS) {
     if (stamp >= stampOf(season.from)) found = season;
@@ -159,24 +161,6 @@ export function yearsFor(name, latitude, config) {
 }
 
 /**
- * Every day of the range, both ends counted.
- *
- * Read at noon UTC and stepped by exact days, for the reason `bounds.js` gives
- * where it measures a span: midnight in a local zone is 23 or 25 hours from the
- * next one twice a year, and the walk would skip or repeat a day. An unusable
- * range — either end missing, or running backwards — yields nothing rather than
- * throwing; the form and the API both refuse it long before this file sees it.
- */
-function* days(start, end) {
-  if (!start || !end || start > end) return;
-  const DAY = 24 * 60 * 60 * 1000;
-  const last = Date.parse(`${end}T12:00:00Z`);
-  for (let stamp = Date.parse(`${start}T12:00:00Z`); stamp <= last; stamp += DAY) {
-    yield new Date(stamp).toISOString().slice(0, 10);
-  }
-}
-
-/**
  * The season the range spends most of its days in, or null if there is no range.
  *
  * **It counts days, and nothing else, which is why the bound moving cost it
@@ -193,7 +177,7 @@ function* days(start, end) {
 export function dominantSeason({ start, end, latitude }) {
   const counts = new Map();
   let best = null;
-  for (const iso of days(start, end)) {
+  for (const iso of eachDay(start, end)) {
     const season = seasonOf(iso, latitude);
     const count = (counts.get(season) ?? 0) + 1;
     counts.set(season, count);

@@ -21,8 +21,20 @@ from __future__ import annotations
 
 import math
 
-from weather_simulator.calibration.table import CorrectionTable, OutsideCoverage
+from weather_simulator.calibration.table import NODE_DECIMALS, CorrectionTable, OutsideCoverage
 from weather_simulator.domain.correction import CloudCorrection, MonthlyCorrection
+
+
+def _corner(latitude: float, longitude: float, step: float) -> tuple[float, float]:
+    """The south-west node of the cell a point falls in.
+
+    Both functions below start here, and they used to start with their own copy
+    of these two lines. They have to agree exactly: :func:`surrounding` names the
+    nodes and :func:`_weights` measures the distance to them, so a cell chosen
+    one way and measured another would weight a point against nodes it does not
+    sit between — silently, and only near a boundary.
+    """
+    return math.floor(latitude / step) * step, math.floor(longitude / step) * step
 
 
 def surrounding(latitude: float, longitude: float, step: float) -> list[tuple[float, float]]:
@@ -30,21 +42,23 @@ def surrounding(latitude: float, longitude: float, step: float) -> list[tuple[fl
 
     A point sitting exactly on a node still gets four of them, three of which
     carry zero weight. That keeps one code path instead of two.
+
+    Rounded to the decimals the table writes its keys with — the lookup is by
+    exact coordinates, so ``48.5`` and ``48.500000000000004`` are two different
+    nodes and only one of them is in the file.
     """
-    south = math.floor(latitude / step) * step
-    west = math.floor(longitude / step) * step
+    south, west = _corner(latitude, longitude, step)
     return [
-        (round(south, 1), round(west, 1)),
-        (round(south, 1), round(west + step, 1)),
-        (round(south + step, 1), round(west, 1)),
-        (round(south + step, 1), round(west + step, 1)),
+        (round(south, NODE_DECIMALS), round(west, NODE_DECIMALS)),
+        (round(south, NODE_DECIMALS), round(west + step, NODE_DECIMALS)),
+        (round(south + step, NODE_DECIMALS), round(west, NODE_DECIMALS)),
+        (round(south + step, NODE_DECIMALS), round(west + step, NODE_DECIMALS)),
     ]
 
 
 def _weights(latitude: float, longitude: float, step: float) -> list[float]:
     """Bilinear weights, in the same order as :func:`surrounding`."""
-    south = math.floor(latitude / step) * step
-    west = math.floor(longitude / step) * step
+    south, west = _corner(latitude, longitude, step)
     y = (latitude - south) / step
     x = (longitude - west) / step
     return [(1 - y) * (1 - x), (1 - y) * x, y * (1 - x), y * x]

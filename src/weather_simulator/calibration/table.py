@@ -36,6 +36,17 @@ from weather_simulator.domain.correction import (
 )
 
 
+# How many decimals a node's coordinates carry, in the file and in memory alike.
+#
+# **One number for two operations that have to agree.** :meth:`CorrectionTable.write`
+# spells a key with it and :func:`grid.surrounding` rounds a computed corner with
+# it; a node whose two spellings differ is a node the lookup cannot find, and the
+# symptom is a place refused for no visible reason. It stood as a bare ``.1f``
+# here and a bare ``1`` there, which is CLAUDE.md rule 3 across two modules — and
+# the pair only happens to hold because the grid steps by half a degree.
+NODE_DECIMALS = 1
+
+
 class GridError(Exception):
     """Base class for every failure the correction grid raises."""
 
@@ -123,7 +134,7 @@ class CorrectionTable:
             "metadata": self.metadata.as_json(),
             "levels": list(LEVELS),
             "nodes": {
-                f"{lat:.1f},{lon:.1f}": {
+                f"{lat:.{NODE_DECIMALS}f},{lon:.{NODE_DECIMALS}f}": {
                     str(month): {
                         "reference": [round(v, 1) for v in monthly.reference],
                         "model_past": [round(v, 1) for v in monthly.model_past],

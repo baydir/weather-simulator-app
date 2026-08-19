@@ -10,7 +10,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { refuse, span } from "../../web/static/js/bounds.js";
+import { refuse } from "../../web/static/js/bounds.js";
 
 /** What GET /api/config really answers. */
 const CONFIG = {
@@ -20,20 +20,8 @@ const CONFIG = {
   max_days: 92,
 };
 
-describe("how long a range is", () => {
-  it("counts both ends", () => {
-    assert.equal(span("2046-07-01", "2046-07-01"), 1);
-    assert.equal(span("2046-07-01", "2046-07-02"), 2);
-    assert.equal(span("2046-07-01", "2046-09-28"), 90);
-  });
-
-  it("does not flinch at the daylight-saving change", () => {
-    // Read at midnight in a local zone, this range is 23 or 25 hours short of a
-    // whole number of days, and the count comes out one too low.
-    assert.equal(span("2046-03-24", "2046-03-31"), 8);
-    assert.equal(span("2046-10-20", "2046-10-31"), 12);
-  });
-});
+// How long a range is, is `calendar.js` — and so is the daylight-saving trap it
+// used to be checked against here. What is left in this file is the refusing.
 
 describe("what the form refuses", () => {
   it("lets an ordinary range through", () => {

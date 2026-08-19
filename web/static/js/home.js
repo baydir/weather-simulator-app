@@ -22,6 +22,7 @@
 
 import { geocode, loadConfig, SearchError } from "./fetch.js";
 import { refuse } from "./bounds.js";
+import { DAY, at, iso, pad } from "./calendar.js";
 import { applyTexts, el } from "./dom.js";
 import { texts } from "./i18n.js";
 import { rotate } from "./prompt.js";
@@ -320,20 +321,21 @@ function aboutPlace(message) {
  */
 function fillDefaultDates() {
   from.value = today();
-  to.value = isoDay(new Date(), 13);
+  // The clock is read once, into an ISO day; the fortnight is then counted in
+  // `calendar.js`, where every other day of this project is counted.
+  to.value = iso(at(today()) + 13 * DAY);
 }
 
-/** Today, as an ISO day, read off this browser's clock like the default above. */
+/**
+ * Today, as an ISO day, off this browser's clock.
+ *
+ * The one local reading in the file, and it has to be local: a visitor in
+ * Auckland opening the page on the 3rd should see the 3rd in the field. What
+ * happens to that day afterwards is UTC arithmetic like everything else — the
+ * server's own clock is what decides where the observed stops, and this only
+ * fills a form.
+ */
 function today() {
-  return isoDay(new Date(), 0);
-}
-
-function isoDay(base, offset) {
-  const day = new Date(base);
-  day.setDate(day.getDate() + offset);
-  return `${day.getFullYear()}-${pad(day.getMonth() + 1)}-${pad(day.getDate())}`;
-}
-
-function pad(n) {
-  return String(n).padStart(2, "0");
+  const now = new Date();
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
