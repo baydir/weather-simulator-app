@@ -233,14 +233,22 @@ export const texts = {
     kilometresPerHour: "km/h",
   },
 
-  // Handed to fetch.js, which transports and does not write. Two sentences
-  // because the two failures are not the visitor's to confuse: Open-Meteo
-  // answering badly is the common one, and its rate limit counts against their
-  // own address, so waiting is something they can actually do.
+  // Handed to fetch.js, which transports and does not write. Separate sentences
+  // because the failures are not the visitor's to confuse: Open-Meteo answering
+  // badly is the common one, and its rate limit counts against their own
+  // address, so waiting is something they can actually do.
+  //
+  // `tookTooLong` is the fourth, and it exists because the advice differs. A
+  // stalled request is not a refused one: nothing was answered, nothing counted
+  // against anybody, and there is no reason to wait — the thing to do is ask
+  // again. Folded into `upstreamFailed` it would have told a visitor to sit out
+  // a rate limit they never hit.
   transport: {
     upstreamFailed:
       "Les données météo n'ont pas pu être récupérées. " +
       "Le service Open-Meteo limite le nombre de recherches ; réessayez dans un moment.",
+    tookTooLong:
+      "Le service météo met trop longtemps à répondre. Relancez la recherche.",
     serviceFailed: "L'application est momentanément indisponible.",
     searchFailed: "La recherche n'a pas abouti.",
   },
