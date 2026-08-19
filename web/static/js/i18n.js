@@ -37,9 +37,10 @@ export const texts = {
     // temps fera-t-il à Nice en 2050 ? », qui viole pourtant la règle 1 — ce
     // qu'aucune formulation ne doit faire, c'est promettre la journée.
     questions: [
+      "Les étés seront ils supportables dans 20 ans ?",
+      "Comment seront les hivers dans les années 2040 ?",
       "Faut-il se marier en avril plutôt qu'en juin ?",
       "Faut-il passer ses vieux jours à Nice ou à Lille ?",
-      "Pourrais-je faire pousser des tomates à Montpellier en 2050 ?",
       "Cet été, vacances à Ajaccio ou à Berck-plage ?",
       "Investir dans un appartement sous les toits à Paris : bonne ou mauvaise idée ?",
       "Vélo ou rando cet hiver à la montagne ?",
