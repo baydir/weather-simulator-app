@@ -29,16 +29,13 @@ is the point of it.
 from __future__ import annotations
 
 import json
-import sys
 import time
 from datetime import date
 from pathlib import Path
 
-sys.path.insert(0, "src")
-
-from weather_simulator.sources import openmeteo  # noqa: E402
-from weather_simulator.sources.client import get_json  # noqa: E402
-from weather_simulator.sources.errors import FetchError  # noqa: E402
+from weather_simulator.sources import openmeteo
+from weather_simulator.sources.client import get_json
+from weather_simulator.sources.errors import FetchError
 
 CACHE_DIR = Path(__file__).resolve().parents[2] / "data" / "temperature_scale"
 START, END = date(1981, 1, 1), date(2010, 12, 31)

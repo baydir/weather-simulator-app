@@ -15,8 +15,13 @@
  * reaches for the global on its first call.
  */
 
-class StubNode {
+class StubNode extends EventTarget {
   constructor(tag, namespace = null) {
+    // An EventTarget, because `prompt.js` is wired entirely with listeners and
+    // its accessibility guarantee is which node is exposed after which event.
+    // Node has one built in; a hand-rolled one would be a second, worse
+    // implementation of something the platform already gets right.
+    super();
     this.tag = tag;
     // Kept so that a test can say a mark was built as SVG and not as an HTML
     // element wearing an SVG name — the one failure that is invisible on screen.
@@ -52,13 +57,21 @@ class StubNode {
   append(...nodes) {
     this.children.push(...nodes);
   }
+
+  replaceChildren(...nodes) {
+    this.children = [...nodes];
+  }
 }
 
 export function install() {
-  globalThis.document = {
-    createElement: (tag) => new StubNode(tag),
-    createElementNS: (namespace, tag) => new StubNode(tag, namespace),
-  };
+  // The document is an EventTarget too, and carries `hidden`: `rotate` listens
+  // for `visibilitychange` on it and reads that flag to decide what the event
+  // meant.
+  const stub = new EventTarget();
+  stub.createElement = (tag) => new StubNode(tag);
+  stub.createElementNS = (namespace, tag) => new StubNode(tag, namespace);
+  stub.hidden = false;
+  globalThis.document = stub;
 }
 
 /** Every node in the tree, the root included. */

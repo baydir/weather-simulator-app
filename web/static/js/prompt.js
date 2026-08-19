@@ -80,10 +80,6 @@ export function rotate(host, questions, { interval = INTERVAL } = {}) {
   if (still || nodes.length === 1) return () => {};
 
   let timer = null;
-  const stop = () => {
-    clearInterval(timer);
-    timer = null;
-  };
   const start = () => {
     if (timer === null) {
       timer = setInterval(() => {
@@ -93,14 +89,38 @@ export function rotate(host, questions, { interval = INTERVAL } = {}) {
     }
   };
 
-  host.addEventListener("mouseenter", stop);
-  host.addEventListener("mouseleave", start);
-  host.addEventListener("focusin", stop);
-  host.addEventListener("focusout", start);
+  /**
+   * What is currently holding the rotation still, if anything.
+   *
+   * **A set of reasons, not a flag, and the difference is a real bug.** The
+   * reasons overlap, and each is lifted by its own event: a reader who parks the
+   * pointer on the banner and then switches tab has put two holds on it, and
+   * coming back lifts only one — the pointer is still there. Restarting on the
+   * return alone, which is what a plain `visibilitychange` handler did, set the
+   * movement going again under a pointer that had asked it to stop. WCAG 2.2.2
+   * is about the asking, not about the last event to fire.
+   */
+  const held = new Set();
+  const hold = (reason) => {
+    held.add(reason);
+    clearInterval(timer);
+    timer = null;
+  };
+  const release = (reason) => {
+    held.delete(reason);
+    if (held.size === 0) start();
+  };
+
+  host.addEventListener("mouseenter", () => hold("pointer"));
+  host.addEventListener("mouseleave", () => release("pointer"));
+  host.addEventListener("focusin", () => hold("focus"));
+  host.addEventListener("focusout", () => release("focus"));
   document.addEventListener("visibilitychange", () =>
-    document.hidden ? stop() : start(),
+    document.hidden ? hold("hidden") : release("hidden"),
   );
 
   start();
-  return stop;
+  // Stopped for good, not merely paused: the hold is never lifted, so a
+  // mouseleave arriving afterwards cannot start a rotation the caller ended.
+  return () => hold("stopped");
 }
