@@ -119,3 +119,24 @@ export function fullDate(iso) {
 export function monthKey(iso) {
   return iso.slice(0, 7);
 }
+
+/**
+ * A sentence, cut where a footnote call belongs in it.
+ *
+ * French typography puts the call *before* the full stop — « N'importe quand*. »
+ * and not « N'importe quand.* » — so the mark cannot simply follow the sentence
+ * the way an appended node would. This says where to cut, and the dictionary
+ * keeps its sentence whole: no key ends in a half-phrase, and nothing has to be
+ * reassembled by a translator.
+ *
+ * **The whole trailing run, not one character.** An ellipsis is three marks and
+ * « … ?! » is more; a call goes before the lot, not inside it. A sentence
+ * ending in none — which no French sentence does, but a key might while it is
+ * being written — comes back whole with an empty tail, and the mark lands at the
+ * end, which is the only sensible place left.
+ */
+export function beforeFinalPunctuation(sentence) {
+  const tail = /[.!?…]+$/.exec(sentence);
+  const cut = tail ? tail.index : sentence.length;
+  return { body: sentence.slice(0, cut), tail: sentence.slice(cut) };
+}

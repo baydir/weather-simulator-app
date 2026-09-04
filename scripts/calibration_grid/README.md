@@ -11,6 +11,7 @@ fait ensuite est dans la section *La grille de correction* de
 | `priority.py` | Ordre de collecte par population desservie |
 | `collect.py` | Sonde d'altitude puis collecte des séries. **Seul à toucher au réseau** |
 | `build.py` | Construit la table depuis le cache, ou une table provisoire |
+| `monthly_bias.py` | L'écart de nébulosité mois par mois, d'où viennent les deux exemples cités par la page de documentation |
 | `run_until_done.sh` | Relance `collect.py` jusqu'à complétion, détaché |
 
 ## Usage

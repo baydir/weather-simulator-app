@@ -40,19 +40,25 @@ hauteur du formulaire change selon celui qu'on déplie.
 | Texte | rien d'ouvert | plage de dates | saison entière |
 |---|---|---|---|
 | la question | 11,2:1 | 11,2:1 | 11,2:1 |
-| la promesse | 7,8:1 | 7,8:1 | 7,8:1 |
-| l'étiquette *Lieu* | 7,8:1 | 7,8:1 | 7,8:1 |
-| le champ *Lieu* | 7,0:1 | 7,0:1 | 7,0:1 |
-| la bande choisie | — | 9,7:1 | 7,7:1 |
-| la bande au repos | 9,7:1 | 7,7:1 | 8,2:1 |
-| l'étiquette *Du* | — | 5,1:1 | — |
-| le champ *Du* | — | 4,6:1 | — |
-| l'étiquette *Saison* | — | — | 5,1:1 |
-| le champ *Saison* | — | — | 4,6:1 |
-| le bouton | — | 7,0:1 | 7,0:1 |
-| l'avertissement | 5,9:1 | 5,9:1 | 5,9:1 |
+| la promesse | 8,1:1 | 8,1:1 | 8,1:1 |
+| l'étiquette *Lieu* | 8,5:1 | 8,5:1 | 8,5:1 |
+| le champ *Lieu* | 7,6:1 | 7,6:1 | 7,6:1 |
+| la bande choisie | — | 10,2:1 | 8,3:1 |
+| la bande au repos | 8,3:1 | 8,3:1 | 9,0:1 |
+| l'étiquette *Du* | — | 5,7:1 | — |
+| le champ *Du* | — | 5,0:1 | — |
+| l'étiquette *Saison* | — | — | 5,7:1 |
+| le champ *Saison* | — | — | 5,0:1 |
+| le bouton | — | 7,6:1 | 7,6:1 |
+| l'avertissement | 6,6:1 | 6,6:1 | 6,6:1 |
 
-**Plancher : 4,6:1**, porté par les deux champs de date.
+**Plancher : 5,0:1**, porté par les deux champs de date.
+
+**Toute la table a monté**, et d'une cause unique : l'avertissement du pied est
+devenu une note de trois lignes là où il en faisait une, la page a grandi
+d'autant, et le dégradé — ancré au document — s'est étiré. Chaque encre se lit
+désormais sur un fond un peu plus sombre que celui contre lequel elle avait été
+choisie. Aucune n'a été retouchée.
 
 **La bande située entre 50 % et 65 % du dégradé ne porte aucune encre.** Le fond
 y va de `#4b688b` à `#677390`, et à ces clartés le noir pur plafonne à 4,0:1 quand
@@ -63,17 +69,24 @@ le seul remède est que le formulaire n'y descende pas.
 
 La table n'est publiée que pour 1440 × 900. Planchers relevés ailleurs :
 
-| Fenêtre | plancher |
-|---|---|
-| 1440 × 900 | **4,6:1** |
-| 1280 × 720 | 3,1:1 |
-| 1440 × 1200 | 3,7:1 |
-| 390 × 844 | 3,1:1 |
+| Fenêtre | plancher | porté par |
+|---|---|---|
+| 1440 × 900 | **5,0:1** | les champs de date |
+| 1280 × 720 | 3,8:1 | le champ *Saison* |
+| 1440 × 1200 | 6,6:1 | l'avertissement |
+| 390 × 844 | 3,8:1 | le champ *Saison* |
 
-Sur une fenêtre haute, le plancher est **l'avertissement**, à 3,7:1 — la phrase
-que la règle 1 rend non négociable, portée par la seule ligne de la page qui ne
-puisse pas se déplacer. Le remède touche la composition de la page et **reste à
-décider** → [`docs/idees.md`](../docs/idees.md).
+**L'avertissement mesure 6,6:1 aux quatre tailles**, et c'est un changement : il
+tombait à 3,7:1 sur la fenêtre haute, où il était le plancher. La note du pied
+faisant maintenant trois lignes, la page dépasse la fenêtre de 1200 px au lieu
+d'être étirée pour la remplir, et le pied retrouve le bas sombre du dégradé au
+lieu de la bande claire. Le remède cherché était un arbitrage de mise en page ;
+il est venu d'un changement de texte, ce qui n'était pas le plan.
+→ [`docs/idees.md`](../docs/idees.md), dont le constat est à amender.
+
+Le plancher reste ailleurs : **les champs de date**, à 3,8:1 sur fenêtre courte
+et sur téléphone. Ceux-là ne sont pas une phrase que la règle 1 rend non
+négociable, mais ils restent sous le seuil de 4,5:1.
 
 ## La page de résultats — 1440 × 960
 

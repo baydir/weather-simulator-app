@@ -25,6 +25,7 @@ import { refuse } from "./bounds.js";
 import { DAY, at, iso, pad } from "./calendar.js";
 import { applyTexts, el } from "./dom.js";
 import { texts } from "./i18n.js";
+import { beforeFinalPunctuation } from "./present.js";
 import { rotate } from "./prompt.js";
 import { rangeOf, seasonOf, yearsFor } from "./season.js";
 
@@ -48,8 +49,10 @@ const seasonPanel = document.getElementById("panel-season");
 const seasonPick = document.getElementById("saison");
 const yearPick = document.getElementById("annee");
 const go = document.getElementById("go");
+const coverage = document.getElementById("coverage");
 
 applyTexts();
+markPromise(document.getElementById("promise"));
 // After applyTexts, which fills every other slot: the heading is the one place
 // the dictionary is read as a list rather than as a single string.
 rotate(document.getElementById("prompt"), texts.home.questions);
@@ -76,11 +79,58 @@ loadConfig()
       field.min = served.coverage_start;
       field.max = served.coverage_end;
     }
+    // The first words of the note at the foot of the page: the period covered,
+    // which only the config knows. The trailing space belongs here rather than
+    // in the markup — it separates this from the sentence in the next span, and
+    // leaves the asterisk against the first word on the day the config never
+    // arrives and this slot stays empty.
+    coverage.textContent = `${texts.warning.coverage(
+      served.coverage_start.slice(0, 4),
+      served.coverage_end.slice(0, 4),
+    )} `;
     fillYears();
   })
   .catch((error) => say(error.message));
 
 // --- choosing the place ------------------------------------------------------
+
+/**
+ * Put the footnote call inside the promise, before its full stop.
+ *
+ * French typography sets the call ahead of the punctuation, so the sentence has
+ * to be cut rather than followed — `beforeFinalPunctuation` decides where, and
+ * is tested there because it is arithmetic on a string and this is not.
+ *
+ * The text is read back off the node rather than out of the dictionary a second
+ * time: `applyTexts` has just written it, and reading it twice is the sort of
+ * second copy that goes on agreeing with itself while disagreeing with the page.
+ *
+ * **The mark is not a link, and it is `aria-hidden`.** A link was tried: the
+ * note it would have pointed at sits at the foot of a page 960 pixels tall, so
+ * a reader on any ordinary window is half a screen from it and the star already
+ * says which way to look — the anchor bought nothing and cost a target, a
+ * focus stop and a name. Hidden from the accessibility tree for the same
+ * reason it is shown to the eye: read aloud, a bare star is "astérisque", which
+ * points nowhere. A screen reader gets the whole promise and, further down, the
+ * whole note; nothing about the pairing is lost by dropping the mark between
+ * them.
+ *
+ * A span rather than the raw character in the dictionary, because the call is
+ * set small and raised, and a substring cannot be styled without an element.
+ */
+function markPromise(node) {
+  // One line per "\n", the call on the last of them — however many that turns
+  // out to be. A promise written on a single line gets no break and keeps the
+  // mark, which is what this did before the promise had lines at all.
+  const lines = node.textContent.split("\n");
+  const { body, tail } = beforeFinalPunctuation(lines.pop());
+  node.replaceChildren(
+    ...lines.flatMap((line) => [el("span", { text: line }), el("br")]),
+    el("span", { text: body }),
+    el("span", { className: "note-ref", text: "*", attrs: { "aria-hidden": "true" } }),
+    el("span", { text: tail }),
+  );
+}
 
 const PAUSE_MS = 300;
 let pending = null;

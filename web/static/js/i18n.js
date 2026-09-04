@@ -17,6 +17,18 @@ export const texts = {
   site: {
     skip: "Aller au formulaire",
     skipToDays: "Aller aux journées",
+
+    // The link to the documentation page, on both pages that carry a search.
+    //
+    // **One key, and the whole phrase is the link.** The tempting shape was a
+    // sentence with "ici" hung off the end, which costs twice: a link labelled
+    // "ici" says nothing to anyone reading the links alone, and a sentence
+    // split across two keys reorders wrongly the first time it is translated.
+    // Set whole, it says where it goes and travels as one string.
+    //
+    // It sits under the warning on both pages, so it is worded as the answer to
+    // the question that warning raises rather than as a menu entry.
+    documentation: "Tout comprendre sur les données affichées",
   },
 
   // The banner asks before it explains. A site name at the top said what the
@@ -51,7 +63,26 @@ export const texts = {
     // terms it names as kept, and the sentence promises an exercise rather than
     // an outcome. It carries none of the forbidden words, and present.test.js
     // walks it like the rest.
-    promise: "Simulez la météo du futur. N'importe où. N'importe quand.",
+    // The asterisk that qualifies this sentence is not in it: `home.js` cuts the
+    // string before its full stop and puts the mark there, French typography
+    // setting a footnote call ahead of the punctuation. The note it refers to is
+    // `warning.note`, at the foot of the same page.
+    //
+    // **The line breaks are the string's own.** Where the promise breaks is
+    // composition, not wrapping: a `max-width` narrow enough to force three
+    // lines would break wherever the font happens to run out, and the font is
+    // not a given — Georgia stands in until EB Garamond arrives over the
+    // network, and sets the same sentence to a different length. So the breaks
+    // are written here, next to the words they separate, and `home.js` sets one
+    // line per "\n".
+    //
+    // Nothing is lost if that script never runs: HTML collapses a newline to a
+    // space, so the `data-text` slot falls back to the whole promise on one
+    // flowing line — which is the right thing to fall back to.
+    promise:
+      "Simulez la météo du futur.\n" +
+      "Consultez celle du passé.\n" +
+      "N'importe où. N'importe quand.",
   },
 
   form: {
@@ -150,7 +181,7 @@ export const texts = {
     ordinary:
       "1991 est proposée parce qu'elle a été mesurée comme ordinaire : " +
       "ni chaude ni froide pour sa période, sur cinq sites français. " +
-      "La période affichée, elle, n'a pas été choisie — elle peut porter une canicule.",
+      "La période affichée, elle, n'a pas été choisie ; elle peut porter une canicule.",
     rainAside:
       "Seules les températures sont superposées : l'année a été retenue sur la " +
       "température, sa pluie n'a rien de typique.",
@@ -184,6 +215,65 @@ export const texts = {
   // second is docs/science.md, which requires the emissions scenario to be
   // stated as a high hypothesis rather than an expected trajectory.
   warning: {
+    // The note the accueil's asterisk refers to, and it exists apart from the
+    // compact line below for two reasons rather than one.
+    //
+    // **The results page cannot afford it.** That page is fitted to be seen
+    // whole — measured at 893 px against a 960-pixel window — and this runs to
+    // four or five lines where `notAForecast` runs to two, which pushes the
+    // strip of days off the fold. The accueil has the room; the results page
+    // has the strip.
+    //
+    // **And they are not the same statement.** `notAForecast` denies, which is
+    // what rule 1 obliges on a screen already showing simulated days. This
+    // explains, to a reader who has not run a search yet and is deciding
+    // whether to.
+    //
+    // Two notes on the wording, both departures from what was drafted:
+    //
+    // "Au-delà des prochains jours" and not "Pour une date future". A date
+    // inside the fortnight ahead *is* future and *is* a forecast — that is the
+    // whole of the rule 1 amendment, and the earlier phrasing took it back. No
+    // number here either, for the reason `provenance.forecast` gives: how far
+    // the forecast reaches is a server constant.
+    //
+    // "du lieu et de la saison" and not "du lieu sélectionné". Nothing is
+    // selected when this is read: it sits under the promise, above a form
+    // nobody has filled in. And "saison" is the word rule 1 uses for what a
+    // date actually situates.
+    //
+    // The period is the one number here, and it is served rather than written
+    // — see `coverage` below. How far the forecast reaches still gets none, for
+    // the reason `provenance.forecast` gives.
+    //
+    // "du climat futur", flatly, and not "du climat, actuel ou futur". The
+    // hedge was wrong rather than cautious: the climate has no resting state,
+    // so a day past the forecast falls under the climate of its own date and
+    // never under today's. There is no branch to name.
+    // The period covered, which opens the note because that is what the
+    // asterisk qualifies — « N'importe quand* ».
+    //
+    // A function, because both ends are served. `/api/config` gives
+    // `coverage_start` and `coverage_end`, and a 1950 written here would go on
+    // saying 1950 the day the API said 1940: the copy rule 3 forbids, and the
+    // reason `bounds.js` takes the same two dates from the same place. It is
+    // also why this cannot be a `data-text` slot — `pages.test.js` refuses a
+    // key that is not a sentence — so `home.js` fills it when the config lands.
+    // Until then the slot is empty and the note still stands: the sentence
+    // after it says where the forecast stops without needing the period.
+    coverage: (from, to) => `${from} à ${to}.`,
+
+    note:
+      "Au-delà des prochains jours, la météo affichée n'est plus une prévision, " +
+      "mais une simulation.",
+
+    // The second line of the same note, and a line of its own rather than a
+    // fourth sentence: the first says where the boundary falls, this says what
+    // is on the far side of it. Two questions, two paragraphs.
+    noteMeaning:
+      "Cette météo simulée n'est pas le temps qu'il fera, mais le temps qu'il " +
+      "pourrait faire, compte tenu du climat futur, du lieu et de la saison.",
+
     notAForecast:
       "Simulation, pas une prévision. La date situe la journée dans une saison, " +
       "elle n'engage rien sur ce jour-là.",

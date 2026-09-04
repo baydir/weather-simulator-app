@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Weather Simulator&nbsp;: comment ça fonctionne</title>
+    <link rel="icon" href="/static/icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/static/css/style.css" />
+  </head>
+
+  <!--
+    The third page, and the only one that carries its own words.
+
+    **No module is loaded here, and that is the point.** The other two pages are
+    empty markup that a script fills from i18n.js; this one has nothing to
+    fetch, nothing to wire, and no slot that depends on a search. It renders
+    with JavaScript off, which is the right property for the page a visitor
+    reaches when they want to know whether to trust the rest.
+
+    **Its prose lives in this file rather than in the dictionary**, against the
+    habit the other two pages follow. The dictionary exists so that interface
+    strings do not scatter across page files, where a translation always misses
+    one. A document is not a scattered string: it is one unit of translation,
+    and it translates as a second file — documentation.en.html — rather than as
+    a few hundred keys. Several thousand words of structured prose in a
+    JavaScript object would cost the dictionary its whole readability and buy
+    nothing.
+
+    What that costs: `present.test.js` walks the dictionary to enforce CLAUDE.md
+    rule 1 and will never see this file. `tests/test_pages.py` reads it directly
+    instead.
+
+    **This page is on white, and no other is.** It inverts the site's two inks
+    rather than importing a palette — the near-black that is paper everywhere
+    else becomes the ink here. The two other pages are an instrument, a dark room
+    with a sky in it where the numbers are what glows; this one is the account of
+    that instrument and runs six screens, and the switch says you have stepped
+    out of the thing and into the explanation of it. No sky either, for a reason
+    of the same kind: under a column of prose a gradient stops being a photograph
+    and becomes something the eye has to read through.
+  -->
+  <body class="doc">
+    <header class="banner">
+      <h1>Comment connaître la météo n'importe où, n'importe quand&nbsp;?</h1>
+    </header>
+
+    <main class="doc-body">
+      <section>
+        <p>
+          Afin de sensibiliser aux effets tangibles du réchauffement climatique,
+          ce site affiche la météo de n'importe quelle ville, à n'importe quelle
+          date. Pourtant, vous entendez régulièrement que la météo n'est pas
+          fiable au-delà d'une quinzaine de jours, à juste titre. Comment en
+          afficher une sur des périodes allant jusqu'à plusieurs décennies&nbsp;?
+        </p>
+
+        <p>
+          En réalité, au-delà d'une quinzaine de jours, une journée avec les
+          grandeurs affichées (températures, précipitations, vent) a toutes les
+          chances de ne jamais se produire. Mais l'idée de ce site n'est pas de
+          savoir s'il faudra prendre son parapluie le 23 mars 2049, mais de
+          proposer une météo plausible. Plausible veut dire qu'une température
+          maximale de 17&nbsp;°C un 28 juillet l'est à Brest, et l'est beaucoup
+          moins à Perpignan.
+        </p>
+
+        <p>
+          Cependant, avec le réchauffement climatique, une météo plausible en
+          2050 n'est pas la même qu'en 2010. C'est ce que l'on cherche à montrer
+          ici&nbsp;: à quoi ressemblerait un hiver ou un été en 2049, jour par
+          jour, dans une atmosphère qui se réchauffe. Comme dit précédemment, on
+          ne pourra pas en conclure que «&nbsp;l'été 2044 sera dur&nbsp;», car
+          rien ne permet de prévoir qu'un tel été tombera en 2044 plutôt qu'en
+          2043 ou 2045. Mais en essayant plusieurs années dans une même ville,
+          vous verrez que la chaleur devient plus intense, que le froid se fait
+          plus rare, et qu'une semaine à plus de 35&nbsp;°C dans le nord de la
+          France finit par être ordinaire.
+        </p>
+      </section>
+
+      <section>
+        <h2>Comment cela fonctionne-t-il&nbsp;?</h2>
+
+        <p>
+          Les données sont issues d'<a href="https://open-meteo.com/">Open-Meteo</a>,
+          un service qui rassemble les sorties des grands centres météorologiques
+          mondiaux et les redistribue gratuitement. Il ne les produit pas&nbsp;: il
+          les collecte, les met au même format et les redistribue. Parmi ces
+          grands services météorologiques nationaux et internationaux, le Centre
+          européen pour les prévisions météorologiques à moyen terme (ECMWF)
+          fournit à lui seul trois des quatre jeux de données utilisés ici. C'est
+          ce qui permet à ce site de passer d'une période à l'autre sans changer
+          d'interlocuteur ni de format.
+        </p>
+
+        <p>
+          Ces données sortent de modèles météorologiques, qui découpent
+          l'atmosphère en mailles de quelques kilomètres et calculent, de proche
+          en proche, le déplacement des masses d'air, de la chaleur et de
+          l'humidité, en appliquant les lois de la physique. On obtient ainsi une
+          température ou une hauteur de pluie en tout point du globe, y compris
+          là où aucune station n'a jamais rien mesuré.
+        </p>
+
+        <p>
+          On cherche ici à afficher la météo n'importe quand, on utilise donc
+          trois modèles, un pour le passé, un pour le présent et le futur proche,
+          un pour le futur lointain.
+        </p>
+
+        <!--
+          The figure breaks out of the reading column: at the measure it would
+          be about five hundred pixels wide for eighty-three days, and the two
+          short ECMWF stretches would go back to being invisible — which is the
+          one thing this chart exists to prevent.
+
+          SVG rather than PNG. It is a line chart: 74 KB against 144, sharp at
+          any zoom, and matplotlib writes its text as paths, so it does not
+          depend on a font the reader may not have.
+
+          The alt text is not a caption. A caption says what to make of the
+          picture and is read by everybody; alt says what is in it, to somebody
+          who will never see it, and has to carry the four stretches and their
+          order because that is the whole content.
+        -->
+        <figure class="doc-figure">
+          <img
+            src="/static/img/coutures.svg"
+            alt="Températures maximale et minimale de Paris, jour par jour, de
+                 J-31 à J+51. Une bande de couleur au-dessus de la courbe indique
+                 le jeu de données qui a servi chaque jour, et la courbe prend la
+                 même couleur : réanalyse ERA5-Land jusqu'à environ J-6, analyse
+                 ECMWF IFS jusqu'à aujourd'hui, prévision ECMWF IFS jusqu'à
+                 J+14, puis simulation du modèle climatique MRI_AGCM3_2_S
+                 au-delà. Trois traits verticaux marquent ces trois passages."
+          />
+          <figcaption>
+            Les données affichées (ici les températures minimales et maximales)
+            sont fournies par quatre jeux de données, pour quatre
+            périodes&nbsp;: passé lointain (en bleu, de 1950 à environ J-6),
+            passé proche (en vert, jusqu'à aujourd'hui), futur proche (en
+            orange, jusqu'à J+14) et futur lointain (en rouge, jusqu'à 2050). Le
+            passé lointain est une réanalyse des données météo, le passé proche
+            l'analyse opérationnelle du même centre, le futur proche une
+            prévision classique. Seul le futur lointain est une simulation issue
+            d'un modèle climatique&nbsp;: ce n'est pas le temps qu'il fera, mais
+            une trajectoire plausible sous un scénario d'émissions haut.
+          </figcaption>
+        </figure>
+
+        <h3>Le passé (1950 à aujourd'hui)&nbsp;: ERA5, un modèle ajusté avec les
+          observations</h3>
+
+        <p>
+          Pour restituer le temps qu'il a fait en tout point du globe, on ne se
+          contente pas de rassembler les relevés&nbsp;: ils sont trop épars, et
+          personne n'a mesuré la température au milieu de l'Atlantique en 1963.
+          On fait donc tourner un modèle météorologique sur toute la période, et
+          on le corrige au fur et à mesure avec toutes les observations
+          disponibles (stations au sol, ballons-sondes, bouées, satellites,
+          etc.). Le modèle comble ce que les observations ne couvrent
+          pas&nbsp;; ces dernières l'ajustent aux mesures réelles et l'empêchent
+          de dériver au cours du temps. Le résultat s'appelle une réanalyse.
+        </p>
+
+        <p>
+          Il faut noter que là où les observations sont denses, une réanalyse
+          s'approche de ce qui a été mesuré&nbsp;; ailleurs, elle peut s'en
+          éloigner. Et ce n'est jamais un relevé de station&nbsp;: c'est une
+          valeur moyenne sur une maille de plusieurs kilomètres, qui lisse un
+          fond de vallée avec les plateaux qui l'entourent.
+        </p>
+
+        <p>
+          La réanalyse employée ici s'appelle ERA5 pour les précipitations et
+          ERA5-Land pour les températures. Elles remontent à 1950 et travaillent
+          sur une maille de 25 km pour la première, de 11 km pour la seconde.
+        </p>
+
+        <p>
+          Une réanalyse demande beaucoup de calcul, et accuse environ une semaine
+          de retard sur le présent. Cette semaine manquante est comblée par
+          l'analyse d'ECMWF&nbsp;: le même recalage sur les observations, mais
+          mené dans la journée, avec les seules observations arrivées à temps.
+          Sa maille est de 9 km, et elle est disponible tout de suite.
+        </p>
+
+        <h3>Futur proche (aujourd'hui à J+14)&nbsp;: une vraie prévision
+          météorologique</h3>
+
+        <p>
+          Pour le jour présent et les quinze suivants, ce site affiche une
+          prévision normale, utilisant un modèle du même genre que ceux des
+          bulletins météo classiques, avec lesquels vous pouvez comparer les
+          prévisions des prochains jours. Elle part de l'état de l'atmosphère
+          observé ce matin et le fait avancer dans le temps. Comme toute
+          prévision météo, sa qualité se dégrade rapidement au fur et à mesure
+          des jours. C'est une limite intrinsèque aux systèmes chaotiques&nbsp;:
+          deux états de l'atmosphère presque identiques finissent par diverger
+          complètement, en une quinzaine de jours. Passé ce délai, il ne subsiste
+          plus rien de ce que l'on savait du temps d'aujourd'hui. Au-delà de
+          quinze jours, ce qui est affiché change de nature&nbsp;: on passe de la
+          prévision à la simulation.
+        </p>
+
+        <h3>Futur lointain (J+14 à 2050)&nbsp;: une simulation climatique jour par
+          jour</h3>
+
+        <p>
+          Ici, on ne part plus de l'atmosphère d'aujourd'hui&nbsp;: le modèle n'en
+          sait rien, et ne le prétend pas. On fait tourner un modèle de climat,
+          qui calcule l'évolution du système jour par jour sur des décennies à
+          partir de la composition de l'atmosphère (gaz à effet de serre,
+          aérosols, activité solaire, etc.). Il produit des journées, avec leurs
+          vagues de chaleur, leurs semaines pluvieuses et leurs redoux d'hiver,
+          mais aucune ne prétend correspondre à une date du calendrier. On peut
+          simplement dire&nbsp;: voilà à quoi peut ressembler un mois de juillet à
+          cet endroit, dans le climat de ces années-là.
+        </p>
+
+        <p>
+          Le modèle employé ici est le <span class="mono">MRI_AGCM3_2_S</span> et
+          vient de CMIP6, le programme international de comparaison de modèles sur
+          lequel s'appuient les rapports du GIEC, et sa maille est ramenée à 10 km
+          par Open-Meteo.
+        </p>
+
+        <p>
+          Open-Meteo en propose d'autres, et celui-ci a été retenu parce que
+          c'est le seul dont les statistiques restent proches de celles de la
+          réanalyse partout. Sur dix sites de climats contrastés, on a comparé la
+          dispersion des températures, la fréquence des jours de pluie et les
+          extrêmes de chaud et de froid, puis classé les cinq modèles à chaque
+          fois. <span class="mono">MRI_AGCM3_2_S</span> arrive premier ou
+          deuxième sur huit sites et dernier sur aucun. Chacun des quatre autres
+          se trompe lourdement sur au moins un&nbsp;: à Singapour, deux d'entre
+          eux ne font pas la mousson&nbsp;; à Bamako, un troisième surestime de
+          7&nbsp;°C les journées les plus chaudes.
+        </p>
+
+        <p>
+          Toutes ces données n'existent que sous un seul scénario d'émissions,
+          proche de ce que l'on appelle <span class="mono">RCP8.5</span>, le plus
+          élevé&nbsp;: il a été conçu pour explorer un futur à risque, non pour
+          décrire la trajectoire attendue. Néanmoins,
+          <a href="https://openmeteo.substack.com/p/climate-change-api">Open-Meteo
+          précise</a> que jusqu'en 2050, les trajectoires climatiques sont proches
+          les unes des autres quel que soit le scénario. La différence se fait
+          sentir pour les décennies au-delà de 2050, non couvertes ici.
+        </p>
+
+        <p>
+          La limite qui pèse le plus ici n'est donc pas le scénario, mais le
+          modèle&nbsp;: il n'y en a qu'un, et une seule sortie ne dit pas de
+          combien une autre s'en écarterait. À l'horizon 2050, cet écart-là est
+          le plus grand des deux.
+        </p>
+      </section>
+
+      <section>
+        <h2>Le traitement de données proposé par le site</h2>
+
+        <h3>L'aspect du ciel (ensoleillé, nuageux, pluvieux)</h3>
+
+        <p>
+          Malgré le travail d'Open-Meteo, chaque modèle ne fournit pas forcément
+          toutes les grandeurs météo. Par exemple, l'aspect du ciel n'est pas
+          fourni par le modèle sur le futur lointain&nbsp;: il ne dit pas
+          directement si le ciel est dégagé, nuageux ou pluvieux. Le ciel est
+          donc reconstruit de la même manière quelle que soit la date, à partir
+          d'une seule règle appliquée à l'identique sur les quatre
+          sources&nbsp;:
+        </p>
+
+        <ol class="rules">
+          <li>
+            précipitations d'au moins 1 mm <em>et</em> température moyenne sous
+            1,5&nbsp;°C → <strong>neige</strong>&nbsp;;
+          </li>
+          <li>sinon, précipitations d'au moins 1 mm → <strong>pluie</strong>&nbsp;;</li>
+          <li>sinon, nébulosité d'au moins 70 % → <strong>couvert</strong>&nbsp;;</li>
+          <li>sinon, nébulosité d'au moins 30 % → <strong>nuageux</strong>&nbsp;;</li>
+          <li>sinon → <strong>dégagé</strong>.</li>
+        </ol>
+
+        <p>
+          Le seuil de 1,5&nbsp;°C a été calé sur trente-cinq hivers à Strasbourg
+          et Briançon, contre la hauteur de neige réellement tombée.
+        </p>
+
+        <p>
+          Cette règle simplifie et donc appauvrit&nbsp;: une bruine et un orage
+          de quarante millimètres reçoivent la même classe, les cumuls
+          journaliers ne portant pas de quoi les distinguer, et aucune gradation
+          d'intensité n'est donc proposée. Une nébulosité moyenne sur la journée
+          ne dit pas non plus si le ciel est resté couvert du matin au soir ou
+          s'il a alterné. Mais elle a le mérite de reconstituer un aspect du ciel
+          pour donner au site une crédibilité sur la météo affichée au jour le
+          jour.
+        </p>
+
+        <h3>La correction de nébulosité</h3>
+
+        <p>
+          Comparé à la réanalyse sur la même période, le modèle climatique
+          produit un ciel trop clair (de 8 à 11 points de nébulosité en moins, en
+          moyenne sur l'année). Ce biais est saisonnier (à Brest, 5 points en
+          décembre contre 13 en août) et géographique (en mai, 8 points à Brest
+          et 15 à Perpignan). Une météo future présentée sans correction serait
+          artificiellement ensoleillée.
+        </p>
+
+        <p>
+          La correction est calculée à l'avance et embarquée dans le site. Pour
+          chaque nœud d'un réseau mondial au pas d'un demi-degré, et pour chacun
+          des douze mois, elle compare la distribution complète des
+          nébulosités&nbsp;: la réanalyse sur 1985-2014, le modèle sur la même
+          période, le modèle sur 2021-2050. Le premier écart donne le biais à
+          retirer, le second la tendance à conserver. À la recherche, le site
+          interpole entre les quatre nœuds entourant le lieu demandé.
+        </p>
+
+        <p>
+          Cette correction n'a pas encore été calculée partout. Le réseau se
+          remplit progressivement, et une recherche portant sur un lieu qui n'y
+          figure pas encore est refusée pour les dates lointaines plutôt que
+          servie sans correction. Ce refus ne va pas plus loin&nbsp;: le passé
+          n'appelle aucune correction, et la prévision des quatorze jours à venir
+          non plus. Ces deux régimes sont donc consultables partout dans le
+          monde.
+        </p>
+      </section>
+
+      <section>
+        <h2>Les limites</h2>
+
+        <p>
+          Toute modélisation essaie, par définition, de décrire au mieux la
+          réalité au prix d'une simplification nécessaire pour quantifier les
+          phénomènes météo. Il faut ainsi avoir conscience que les résultats
+          présentés, passés ou futurs, s'écartent (raisonnablement) de la
+          réalité. Voici quelques-uns des défauts recensés&nbsp;:
+        </p>
+
+        <ul class="rules">
+          <li>
+            <strong>Une maille de 9 à 25 km selon la source.</strong> Les
+            grandeurs sont moyennées sur une zone de cette taille. Orages,
+            brouillards de vallée et effets de relief fins ne sont pas
+            représentés.
+          </li>
+          <li>
+            Pour la même raison, les phénomènes particuliers comme l'inversion
+            thermique ou l'îlot de chaleur urbain ne sont pas pris en compte.
+            L'état de l'art s'attend à ce que les extrêmes de froid et de chaud
+            en soient sous-estimés, sans que ce site l'ait mesuré.
+          </li>
+          <li>
+            <strong>Les cumuls de pluie sont exploitables, les intensités ne le
+            sont pas.</strong> Les réanalyses surestiment les pluies faibles et
+            le nombre de jours pluvieux, et sous-estiment les épisodes intenses.
+          </li>
+        </ul>
+
+        <p>
+          Le relevé complet des limites, les mesures qui les établissent et les
+          références sont publiés avec le code.
+        </p>
+      </section>
+
+      <section class="credits">
+        <h2>Sources et crédits</h2>
+
+        <dl class="pairs">
+          <dt>Données</dt>
+          <dd><a href="https://open-meteo.com/">Open-Meteo</a></dd>
+
+          <dt>Réanalyses</dt>
+          <dd>ERA5 et ERA5-Land, ECMWF / Copernicus Climate Change Service</dd>
+
+          <dt>Prévision et analyses</dt>
+          <dd>ECMWF IFS</dd>
+
+          <dt>Modèle climatique</dt>
+          <dd>
+            <span class="mono">MRI_AGCM3_2_S</span>, Meteorological Research
+            Institute (Japon), protocole CMIP6 / HighResMIP
+          </dd>
+        </dl>
+      </section>
+
+      <p class="doc-back"><a href="/">Retour à l'accueil</a></p>
+    </main>
+  </body>
+</html>

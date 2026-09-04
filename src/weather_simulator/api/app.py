@@ -253,6 +253,13 @@ def mount_web(target: FastAPI, directory: Path = WEB) -> bool:
         can be shared and the back button works without a line of script."""
         return FileResponse(directory / "pages" / "results.html", headers=REVALIDATE)
 
+    @target.get("/documentation", include_in_schema=False)
+    def documentation() -> FileResponse:
+        """Where the days come from, at length. Loads no module and reads no
+        endpoint — it is the page a visitor opens to decide whether to trust the
+        other two, so it renders with JavaScript off."""
+        return FileResponse(directory / "pages" / "documentation.html", headers=REVALIDATE)
+
     return True
 
 

@@ -35,7 +35,22 @@
     -->
     <header class="banner">
       <h1 id="prompt" class="prompt"></h1>
-      <p class="tagline" data-text="home.promise"></p>
+      <!--
+        The promise, and the asterisk that qualifies it.
+
+        **The slot is declared here and the mark is placed by script**, which is
+        not the arrangement the rest of the page uses and has one reason. The
+        call goes *before* the full stop — « N'importe quand*. » — so it falls
+        inside the sentence, and a node written here could only ever follow it.
+        `home.js` cuts the filled text where `beforeFinalPunctuation` says and
+        puts the three pieces back.
+
+        The `data-text` stays all the same: it is what `pages.test.js` checks the
+        dictionary against, and it is what shows if the enhancement above it ever
+        fails — the whole promise, unmarked, which is the right thing to fall
+        back to.
+      -->
+      <p class="tagline" id="promise" data-text="home.promise"></p>
     </header>
 
     <main>
@@ -165,8 +180,29 @@
       </form>
     </main>
 
+    <!--
+      The warning, and immediately under it the place that explains it. A
+      visitor who reads "simulation, pas une prévision" and wants to know what
+      that means should not have to run a search first to find out.
+    -->
     <footer class="banner">
-      <p class="tagline" data-text="warning.notAForecast"></p>
+      <!--
+        The note the asterisk above refers to.
+
+        The mark is `aria-hidden`: it is a visual back-reference and nothing
+        else. Read aloud it would be "astérisque" in front of a sentence that
+        already stands on its own — the pairing is for the eye, and the eye is
+        what it is left to.
+      -->
+      <p class="tagline">
+        <span class="note-mark" aria-hidden="true">*</span
+        ><span id="coverage"></span
+        ><span data-text="warning.note"></span>
+      </p>
+      <p class="tagline" data-text="warning.noteMeaning"></p>
+      <p class="doc-link">
+        <a href="/documentation" data-text="site.documentation"></a>
+      </p>
     </footer>
   </body>
 </html>

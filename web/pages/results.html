@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Weather Simulator — résultats</title>
+    <title>Weather Simulator&nbsp;: résultats</title>
     <link rel="icon" href="/static/icon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/static/css/style.css" />
     <script type="module" src="/static/js/results.js"></script>
@@ -35,6 +35,21 @@
         <p data-text="warning.notAForecast"></p>
         <p data-text="warning.scenario"></p>
       </aside>
+
+      <!--
+        The way out to the long explanation, at the top and next to the warning
+        it answers.
+
+        **Outside the aside, deliberately.** That block is hidden whenever the
+        range stops short of the climate model, and a link folded into it would
+        vanish on every past-only search — precisely the searches whose reader
+        has no warning to prompt the question and most needs the offer. Here it
+        is one line under the warning when there is one, and the first line of
+        the page when there is not.
+      -->
+      <p class="doc-link">
+        <a href="/documentation" data-text="site.documentation"></a>
+      </p>
 
       <p id="wait" class="status" aria-live="polite" data-text="results.loading"></p>
       <p id="failure" class="failure" role="alert" hidden></p>

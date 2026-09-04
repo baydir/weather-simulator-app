@@ -34,6 +34,12 @@ dev = [
 screenshots = [
     "playwright",
 ]
+# Drawing a series, scripts/model_seams/. Out of dev for the same reason as the
+# two above: nothing in the test suite draws anything, and the runtime serves
+# JSON — every chart the visitor sees is drawn by the browser.
+charts = [
+    "matplotlib",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]

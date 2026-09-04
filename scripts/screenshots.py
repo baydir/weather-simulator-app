@@ -227,9 +227,15 @@ def frame(page: Page, size: dict[str, int]) -> None:
     The page itself does not overflow: ``body.scrollWidth`` is the viewport's.
     Left alone, the screenshot came out five times too wide and everything in it
     was unreadably small.
+
+    The cap was 3000 px, which was the height of the tallest page there was.
+    The documentation page runs past that and came out beheaded at the foot;
+    8000 clears it with room. Nothing else moves — every other view measures
+    under 3000 and is capped by its own height, not by this number, which is
+    only here so a runaway page cannot ask for a screenshot of a gigabyte.
     """
     height = page.evaluate("document.body.scrollHeight")
-    page.set_viewport_size({"width": size["width"], "height": min(height, 3000)})
+    page.set_viewport_size({"width": size["width"], "height": min(height, 8000)})
 
 
 def results_url(base: str, place: dict[str, str], start: date, end: date) -> str:
@@ -250,6 +256,13 @@ def home(page: Page, base: str) -> None:
     page.goto(base)
     # The bounds arrive from /api/config; until they do, the form is half-built.
     page.wait_for_function("() => document.getElementById('debut').min !== ''")
+
+
+def documentation(page: Page, base: str) -> None:
+    """The third page. Nothing to wait for that `goto` has not already waited on:
+    it loads no module, fetches nothing, and is complete the moment it parses —
+    which is the property being photographed as much as the layout is."""
+    page.goto(f"{base}/documentation")
 
 
 def home_candidates(page: Page, base: str) -> None:
@@ -363,6 +376,8 @@ VIEWS = {
     "home-candidates": (home_candidates, DESKTOP, "light"),
     "home-season": (home_season, DESKTOP, "light"),
     "home-dark": (home, DESKTOP, "dark"),
+    "documentation": (documentation, DESKTOP, "light"),
+    "documentation-narrow": (documentation, PHONE, "light"),
     "results": (results, DESKTOP, "light"),
     "results-dark": (results, DESKTOP, "dark"),
     "results-seam": (results_seam, DESKTOP, "light"),

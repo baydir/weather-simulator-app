@@ -100,10 +100,15 @@
   --space: 4px;
   --width: 1100px;
   --measure: 62ch;
-  /* The home column: the promise and the form, deliberately narrower than the
-     reading measure. They are a handful of short lines and three fields, not
-     prose — set to 62ch they sprawl under a heading that runs edge to edge. */
-  --column: 30rem;
+  /* The home column: the promise, the form, and the note at the foot. Narrower
+     than the reading measure, and deliberately — set to 62ch they sprawl under
+     a heading that runs edge to edge.
+     It was 30rem while it held short lines and three fields only. The note is
+     the first prose to join it, and 30rem broke it over four lines with three
+     words alone on the last; 33rem carries it in three. That is the ceiling
+     rather than a preference — a hair more and the column passes the reading
+     measure it is defined against. */
+  --column: 33rem;
   --card: 13rem;
 
   --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -471,6 +476,19 @@ body.results .warning {
   margin-top: calc(var(--space) * 8);
 }
 
+/* The link out to the documentation, on this page only.
+ *
+ * On the accueil it sits inside the centred footer banner, set in the serif
+ * that carries the whole of that page. Here it lands between the warning and
+ * the strip, among blocks the results page sets in the sans — left-aligned on
+ * the same measure, at the warning's own size, so it reads as one more line of
+ * that block rather than as something pasted under it. */
+body.results .doc-link {
+  text-align: left;
+  font-family: var(--font);
+  font-size: 0.9375rem;
+}
+
 body.results .band {
   margin-top: calc(var(--space) * 8);
 }
@@ -568,8 +586,47 @@ body.home .sky::after {
  * instead of pale. Burnt brown rather than black: it belongs to the sky it sits
  * on. Measured 6.6:1 against #e28f5b, where the page's usual muted ink gave 1.5.
  */
-body.home footer .tagline {
+body.home footer .tagline,
+body.home footer .doc-link {
   color: #331708;
+}
+
+/* The note takes the column the form takes, and by reading the same token
+   rather than by landing on the same number.
+ *
+ * `--column` is what the promise and the search are set to, and this is the
+ * third block of running text on the page: left at `--measure` it drew a
+ * second, wider edge under a page that has exactly one. The two widths were
+ * within thirty pixels of each other, which is worse than a frank difference —
+ * it reads as a misalignment rather than as an intention.
+ *
+ * `pretty` and not `balance`. Balance shrinks the block to even the lines,
+ * which is right for two or three words under a heading and wrong here: it
+ * would pull the note back off the edge that was just given to it. `pretty`
+ * leaves the width alone and only refuses the orphan on the last line. */
+body.home footer .tagline {
+  max-width: var(--column);
+  text-wrap: pretty;
+}
+
+/* The note runs to two paragraphs — where the boundary falls, then what lies on
+   the far side of it — and the second is the next line of the same note, not a
+   new subject. `.tagline` opens on twice `--space`, which is the gap that says
+   "something else starts here"; halved, it separates the two sentences and
+   keeps them one block. Written on the sibling rather than on a class of its
+   own: what earns the tighter gap is following the first, and nothing else. */
+body.home footer .tagline + .tagline {
+  margin-top: var(--space);
+}
+
+/* The link under it lands on the same bright band, so it takes the same ink
+   rather than the page's pale one — `a { color: var(--ink) }` would otherwise
+   put ivory on orange, at about 1.5:1. Its underline is drawn in that ink too:
+   `--rule-strong` is chosen against the near-black paper and has nothing to do
+   here. */
+body.home footer .doc-link a {
+  color: inherit;
+  text-decoration-color: currentColor;
 }
 
 /* The banner sits lower than the page's own top padding would put it, so the
@@ -633,6 +690,7 @@ main {
 
 .tagline,
 .warning,
+.doc-link,
 .provenance,
 .failure,
 .search {
@@ -750,6 +808,40 @@ h1 {
 .prompt + .tagline {
   font-size: 1.3125rem;
   text-wrap: balance;
+}
+
+/*
+ * The footnote mark, at both ends of the reference.
+ *
+ * The promise claims something — simulate the weather of the future, anywhere,
+ * any time — and the sentence at the foot of the page is the qualification of
+ * that claim. An asterisk is the shortest way of saying so; it costs the
+ * headline nothing and it puts the caveat one click away instead of one scroll
+ * of hope.
+ *
+ * Neither end is a link. The note sits at the foot of a page 960 pixels tall,
+ * half a screen from the promise on any ordinary window, and the star already
+ * says which way to look; an anchor would have bought a target, a focus stop
+ * and an accessible name for a scroll the reader was going to make anyway.
+ * Both marks are `aria-hidden` in the markup for the matching reason — read
+ * aloud, a bare star is "astérisque", pointing at nothing.
+ *
+ * `line-height: 0` is not cosmetic. A raised glyph is still part of its line
+ * box, and left with the inherited leading it grows the line it sits on — the
+ * promise would gain a couple of pixels of height and the form under it would
+ * shift down, on the one page whose vertical placement is measured in `vh`.
+ */
+.note-ref,
+.note-mark {
+  font-size: 0.68em;
+  vertical-align: super;
+  line-height: 0;
+}
+
+/* The mark precedes the note rather than following it, so the gap goes on the
+   right. Set in `em` so it tracks the glyph and not the page. */
+.note-mark {
+  margin-right: 0.35em;
 }
 
 #count:not(:empty)::before {
@@ -1798,6 +1890,288 @@ body.results [data-band="8"] { --band: #16100c; --band-ink: #fff; }
   margin: 0;
   color: var(--ink);
   font-family: var(--font-display);
+}
+
+/* --- the documentation page ------------------------------------------------ */
+
+/*
+ * An article, on white. The one page of this site that is read rather than used.
+ *
+ * **It inverts the two inks and imports nothing.** `--paper` becomes white and
+ * `--ink` becomes the near-black that is the paper everywhere else — the page is
+ * the site's own palette turned over, which is why every rule above it keeps
+ * working untouched. Measured on the white: the ink at 18,4:1, the soft ink at
+ * 5,9:1. Only these five tokens move, and `color-scheme`, without which the
+ * browser draws its own scrollbars dark in the middle of a white page.
+ *
+ * **Why invert at all.** The two other pages are an instrument: a dark room with
+ * a sky in it, where the numbers are what glows. This one is the explanation of
+ * that instrument, and it is six screens long. The switch to white is the
+ * clearest available way of saying you have stepped out of the thing and into
+ * the account of it — and it buys plain readability at length, which no amount
+ * of ink chosen against a gradient was going to buy.
+ *
+ * **No sky, for the same reason.** Under six screens of text a gradient stops
+ * being a photograph and becomes something the eye reads through.
+ *
+ * **The serif carries the body text here**, where elsewhere it carries only
+ * titles and figures. Not a break with the two registers but the rule applied:
+ * the serif is for what the visitor reads as content, and on this page the
+ * content *is* running text. The sans keeps what it always has — the table's
+ * column heads and the credit labels, which name things rather than say them.
+ *
+ * **Both faces are variable**, 400–800 and 400–700, so weight here is drawn and
+ * not synthesised. That is what lets the hierarchy be carried by weight in the
+ * way a publication's is, instead of by size alone.
+ */
+
+body.doc {
+  color-scheme: light;
+
+  --paper: #ffffff;
+  --ink: #17140f;
+  --ink-soft: #6b6459;
+  --rule: #e5e0d6;
+  --rule-strong: #c4bdb0;
+
+  /* The face *and* the size are set on the page, not on the article inside it,
+     and that is what holds the column straight.
+
+     `--measure` is 62ch, and a `ch` is measured in the font of the element the
+     max-width lands on — its family and its size both. Set on `.doc-body`
+     alone, the header resolved 62ch of Inter at 16 px and the article 62ch of
+     Garamond at 19 px: two different widths, each centred, so the title sat to
+     the left of its own text twice over. Declared here, every block on the page
+     computes the same column.
+
+     The sans keeps the three places that name things rather than say them: the
+     table's column heads, the credit labels, and the way back. */
+  font-family: var(--font-display);
+  font-size: 1.3125rem;
+  line-height: 1.7;
+
+  /* The measure stays `:root`'s 62ch and the type carries the change, which is
+     not what it looked like it should be.
+     `ch` is the width of the "0" glyph, and EB Garamond's digits are wide
+     against its lowercase: 62ch renders about 83 characters a line, not 62.
+     Measured on this page's own prose, 62ch gave 565 px at 19 px and 685 px at
+     68ch — 91 characters, well past the comfortable range. Going to 21 px on
+     the same 62ch gives 625 px at the same 83 characters: bigger type, a wider
+     column, and a line no longer than the one the page already had. */
+}
+
+body.doc > header.banner,
+body.doc > main {
+  max-width: var(--measure);
+}
+
+/* The attack of a piece, not the banner of a page: the title sits on the left
+   margin, the standfirst under it, and the text starts. `.banner` centres, and
+   this is the one place that is wrong — a centred title reads as a masthead,
+   which is what the accueil wants and an article does not. */
+body.doc > header.banner {
+  text-align: left;
+}
+
+body.doc h1 {
+  font-size: 2.5rem;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.005em;
+}
+
+/* The one hairline on the page, between the standfirst and the first section.
+   The face and the size come from `body.doc`, for the reason given there. */
+.doc-body {
+  margin-top: calc(var(--space) * 12);
+  padding-top: calc(var(--space) * 10);
+  border-top: 1px solid var(--rule);
+}
+
+/* Space, not a rule, between two sections. The page has one hairline — under
+   the title — and adding six more would turn an article back into a document
+   with headed compartments. At this leading the gap alone reads as a break. */
+.doc-body section + section {
+  margin-top: calc(var(--space) * 16);
+}
+
+.doc-body h2 {
+  margin: 0 0 calc(var(--space) * 5);
+  font-size: 1.875rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.005em;
+}
+
+.doc-body p {
+  margin: calc(var(--space) * 5) 0 0;
+}
+
+.doc-body h2 + p {
+  margin-top: 0;
+}
+
+/* The subsections of "comment cela fonctionne", one per model. Set apart from
+   the body by weight and a little size, and by the air above rather than by a
+   rule: they sit inside a section, and a hairline would read as ending it. */
+.doc-body h3 {
+  margin: calc(var(--space) * 11) 0 calc(var(--space) * 4);
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+/*
+ * The figure, wider than the text it sits in.
+ *
+ * At the reading measure it comes out about five hundred pixels across for
+ * eighty-three days, and the two short ECMWF stretches go back to being
+ * invisible — which is the one thing the chart exists to prevent. So it breaks
+ * out, capped at 60rem and at the width the body's own padding leaves.
+ *
+ * The negative inline margin is what breaks it out: `width` alone would overflow
+ * to the right, `auto` margins collapse to zero once the child is wider than its
+ * parent. Half the difference, on each side, and the figure stays centred on the
+ * column it escapes.
+ */
+.doc-figure {
+  /* Named `doc-figure` and not `figure`: `.chart` was the first try and it is
+     taken — the results page paints its own SVG chart with it, background
+     included, and this page's `--raised` is still the near-black of `:root`.
+     The caption came out white-on-black inside a white page, which is what a
+     one-sheet stylesheet costs when two pages reach for the same word. */
+  --figure: min(60rem, 100vw - var(--space) * 14);
+  width: var(--figure);
+  margin: calc(var(--space) * 9) calc((100% - var(--figure)) / 2) 0;
+}
+
+.doc-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* The caption is read by everybody and says what to make of the picture; the
+   `alt` says what is in it, to somebody who will never see it. Neither replaces
+   the other, and this one carries the two sentences rule 1 obliges.
+ *
+ * **It fills the figure, in columns rather than in lines.** Held at the reading
+ * measure it drew a narrow block under a drawing three times its width, which
+ * reads as a mistake once the caption runs past two sentences; set flat across
+ * 60rem it would run to about a hundred and thirty characters a line, and the
+ * eye loses the return. Columns give both — the figure's width, and lines the
+ * length of the ones above.
+ *
+ * `column-width` and not `columns: 2`: the count is then whatever fits, so the
+ * phone gets one column without a media query, and a caption short enough not
+ * to need two stays on one. */
+.doc-figure figcaption {
+  margin: calc(var(--space) * 4) 0 0;
+  column-width: 26rem;
+  column-gap: calc(var(--space) * 8);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+
+/* Numbered where the order is the rule — the sky decision tree is read top to
+   bottom and the first match wins — and bulleted where it is a list of three
+   independent things. One set of spacing serves both. */
+.rules {
+  margin: calc(var(--space) * 5) 0 0;
+  padding-left: calc(var(--space) * 6);
+}
+
+.rules li + li {
+  margin-top: calc(var(--space) * 3);
+}
+
+/* Model and scenario identifiers, which are names of things and not words. The
+   family is the browser's own: no fourth file is loaded to set four short
+   strings. */
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+
+.credits .pairs dt {
+  font-family: var(--font);
+  font-size: var(--label-size);
+  font-weight: 500;
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  /* The label sits on the first line of its value, which is set larger. */
+  padding-top: 0.45em;
+}
+
+.doc-back {
+  margin: calc(var(--space) * 16) 0 0;
+  padding-top: calc(var(--space) * 6);
+  border-top: 1px solid var(--rule);
+  font-family: var(--font);
+  font-size: 0.9375rem;
+}
+
+/* The link to this page, on the two that carry a search. One line of the same
+   soft ink as the warning it follows, and it never competes with it.
+
+   The margin only ever applies on the results page: in the home footer the
+   warning and this sit inside `.banner`, whose `p + p` rule is more specific
+   and sets the spacing there. */
+.doc-link {
+  /* `width` as well as `max-width`, and it is not redundant. The results page
+     lays its `main` out as a column flex container, and a flex item with an
+     auto margin across the axis stops stretching and shrinks to its content —
+     so the box came out as wide as the sentence and centred itself, sitting
+     indented under a warning that starts at the margin. Declaring the width
+     gives it the same box `.warning` gets. Nothing changes on the accueil,
+     where the footer is an ordinary block. */
+  width: 100%;
+  margin: calc(var(--space) * 5) auto 0;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: var(--ink-soft);
+}
+
+@media (max-width: 34rem) {
+  body.doc h1 {
+    font-size: 2rem;
+  }
+
+  .doc-body h2 {
+    font-size: 1.5rem;
+  }
+
+  .doc-body h3 {
+    font-size: 1.25rem;
+  }
+
+  /* On the page, not on the article, so the column stays one width — see the
+     note on `body.doc`. */
+  body.doc {
+    font-size: 1.125rem;
+  }
+
+  /* The figure stops shrinking and starts scrolling, which is the sheet's own
+     habit — the strip of days and the table above it both do this.
+     Fitted to a phone it is 340 pixels across for eighty-three days, and its
+     axis labels come out at four pixels: the shape survives, every word on it
+     does not. Held at 40rem it needs one sideways push and can be read. */
+  .doc-figure {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+
+  .doc-figure img {
+    min-width: 40rem;
+  }
+
+  /* The caption is prose and stays put: it must not travel with the drawing. */
+  .doc-figure figcaption {
+    position: sticky;
+    left: 0;
+  }
 }
 
 /* --- the results page, laid on its heat ------------------------------------ */

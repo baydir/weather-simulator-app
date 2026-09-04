@@ -145,7 +145,21 @@ describe("the vocabulary, rule 1", () => {
   // What the ban still covers, untouched: every string describing a simulated
   // day, and "il fera" everywhere — a forecast states a likelihood, not what
   // the day will be.
-  const ALLOWED = ["warning.notAForecast", "warning.scenario", "provenance.forecast"];
+  // `warning.note` is the fourth, and it is the same exemption as the first for
+  // the same reason: it names the forecast in order to say where it stops, and
+  // it names "le temps qu'il fera" in order to say that this is not it. A
+  // denial has to be able to speak the thing it denies.
+  //
+  // `warning.noteMeaning` is the fifth, and it is the second half of the
+  // fourth: the note was split in two the day the covered period opened it, and
+  // "le temps qu'il fera" went with the half that denies it.
+  const ALLOWED = [
+    "warning.note",
+    "warning.noteMeaning",
+    "warning.notAForecast",
+    "warning.scenario",
+    "provenance.forecast",
+  ];
 
   /** Every string in the dictionary, including those a function returns. */
   function* strings(node, path = "") {
@@ -160,7 +174,7 @@ describe("the vocabulary, rule 1", () => {
     }
   }
 
-  it("no string speaks of a forecast, but the two that deny one", () => {
+  it("no string speaks of a forecast, but those written to deny one", () => {
     for (const [path, text] of strings(texts)) {
       if (ALLOWED.includes(path)) continue;
       for (const word of FORBIDDEN) {
@@ -179,5 +193,78 @@ describe("the vocabulary, rule 1", () => {
     for (const [path, text] of strings(texts)) {
       assert.ok(!text.toLowerCase().includes("rafale"), `"rafale" in texts.${path}`);
     }
+  });
+});
+
+/**
+ * Where a footnote call goes in a sentence.
+ *
+ * French typography puts it before the full stop, so the promise on the accueil
+ * has to be cut rather than followed. The cut is arithmetic on a string, which
+ * is why it lives here and not in `home.js` with the node that carries it.
+ */
+describe("the footnote call", () => {
+  it("goes before the full stop, not after it", () => {
+    assert.deepEqual(present.beforeFinalPunctuation("N'importe quand."), {
+      body: "N'importe quand",
+      tail: ".",
+    });
+  });
+
+  it("goes before the whole run, not into the middle of it", () => {
+    // An ellipsis is three marks and "… ?" is more. A call belongs ahead of the
+    // lot; splitting one would put a star inside the punctuation.
+    assert.equal(present.beforeFinalPunctuation("Vraiment…").tail, "…");
+    assert.equal(present.beforeFinalPunctuation("Vraiment...").tail, "...");
+    assert.equal(present.beforeFinalPunctuation("Vraiment ?!").tail, "?!");
+  });
+
+  it("leaves a sentence with no punctuation whole", () => {
+    // No French sentence ends this way, but a key being written might. The mark
+    // then lands at the end, which is the only place left.
+    assert.deepEqual(present.beforeFinalPunctuation("Sans point"), {
+      body: "Sans point",
+      tail: "",
+    });
+  });
+
+  it("cuts the promise the accueil actually carries", () => {
+    // The one that matters: the dictionary keeps its sentences whole, and this
+    // is what the page makes of the last of them — the line the call sits on.
+    const last = texts.home.promise.split("\n").at(-1);
+    const { body, tail } = present.beforeFinalPunctuation(last);
+    assert.equal(body + tail, last);
+    assert.equal(tail, ".");
+    assert.ok(body.endsWith("N'importe quand"));
+  });
+});
+
+/**
+ * Where the promise breaks.
+ *
+ * The accueil sets it on three lines, and that is composition rather than
+ * wrapping: a width narrow enough to force them breaks wherever the font runs
+ * out, and the font is not a given — Georgia stands in until EB Garamond
+ * arrives, and sets the same sentence to a different length. So the breaks are
+ * written into the string, and what is checked here is that the string stays
+ * something `home.js` can set: lines with words in them, and a last line the
+ * footnote call can be cut into.
+ */
+describe("the lines of the promise", () => {
+  const lines = texts.home.promise.split("\n");
+
+  it("carries its own breaks", () => {
+    assert.ok(lines.length > 1, "la promesse tient sur une seule ligne");
+  });
+
+  it("has no empty line", () => {
+    // A trailing "\n", or two in a row, would set a blank line under the
+    // promise and push the form down by one — silently, since nothing else
+    // reads this string.
+    assert.deepEqual(lines.filter((line) => line.trim() === ""), []);
+  });
+
+  it("loses nothing but the breaks it was written with", () => {
+    assert.equal(lines.join("\n"), texts.home.promise);
   });
 });
