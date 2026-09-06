@@ -106,10 +106,11 @@ src/weather_simulator/
     api/           endpoints, validation, plan de requêtes, contrat JSON
     calibration/   table de coefficients et interpolation
 web/
-    pages/         home.html, results.html — HTML statique, aucun gabarit
+    pages/         home.html, results.html, documentation.html — HTML statique,
+                   aucun gabarit
     static/css/    style.css, une feuille bâtie sur des variables
     static/js/     fetch.js, i18n.js, present.js, bounds.js, band.js, chart.js,
-                   series.js, season.js, compare.js, dom.js, prompt.js,
+                   series.js, season.js, compare.js, csv.js, dom.js, prompt.js,
                    home.js, results.js
 ```
 
@@ -130,9 +131,10 @@ absent, elle démarre quand même.
 **La frontière entre modules du navigateur sépare ce qui se vérifie sans
 navigateur de ce qui n'existe que dans la page.** `present.js` (formatage et
 arrondis), `bounds.js` (les refus du formulaire), `band.js` (la construction de
-la bande), `chart.js` (la géométrie du graphe), `series.js`, `season.js` et
-`compare.js` tournent sous `node --test` ; `home.js` et `results.js` ne portent
-que le câblage. C'est la même frontière qui garde une migration possible.
+la bande), `chart.js` (la géométrie du graphe), `series.js`, `season.js`,
+`compare.js` et `csv.js` (le fichier emporté) tournent sous `node --test` ;
+`home.js` et `results.js` ne portent que le câblage. C'est la même frontière qui
+garde une migration possible.
 
 Quatre modules portent une règle plutôt qu'un rendu, et chacun tient un
 invariant qu'un test referme :
@@ -800,6 +802,43 @@ fonction. L'année comparée étant une recherche ordinaire de ce site, un lien
 « Voir 1991 en détail » ouvre sa propre page, avec sa bande, ses cartes et chaque
 nombre en toutes lettres. Il est posé avant même que les données arrivent : il
 reste vrai qu'elles arrivent ou non.
+
+---
+
+## Emporter les journées
+
+**Un bouton discret sous le graphe écrit à l'écran ce que la page a déjà en
+mémoire**, en CSV : une ligne par journée, la série affichée, et l'année
+comparée avec elle lorsqu'elle est sur le panneau. Aucun code serveur, aucune
+requête de plus — le fichier est une seconde écriture de ce qui est déjà arrivé.
+
+**`origine` et `source` sont des colonnes, sur chaque ligne.** C'est la règle 1
+appliquée à un fichier plutôt qu'à un écran : un fichier survit à la page qui
+l'a produit, et une température sans origine à côté d'elle se lit des années
+plus tard comme une mesure. Sur la ligne et non en tête de fichier, la marque ne
+peut pas être séparée du nombre qu'elle qualifie, et elle survit à un tri, à un
+filtre et à un copier-coller vers une autre feuille. Les trois mots sont ceux du
+site : *observé*, *prévision*, *simulation*.
+
+**Rien n'est calculé.** Chaque colonne est un champ servi par l'API. Le cumul
+des précipitations reste sur le graphe : c'est la seule agrégation admise ici,
+et l'emporter dans un fichier élargirait cette exception sans arbitrage → [Ce
+que l'interface ne calcule pas](#ce-que-linterface-ne-calcule-pas). Un tableur
+le refait d'une formule sur la colonne des précipitations.
+
+**Point-virgule, virgule décimale, marque d'ordre d'octets.** Un tableur
+français ouvre le fichier d'un double-clic ; `read_csv` demande alors `sep=";",
+decimal=",", encoding="utf-8-sig"`. La convention inverse déplacerait la gêne
+sur le visiteur, à qui le bouton s'adresse. Le nom du fichier porte le lieu et
+la plage — `meteo-brest-2046-07-01-2046-07-31.csv` — parce que deux exports d'un
+même après-midi sont deux recherches différentes, et que `donnees (1).csv` ne se
+distingue plus de rien une semaine après.
+
+**Le bouton est hors du bloc de comparaison** : il offre ce qui est dessiné que
+l'autre année le soit ou non, et plié dans ce bloc il se cacherait derrière un
+contrôle que le visiteur n'ouvre peut-être jamais. Il tombe dans le bas sombre
+du dégradé et bascule donc en encre pâle avec la provenance sous lui — mesuré à
+6,7:1 au pire → [`ink_contrast.md`](../scripts/ink_contrast.md).
 
 ---
 
