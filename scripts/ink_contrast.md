@@ -39,26 +39,54 @@ hauteur du formulaire change selon celui qu'on déplie.
 
 | Texte | rien d'ouvert | plage de dates | saison entière |
 |---|---|---|---|
-| la question | 11,2:1 | 11,2:1 | 11,2:1 |
-| la promesse | 8,1:1 | 8,1:1 | 8,1:1 |
-| l'étiquette *Lieu* | 8,5:1 | 8,5:1 | 8,5:1 |
-| le champ *Lieu* | 7,6:1 | 7,6:1 | 7,6:1 |
-| la bande choisie | — | 10,2:1 | 8,3:1 |
-| la bande au repos | 8,3:1 | 8,3:1 | 9,0:1 |
-| l'étiquette *Du* | — | 5,7:1 | — |
-| le champ *Du* | — | 5,0:1 | — |
-| l'étiquette *Saison* | — | — | 5,7:1 |
-| le champ *Saison* | — | — | 5,0:1 |
-| le bouton | — | 7,6:1 | 7,6:1 |
-| l'avertissement | 6,6:1 | 6,6:1 | 6,6:1 |
+| la question | 11,2:1 | 11,3:1 | 11,3:1 |
+| la promesse | 7,5:1 | 7,7:1 | 7,7:1 |
+| l'étiquette *Lieu* | 7,1:1 | 7,4:1 | 7,4:1 |
+| le champ *Lieu* | 6,4:1 | 6,7:1 | 6,7:1 |
+| la bascule choisie | — | 9,3:1 | 7,5:1 |
+| la bascule au repos | 7,1:1 | 7,5:1 | 8,0:1 |
+| l'étiquette *Du* | — | 5,0:1 | — |
+| le champ *Du* | — | **4,5:1** | — |
+| l'étiquette *Saison* | — | — | 5,0:1 |
+| le champ *Saison* | — | — | **4,5:1** |
+| le bouton | — | 6,9:1 | 6,9:1 |
+| l'avertissement | 5,7:1 | 5,9:1 | 5,9:1 |
+| le lien documentation | 6,6:1 | 6,5:1 | 6,5:1 |
 
-**Plancher : 5,0:1**, porté par les deux champs de date.
+**Plancher : 4,5:1**, porté par les deux champs de date.
 
-**Toute la table a monté**, et d'une cause unique : l'avertissement du pied est
-devenu une note de trois lignes là où il en faisait une, la page a grandi
-d'autant, et le dégradé — ancré au document — s'est étiré. Chaque encre se lit
-désormais sur un fond un peu plus sombre que celui contre lequel elle avait été
-choisie. Aucune n'a été retouchée.
+**Toute la table descend, et toujours pour la même raison.** Le pied a d'abord
+gagné une note de trois lignes là où il en faisait une ; la note a ensuite gagné
+sa période et la promesse une troisième ligne. La page grandit à chaque fois, le
+dégradé — ancré au document — s'étire avec elle, et chaque encre finit par se
+lire sur un fond plus sombre que celui contre lequel elle avait été choisie.
+Aucune n'a été retouchée, sauf celle du lien.
+
+**Le lien du pied est une ligne neuve de cette table, et il ne l'était pas par
+hasard.** Il n'était mesuré nulle part : il avait pris l'encre sombre de la note
+parce qu'il se posait à côté d'elle sur la bande orange, et il a glissé, note
+après note, jusqu'au rouge sombre du bas. Relevé pour la première fois, il
+sortait à **2,9:1** — sous les 4,5:1 qu'un texte demande et sous les 3:1 que
+demande n'importe quelle marque. Ce qui échappe à la table échappe à la mesure,
+et une ligne ajoutée le jour où l'on regarde est une ligne qui manquait depuis le
+début.
+
+**La correction est de mise en page et non d'encre** : la marge sous le pied
+passe de 40 à 80 px, ce qui remonte la note et son lien sur la bande orange. Le
+lien y lit 6,5:1, la note 5,9, et toute la table monte d'un demi-point au passage.
+Les paliers ont été mesurés — 48 px donnent 3,5:1 au lien, 64 px 4,9 et 72 px 5,6 ;
+au-delà de 80 le gain s'arrête, la page grandissant avec la marge et le dégradé
+avec la page.
+
+**Et cela ne tient qu'à cette fenêtre-là**, ce qui est le vrai constat de la
+manœuvre. Voir la table des planchers ci-dessous : à 1280 × 720 et sur téléphone,
+le pied tombe dans la bande sans encre et le lien y mesure 1,6:1 et 1,5:1, que la
+marge vaille 40 px ou 80. **Aucune encre plate ne résout ce bloc** — le noir
+plafonne à 4,0:1 dans cette bande et l'ivoire à 4,2 — et un blanc, qui passait
+partout (5,7 à 10,0:1), fait une tache sur une page qui n'a pas d'autre blanc.
+Ce qui le résoudrait est ce qui a résolu le bloc de comparaison sur l'autre page :
+un sol opaque qui ne bouge pas → [`docs/application.md`](../docs/application.md).
+**Arbitrage en attente.**
 
 **La bande située entre 50 % et 65 % du dégradé ne porte aucune encre.** Le fond
 y va de `#4b688b` à `#677390`, et à ces clartés le noir pur plafonne à 4,0:1 quand
@@ -71,13 +99,21 @@ La table n'est publiée que pour 1440 × 900. Planchers relevés ailleurs :
 
 | Fenêtre | plancher | porté par |
 |---|---|---|
-| 1440 × 900 | **5,0:1** | les champs de date |
-| 1280 × 720 | 3,8:1 | le champ *Saison* |
-| 1440 × 1200 | 6,6:1 | l'avertissement |
-| 390 × 844 | 3,8:1 | le champ *Saison* |
+| 1440 × 900 | **4,5:1** | les champs de date |
+| 1280 × 720 | 1,6:1 | le lien documentation |
+| 1440 × 1200 | 4,3:1 | le lien documentation |
+| 390 × 844 | 1,5:1 | le lien documentation |
 
-**L'avertissement mesure 6,6:1 aux quatre tailles**, et c'est un changement : il
-tombait à 3,7:1 sur la fenêtre haute, où il était le plancher. La note du pied
+**Le lien du pied porte le plancher partout sauf sur la fenêtre de référence**, et
+c'est la mesure qui a fait apparaître le problème plutôt que l'œil : sur la
+fenêtre haute et sur téléphone, le pied se pose dans la bande sans encre du
+dégradé, où l'encre sombre ne peut rien valoir. La marge de 80 px le sort de là
+en 1440 × 900 seulement. En blanc, il mesurait 8,7:1, 7,9 et 10,0 à ces trois
+tailles : c'est la seule encre plate qui passe partout, et elle a été écartée
+pour l'œil, pas pour la mesure.
+
+**L'avertissement mesure 6,6:1 ou mieux aux quatre tailles**, et c'est un
+changement : il tombait à 3,7:1 sur la fenêtre haute, où il était le plancher. La note du pied
 faisant maintenant trois lignes, la page dépasse la fenêtre de 1200 px au lieu
 d'être étirée pour la remplir, et le pied retrouve le bas sombre du dégradé au
 lieu de la bande claire. Le remède cherché était un arbitrage de mise en page ;
@@ -100,47 +136,52 @@ mesure.
 
 | Texte | hiver | printemps | été | automne |
 |---|---|---|---|---|
-| le lieu | 15,9:1 | 14,7:1 | 16,1:1 | 16,0:1 |
-| la plage | 13,5:1 | 11,8:1 | 13,1:1 | 13,6:1 |
-| nouvelle recherche | 15,3:1 | 14,3:1 | 14,2:1 | 15,3:1 |
-| l'avertissement | 14,5:1 | 13,8:1 | 12,3:1 | 14,5:1 |
-| le scénario | 12,3:1 | 11,1:1 | 10,1:1 | 12,4:1 |
-| le mois | 11,7:1 | 10,8:1 | 9,1:1 | 11,7:1 |
-| le jour | 13,3:1 | 13,1:1 | 10,2:1 | 13,2:1 |
+| le lieu | 16,0:1 | 14,7:1 | 16,2:1 | 16,0:1 |
+| la plage | 13,5:1 | 11,8:1 | 13,3:1 | 13,6:1 |
+| nouvelle recherche | 15,4:1 | 14,3:1 | 14,5:1 | 15,4:1 |
+| l'avertissement | 14,6:1 | 13,9:1 | 12,6:1 | 14,7:1 |
+| le mois | 11,8:1 | 10,9:1 | 9,3:1 | 11,8:1 |
+| le jour | 13,5:1 | 13,2:1 | 10,4:1 | 13,4:1 |
 | les deux mesures | 16,9:1 | 15,3:1 | 18,1:1 | 17,4:1 |
-| la couture | 12,0:1 | 12,5:1 | 8,6:1 | 11,7:1 |
+| la couture | 12,3:1 | 12,6:1 | 8,9:1 | 12,0:1 |
 | les repères du graphe | 14,6:1 | 12,5:1 | 15,7:1 | 15,1:1 |
 | la couture du graphe | 16,9:1 | 15,3:1 | 18,1:1 | 17,4:1 |
 | comparer | 14,6:1 | 12,5:1 | 15,7:1 | 15,1:1 |
-| la provenance | 8,6:1 | **7,9:1** | 9,8:1 | 9,2:1 |
+| exporter | 7,9:1 | **6,7:1** | 8,4:1 | 8,1:1 |
+| la provenance | 8,7:1 | 8,0:1 | 9,9:1 | 9,2:1 |
 
 ### 1280 × 720
 
 Le dégradé étant ancré au document, une page raccourcie fait glisser chaque bloc
-sur une autre portion. La page fait 1637 px au lieu de 1705, et tout se desserre
+sur une autre portion. La page fait 1757 px au lieu de 1825, et tout se desserre
 d'un cran :
 
 | Texte | hiver | printemps | été | automne |
 |---|---|---|---|---|
-| le lieu | 16,0:1 | 14,7:1 | 16,4:1 | 16,1:1 |
-| la plage | 13,6:1 | 11,9:1 | 13,3:1 | 13,7:1 |
-| nouvelle recherche | 15,3:1 | 14,3:1 | 14,4:1 | 15,4:1 |
-| l'avertissement | 14,7:1 | 13,9:1 | 12,7:1 | 14,7:1 |
-| le scénario | 12,4:1 | 11,2:1 | 10,4:1 | 12,5:1 |
-| le mois | 12,0:1 | 11,0:1 | 9,5:1 | 12,1:1 |
-| le jour | 13,6:1 | 13,3:1 | 10,7:1 | 13,6:1 |
+| le lieu | 16,1:1 | 14,8:1 | 16,5:1 | 16,1:1 |
+| la plage | 13,6:1 | 11,9:1 | 13,5:1 | 13,7:1 |
+| nouvelle recherche | 15,4:1 | 14,4:1 | 14,6:1 | 15,5:1 |
+| l'avertissement | 14,8:1 | 14,0:1 | 13,0:1 | 14,8:1 |
+| le mois | 12,1:1 | 11,0:1 | 9,7:1 | 12,2:1 |
+| le jour | 13,8:1 | 13,4:1 | 10,9:1 | 13,8:1 |
 | les deux mesures | 16,9:1 | 15,3:1 | 18,1:1 | 17,4:1 |
-| la couture | 12,3:1 | 12,6:1 | 9,0:1 | 12,0:1 |
+| la couture | 12,5:1 | 12,7:1 | 9,2:1 | 12,3:1 |
 | les repères du graphe | 14,6:1 | 12,5:1 | 15,7:1 | 15,1:1 |
 | la couture du graphe | 16,9:1 | 15,3:1 | 18,1:1 | 17,4:1 |
 | comparer | 14,6:1 | 12,5:1 | 15,7:1 | 15,1:1 |
-| la provenance | 8,9:1 | **8,2:1** | 10,1:1 | 9,4:1 |
+| exporter | 8,1:1 | **7,1:1** | 8,9:1 | 8,4:1 |
+| la provenance | 8,9:1 | 8,3:1 | 10,2:1 | 9,5:1 |
 
-**Plancher : 7,9:1 sur la fenêtre haute, 8,2 sur la courte**, porté par le
-dépliant *d'où viennent ces journées*, au printemps — le dernier texte de la
-page, donc le plus bas sur le dégradé. C'est **la fenêtre courte qui donne les
+**Plancher : 6,7:1 sur la fenêtre haute, 7,1 sur la courte**, porté par le bouton
+*exporter mes données*, au printemps — l'avant-dernier texte de la page, donc
+presque le plus bas sur le dégradé. C'est **la fenêtre courte qui donne les
 meilleurs rapports**, la page y étant proportionnellement plus haute que le
 dégradé qu'elle traverse.
+
+**Le bouton a pris le plancher au dépliant en arrivant** : il se pose au-dessus
+de lui, sur la même encre pâle, et son texte est plus petit d'un cran. Le
+dépliant tenait 7,9:1 et passe à 8,0, poussé plus bas par la ligne qui vient de
+s'insérer. Les deux restent loin des 4,5:1 qu'un texte demande.
 
 **Il a changé de porteur en montant**, quand le troisième panneau du graphe a
 allongé la page de 1472 à 1705 px : l'étiquette de couture, qui le tenait à 7,7:1

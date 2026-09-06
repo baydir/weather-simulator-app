@@ -73,8 +73,11 @@ ROWS = [
     ("le lieu", "#place"),
     ("la plage", "#range"),
     ("nouvelle recherche", "header.banner a"),
-    ("l'avertissement", "#warning p:first-of-type"),
-    ("le scénario", "#warning p:last-of-type"),
+    # One line and no longer two: the emissions scenario left this block for the
+    # documentation page, where it can be stated with its nuances. The row went
+    # with it — `p:last-of-type` had quietly become the same paragraph as the one
+    # above, and the table was publishing one measurement under two names.
+    ("l'avertissement", "#warning p"),
     ("le mois", ".card-month"),
     ("le jour", ".card-day"),
     # **The two temperatures are not rows here any more**, and taking them out
@@ -101,6 +104,11 @@ ROWS = [
     # onto another part of the gradient, which would be measuring a page nobody
     # is looking at.
     ("comparer", "#compare-toggle"),
+    # The second control, and the one that made this row necessary: it sits on
+    # the sky rather than on the comparison block's paper, at the height where
+    # the gradient has gone dark. Written in the page's soft ink it measured as
+    # two darks on one another and could not be seen at all.
+    ("exporter", "#export-button"),
     ("la provenance", ".provenance summary"),
 ]
 
@@ -138,6 +146,10 @@ HOME_ROWS = [
     ("le champ Saison", "#saison"),
     ("le bouton", 'button[type="submit"]'),
     ("l'avertissement", "footer .tagline"),
+    # The last line of the page, and it was never a row until it was looked at:
+    # it sits below the note, where the sunset has left the bright band and gone
+    # dark, and it took the note's dark ink down there with it.
+    ("le lien documentation", "footer .doc-link a"),
 ]
 
 # The accueil has no card and no chart; nothing on it is on an opaque ground.

@@ -153,11 +153,16 @@ describe("the vocabulary, rule 1", () => {
   // `warning.noteMeaning` is the fifth, and it is the second half of the
   // fourth: the note was split in two the day the covered period opened it, and
   // "le temps qu'il fera" went with the half that denies it.
+  //
+  // `export.origin.forecast` is the sixth, and it is the same exemption reaching
+  // a file instead of a screen: the column names what produced each day, and the
+  // fortnight ahead is produced by a forecast. Leaving it unnamed to satisfy the
+  // ban would put an unqualified temperature in a file that outlives the page.
   const ALLOWED = [
+    "export.origin.forecast",
     "warning.note",
     "warning.noteMeaning",
     "warning.notAForecast",
-    "warning.scenario",
     "provenance.forecast",
   ];
 

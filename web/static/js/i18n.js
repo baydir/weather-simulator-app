@@ -168,24 +168,67 @@ export const texts = {
   // old climate had no extremes — when it is the selection that removed them.
   //
   // **`rainAside` says the second thing the measurement obliges.** The year was
-  // picked on temperature alone, so its rain is nobody's idea of typical. Rather
-  // than draw it and have to explain that, it is not drawn, and the note says so
-  // — better assumed than discovered.
+  // picked on temperature alone, so its rain is nobody's idea of typical. It is
+  // drawn all the same — the arbitration of the project owner, who asked for
+  // the comparison on all three panels knowing this — and the note is what
+  // keeps that honest. Without it a reader takes the grey bars for a normal,
+  // misled by a selection that never looked at rain.
   compare: {
     open: "Comparer avec une autre année",
     close: "Masquer la comparaison",
     year: "Année de comparaison",
     loading: "Récupération de l'année comparée…",
-    legend: (year) => `Températures de ${year}`,
-    ordinaryLegend: (year) => `Températures de ${year}, une année sans particularité`,
+    legend: (year) => `Année ${year}`,
+    ordinaryLegend: (year) => `Année ${year}, sans particularité de température`,
     ordinary:
       "1991 est proposée parce qu'elle a été mesurée comme ordinaire : " +
       "ni chaude ni froide pour sa période, sur cinq sites français. " +
       "La période affichée, elle, n'a pas été choisie ; elle peut porter une canicule.",
     rainAside:
-      "Seules les températures sont superposées : l'année a été retenue sur la " +
-      "température, sa pluie n'a rien de typique.",
+      "L'année a été retenue sur la température seule : sa pluie, elle, n'a rien " +
+      "de typique.",
     seeYear: (year) => `Voir ${year} en détail`,
+  },
+
+  // The file the visitor takes away, and the words written in it.
+  //
+  // **`origin` is a column, so its three words are dictionary entries like any
+  // other.** A file outlives the page it left: a temperature with no origin
+  // beside it can be read years later as a measurement, which is the leak
+  // CLAUDE.md rule 1 exists to close. The words are the site's own — a forecast
+  // named a forecast, a projection named a simulation — which is why `forecast`
+  // joins the sentences `present.test.js` exempts from the ban.
+  //
+  // **`columns` is a function, and that is what lets it borrow.** Two of its
+  // headers are labels the page already declares: the unit, and « vent
+  // maximal », which `docs/application.md` fixes as the label for a sustained
+  // wind and forbids shortening to « vent ». Written out a second time here,
+  // they would drift the day one of them is edited — and a header nobody rereads
+  // is exactly where a drift survives. A literal cannot read the object it is
+  // being declared in; a function called later can.
+  //
+  // The other headers are written out rather than borrowed: « Minimale » says
+  // which of the two temperatures on a card that carries both, and says nothing
+  // at all at the top of a column in a spreadsheet.
+  export: {
+    button: "Exporter mes données",
+    columns: () => [
+      "Date",
+      "Origine",
+      "Source",
+      `Température minimale (${texts.units.celsius})`,
+      `Température maximale (${texts.units.celsius})`,
+      `${texts.measure.precipitation} (${texts.units.millimetres})`,
+      "Nébulosité (%)",
+      `Vent moyen (${texts.units.kilometresPerHour})`,
+      `${texts.measure.windMax} (${texts.units.kilometresPerHour})`,
+      "Ciel",
+    ],
+    origin: {
+      observed: "Observé",
+      forecast: "Prévision",
+      simulated: "Simulation",
+    },
   },
 
   // Folded, but there. A corrected series read without knowing which model was
@@ -211,9 +254,14 @@ export const texts = {
     noGrid: "Aucune journée simulée : cette recherche n'a demandé aucune correction.",
   },
 
-  // The two obligations, kept to two lines. The first is CLAUDE.md rule 1; the
-  // second is docs/science.md, which requires the emissions scenario to be
-  // stated as a high hypothesis rather than an expected trajectory.
+  // What a screen showing simulated days has to say, which is CLAUDE.md rule 1.
+  //
+  // **It was two lines and is one.** The second named the emissions scenario, a
+  // statement `docs/science.md` requires of the interface — and gets, on the
+  // documentation page, where there is room to add that the scenarios have not
+  // parted by 2050 and that the single model weighs more than the trajectory.
+  // Four words under a search rank the scenario without any of that, which
+  // reads as more alarming than the measurement warrants.
   warning: {
     // The note the accueil's asterisk refers to, and it exists apart from the
     // compact line below for two reasons rather than one.
@@ -277,7 +325,6 @@ export const texts = {
     notAForecast:
       "Simulation, pas une prévision. La date situe la journée dans une saison, " +
       "elle n'engage rien sur ce jour-là.",
-    scenario: "Scénario d'émissions haut.",
   },
 
   // The four names, in the order the form offers them, which is the order a

@@ -28,12 +28,20 @@
 
     <main>
       <!--
-        Shown only when the range reaches the future. Two lines: CLAUDE.md
-        rule 1, and the emissions scenario docs/science.md requires stated.
+        Shown only when the range reaches the future, and it carries CLAUDE.md
+        rule 1 and nothing else.
+
+        **The emissions scenario used to be a second line here.**
+        `docs/science.md` requires that status stated in the interface, and it is
+        stated — at length, on the documentation page, where the same paragraph
+        can also say that the scenarios have not yet parted by 2050 and that the
+        single model weighs more than the choice of trajectory. Four words under
+        a search could carry the ranking but never that, and a caveat read as
+        more alarming than it is costs the same trust as one that is missing.
+        `test_pages.py` keeps the statement on the page that explains it.
       -->
       <aside id="warning" class="warning" hidden>
         <p data-text="warning.notAForecast"></p>
-        <p data-text="warning.scenario"></p>
       </aside>
 
       <!--
@@ -119,6 +127,26 @@
           <p id="compare-failure" class="failure" role="alert" hidden></p>
         </div>
       </div>
+
+      <!--
+        The days on screen, as a file.
+
+        **Outside the comparison box on purpose.** It offers what is drawn
+        whether or not a second year is drawn with it, and folded into that box
+        it would sit behind a control the visitor may never open.
+
+        A button and not a link: nothing is fetched and nowhere is navigated to.
+        The file is written from what the page already holds, which is also why
+        it is hidden until there is something to write.
+      -->
+      <p id="export" class="export" hidden>
+        <button
+          type="button"
+          id="export-button"
+          class="link"
+          data-text="export.button"
+        ></button>
+      </p>
 
       <details id="provenance" class="provenance" hidden>
         <summary data-text="provenance.summary"></summary>

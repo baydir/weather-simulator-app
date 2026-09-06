@@ -703,8 +703,8 @@ onze pixels — et c'est la réponse que la bande donne déjà au même problèm
 
 **« 39 °C » ne dit quelque chose qu'à qui sait ce qu'était un 14 juillet
 auparavant** : la pédagogie est dans l'écart, pas dans la valeur. Un bouton sous le
-graphe pose les températures d'une autre année sur le même panneau, où la
-superposition *est* la comparaison.
+graphe pose une autre année sur les mêmes panneaux, où la superposition *est*
+la comparaison.
 
 **Aucun code serveur.** Les mêmes dates dans une autre année repassent par
 `/api/plan` et `/api/days`, qui les découpent, les corrigent et les classent avec
@@ -745,8 +745,10 @@ libellé dit que l'année a été *choisie pour être ordinaire* — la période
 elle, n'a pas été sélectionnée et peut porter une canicule ; comparer un tirage
 libre à un tirage choisi pour sa sagesse laisserait croire que le passé n'avait
 pas d'extrêmes. Et la sélection portant sur la seule température, **la pluie de
-l'année retenue est quelconque** : elle n'est donc pas dessinée, et une note le
-dit plutôt que de le laisser découvrir.
+l'année retenue est quelconque**. Elle est dessinée malgré tout, par arbitrage
+du porteur du projet, sur les deux panneaux de pluie ; la note dit ce que la
+sélection n'a pas regardé, faute de quoi le gris se lirait comme une normale
+de pluie.
 
 ### Ce que le dessin en fait
 
@@ -756,16 +758,33 @@ point est la marque de l'année demandée. Elle cesse ainsi d'être deux tracés
 suivre pour devenir le sol contre lequel les deux courbes saturées se lisent — la
 question étant si la journée tient dans ce qui était ordinaire ou en sort.
 
+**Sur les deux panneaux de pluie, le gris est posé par-dessus et non dessous.**
+Deux barres partent de la même ligne de base : la plus courte est *dans* la
+plus haute et non à côté, si bien qu'une barre grise placée dessous
+n'apparaîtrait que les jours où le passé était le plus humide, soit la moitié
+de la comparaison. Posée dessus et translucide, les deux hauteurs se lisent et
+le recouvrement fait une troisième teinte. Le cumul, lui, repasse dessous comme
+les températures : deux courbes fines se croisent sans se cacher. **Un seul
+plafond cadre les deux années** dans chacun des deux panneaux, pour la raison
+qui vaut déjà pour la fenêtre des températures : cadrées chacune sur son propre
+maximum, la plus forte barre d'une année sèche viendrait à la hauteur de la
+plus forte d'une année humide, et le panneau montrerait son cadrage plutôt que
+la météo.
+
 **Le gris est un jeton posé à côté des deux températures**, mesuré à 3,44:1 sur le
 papier du graphe — un trait suivi à l'œil en demande 3. La force du remplissage
 vit dans un second jeton, le témoin de la légende étant en HTML et un `span` ne
 pouvant pas emprunter un `fill` de SVG.
 
-**L'année est écrite sur le dessin**, dans la marge au-dessus du panneau — la
-seule bande où aucune marque ne peut tomber —, et ses chiffres prennent l'encre
-douce de la graduation. C'est la seule chose que le graphe écrive en plus des
-titres, graduations et repères → [Ce que l'interface ne calcule
-pas](#ce-que-linterface-ne-calcule-pas).
+**L'année est écrite sur le dessin**, dans la marge au-dessus de chacun des
+trois panneaux — la seule bande où aucune marque ne peut tomber —, et ses
+chiffres prennent l'encre douce de la graduation. Chaque libellé porte
+l'échantillon de sa propre marque : la bande sur les températures, une barre
+sur les précipitations, un trait sur le cumul. Ils sont dessinés avec les
+classes des marques elles-mêmes, un témoin tenu à jour à la main étant le
+double exemplaire que la règle 3 interdit. C'est la seule chose que le graphe
+écrive en plus des titres, graduations et repères → [Ce que l'interface ne
+calcule pas](#ce-que-linterface-ne-calcule-pas).
 
 **Le bloc de comparaison est sur le papier du graphe**, seul sol qui ne bouge pas :
 posé sur le dégradé il mesurerait 1,1:1, et le basculer en encre pâle comme la

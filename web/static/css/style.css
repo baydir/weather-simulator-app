@@ -619,11 +619,18 @@ body.home footer .tagline + .tagline {
   margin-top: var(--space);
 }
 
-/* The link under it lands on the same bright band, so it takes the same ink
+/* The link lands on the same bright band as the note, so it takes the same ink
    rather than the page's pale one — `a { color: var(--ink) }` would otherwise
    put ivory on orange, at about 1.5:1. Its underline is drawn in that ink too:
    `--rule-strong` is chosen against the near-black paper and has nothing to do
-   here. */
+   here.
+
+   **It stopped landing there once, and the fix was the layout and not the ink.**
+   The note grew from one line to four; the page grew with it; the footer slid
+   down to where the sunset goes to its dark red, and the link came out at 2,9:1.
+   Written white it read, and looked like a patch on a page that has no other
+   white. The room under the footer is what puts it back on the orange — see
+   `body.home`. */
 body.home footer .doc-link a {
   color: inherit;
   text-decoration-color: currentColor;
@@ -670,11 +677,19 @@ body.home {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  /* Less room under the warning than the page's shared bottom padding leaves.
-     That padding was sized for a strip of ninety cards ending mid-scroll; here
-     the footer is already held at the bottom by the margin below, and the extra
-     forty pixels only pushed the page past the window. */
-  padding-bottom: calc(var(--space) * 10);
+  /* **The room under the footer is what keeps the note on the orange.** It was
+     forty pixels: enough while the note was one line, and not enough once it
+     became four — the block slid into the dark red end of the sunset and the
+     link under it measured 2,9:1. Raising it lifts the whole footnote back
+     onto the bright band, ink untouched.
+
+     Eighty, and the steps were measured: 48 px gives the link 3,5:1, 64 px
+     4,9 and 72 px 5,6. Eighty puts it at 6,5, which is what the note above it
+     reads — the two are one block and should not be legible to different
+     degrees. Past that the gain stops: 160 px buys a tenth of a point, and
+     the reason is that the page grows with the padding and the gradient,
+     anchored to the document, grows with the page. */
+  padding-bottom: calc(var(--space) * 20);
 }
 
 body.home > footer.banner {
@@ -692,6 +707,7 @@ main {
 .warning,
 .doc-link,
 .provenance,
+.export,
 .failure,
 .search {
   max-width: var(--measure);
@@ -1679,6 +1695,18 @@ body.results [data-band="8"] { --band: #16100c; --band-ink: #fff; }
   opacity: 0.75;
 }
 
+/* The compared year's rain, laid *over* the drawn year's bars and not under
+   them. Two bars stand on the same baseline, so the shorter one is inside the
+   taller and not beside it: underneath, the grey would show only on the days
+   the past was the wetter of the two, which is half a comparison. The
+   translucency is what makes the overlay legible rather than an erasure — the
+   crossing reads as a third shade belonging to neither year. Below the 0,75 of
+   the bars it crosses, so the year asked for is still the one read first. */
+.chart-bar.past {
+  fill: var(--past);
+  opacity: 0.55;
+}
+
 /* The running total, in the panel under the bars it totals. **The same colour as
    them**, which is the one honest choice available: a second hue would make the
    curve a second quantity, and it is the same water measured twice. Full
@@ -1690,6 +1718,17 @@ body.results [data-band="8"] { --band: #16100c; --band-ink: #fff; }
    stay six. */
 .chart-line.cumulative {
   color: var(--cool);
+}
+
+/* The compared year's total is both things at once: a `cumulative` curve and a
+   `past` one. The two rules above carry the same weight, so this file's order
+   decides — and the order handed the colour to the panel, drawing the older
+   year in the live year's blue, which is the one thing the grey exists to
+   prevent. Naming both classes puts the tone back on top. Written here rather
+   than by swapping the two rules, because a swap is undone by the next edit
+   that does not know why the order mattered. */
+.chart-line.past.cumulative {
+  color: var(--past);
 }
 
 /* A day whose rain is missing, which would otherwise draw exactly what a dry
@@ -1849,6 +1888,20 @@ body.results [data-band="8"] { --band: #16100c; --band-ink: #fff; }
    aria-live, so it must stay in the document rather than be toggled hidden. */
 #compare-status:empty {
   display: none;
+}
+
+/* The way out of the page: the days as a file. On the page ground rather than
+   in a box of its own — a control the visitor finds when looking for it, and one
+   that does not compete with the days. It falls in the dark end of the results
+   page, so its ink turns over with the provenance below it; see that block. */
+.export {
+  /* No `width: 100%`, unlike `.doc-link`, and the difference is what it lines up
+     with. This page's `main` is a column flex container, so a flex item with an
+     auto inline margin shrinks to its content and centres — which is what the
+     provenance under it does, and these two are the foot of the page read
+     together. Stretched to the measure it started two hundred pixels left of the
+     provenance and made a staircase of three left edges. */
+  margin-top: calc(var(--space) * 8);
 }
 
 /* --- where the days come from ---------------------------------------------- */
@@ -2293,15 +2346,21 @@ body.results .chart-panel::-webkit-scrollbar-thumb {
 /*
  * **The bottom of the page is where the ink turns over.** By the provenance the
  * gradient is past `#810402` and heading for black, and the dark ink that
- * serves the heading would vanish into it. This is the one block on the page
- * that reads pale, and the rule above it is what marks the crossing.
+ * serves the heading would vanish into it. This is the foot of the page reading
+ * pale, and the rule over the provenance is what marks the crossing.
+ *
+ * **The export button crossed with it**, and it was written dark first: on the
+ * ground at that height, `--ink-soft` is #3d1c07 against #8c4315, which is two
+ * darks and a button nobody can see. It sits above the rule rather than below
+ * it, so it takes the pale ink without the border.
  */
 body.results .provenance {
   border-top-color: rgb(255 255 255 / 30%);
   color: rgb(255 255 255 / 72%);
 }
 
-body.results .provenance summary {
+body.results .provenance summary,
+body.results .export .link {
   color: rgb(255 255 255 / 72%);
 }
 

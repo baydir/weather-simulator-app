@@ -94,14 +94,15 @@ export const BOX = {
   top: 30,
   temperature: 245,
   // **The gap stopped being empty, and that is what sets it.** It holds the
-  // temperature panel's own row of dates, fourteen below its foot, and the rain
-  // title, which hangs twelve above its panel. At 36 the capitals landed on the
-  // digits' descenders; at 48 they cleared by twenty-two, which the geometry
-  // called separate and the eye read as one block — a title has to belong
-  // visibly to the panel under it, not to the axis over it. At 72 there are
-  // forty-six units between the two lines, and the title has plainly crossed
-  // over to the panel it names.
-  gap: 72,
+  // panel's own two rows — the days fourteen below its foot, the months
+  // sixteen under those — and the next title, which hangs twelve above its
+  // panel. At 36 the capitals landed on the digits' descenders; at 48 they
+  // cleared by twenty-two, which the geometry called separate and the eye read
+  // as one block: a title has to belong visibly to the panel under it, not to
+  // the axis over it. Forty-six units is where it plainly crosses over, and 88
+  // is what leaves forty-six under the second row where 72 left it under the
+  // first.
+  gap: 88,
   rain: 140,
   // **The same height as the rain panel, and that is the whole argument.** The
   // two of them plot millimetres of the same water; giving them one height
@@ -154,21 +155,23 @@ export function frame(count, box = BOX) {
     // Zero days would divide by zero. It cannot happen — a served series has at
     // least one day — but a column of zero width is a nicer failure than NaN.
     column: count === 0 ? 0 : (plot.to - plot.from) / count,
-    // Each panel is dated at its own foot. **The three rows are one axis read
-    // three times, not three axes**: the same days, at the same x, from one
-    // function called once per panel — which is what CLAUDE.md rule 3 asks for
-    // and the opposite of what it forbids. Repeating them is the whole point.
-    // The temperature panel alone is 245 units tall, and dating a point on the
-    // bottom panel would otherwise mean carrying the eye up past two others.
-    temperature: { ...temperature, dates: temperature.bottom + 14 },
-    rain: { ...rain, dates: rain.base + 14 },
-    cumul: { ...cumul, dates: cumul.base + 14 },
-    // Under the lowest panel the row is doubled by the months, numbers over
-    // words, in the order a French date is said. The months are named once
-    // where they turn and only there: repeated under all three panels they
-    // would be eight words too many, and a number above a name is already a
-    // date.
-    months: cumul.base + 30,
+    // Each panel is dated at its own foot, on two rows: the days, then the
+    // months where they turn — numbers over words, in the order a French date
+    // is said. **The six rows are one axis read three times, not three axes**:
+    // the same days, at the same x, from two functions called once per panel —
+    // which is what CLAUDE.md rule 3 asks for and the opposite of what it
+    // forbids. Repeating them is the whole point. The temperature panel alone
+    // is 245 units tall, and dating a point on the bottom panel would otherwise
+    // mean carrying the eye up past two others.
+    //
+    // **The months were named once, under the lowest panel, and that was the
+    // mistake.** The argument for it was that a name repeated three times is
+    // eight words too many; what it cost was that the row over it read « 1, 10,
+    // 20, 1, 10 » with no way of telling which 1 was which without leaving the
+    // panel being read. A row of bare numbers is not a date.
+    temperature: { ...temperature, dates: temperature.bottom + 14, months: temperature.bottom + 30 },
+    rain: { ...rain, dates: rain.base + 14, months: rain.base + 30 },
+    cumul: { ...cumul, dates: cumul.base + 14, months: cumul.base + 30 },
   };
 }
 
@@ -196,10 +199,17 @@ export function temperatureWindow(days, step) {
   };
 }
 
-/** The top of the rain axis: the wettest day, or the floor. */
-export function rainCeiling(days) {
-  const values = days.map((day) => day.precipitation).filter((value) => !missing(value));
-  return Math.max(RAIN_FLOOR_MM, ...values);
+/**
+ * The top of the rain axis: the wettest day of either year, or the floor.
+ *
+ * **One ceiling over both**, for the reason the temperature window is one over
+ * both: two years each drawn against their own top would put the taller bar of
+ * a dry year level with the taller bar of a wet one, and the panel would be a
+ * picture of its own framing rather than of the weather.
+ */
+export function rainCeiling(days, compared = null) {
+  const read = (list) => list.map((day) => day?.precipitation).filter((value) => !missing(value));
+  return Math.max(RAIN_FLOOR_MM, ...read(days), ...(compared ? read(compared) : []));
 }
 
 /**
@@ -268,16 +278,18 @@ export function rainTicks(ceiling) {
  */
 export function cumulative(days) {
   let total = 0;
+  // `day?.` and not `day.`: the compared year arrives with a null in every slot
+  // it has no day for, and a running total is asked of it too.
   const totals = days.map((day) =>
-    missing(day.precipitation) ? null : (total += day.precipitation),
+    missing(day?.precipitation) ? null : (total += day.precipitation),
   );
   return runs(totals, (value) => value);
 }
 
-/** The top of the right-hand axis: where the total ends, or the floor. */
-export function cumulativeCeiling(days) {
-  const last = cumulative(days).at(-1)?.at(-1)?.value ?? 0;
-  return Math.max(RAIN_FLOOR_MM, last);
+/** The top of the right-hand axis: where the higher total ends, or the floor. */
+export function cumulativeCeiling(days, compared = null) {
+  const end = (list) => cumulative(list).at(-1)?.at(-1)?.value ?? 0;
+  return Math.max(RAIN_FLOOR_MM, end(days), compared ? end(compared) : 0);
 }
 
 /**
@@ -425,16 +437,26 @@ export function chart(days, scale, { compared = null, box = BOX } = {}) {
     ...(span && compared ? pastBand(geometry, compared, y) : []),
     ...(span && compared ? curves(geometry, compared, y, { tone: "past", points: false }) : []),
     ...(span ? curves(geometry, days, y) : []),
-    rain(geometry, days),
-    cumul(geometry, days),
+    rain(geometry, days, compared),
+    cumul(geometry, days, compared),
     ...(span
-      ? [dates(geometry, days, geometry.temperature.bottom, geometry.temperature.dates)]
+      ? [
+          dates(geometry, days, geometry.temperature.bottom, geometry.temperature.dates),
+          months(geometry, days, geometry.temperature.months),
+        ]
       : []),
     dates(geometry, days, geometry.rain.base, geometry.rain.dates),
+    months(geometry, days, geometry.rain.months),
     dates(geometry, days, geometry.cumul.base, geometry.cumul.dates),
-    months(geometry, days),
+    months(geometry, days, geometry.cumul.months),
     seamMark(geometry, days),
-    year ? pastLegend(geometry, year) : null,
+    ...(year
+      ? [
+          pastLegend(geometry, year, geometry.temperature.top, SAMPLES.band),
+          pastLegend(geometry, year, geometry.rain.top, SAMPLES.bar),
+          pastLegend(geometry, year, geometry.cumul.top, SAMPLES.line),
+        ]
+      : []),
   ].filter(Boolean);
 
   return svg(
@@ -480,31 +502,81 @@ function comparedYear(compared) {
  */
 const LEGEND = { swatch: 18, gap: 6, year: 26 };
 
-function pastLegend(frame, year) {
-  const left = frame.plot.to - (LEGEND.swatch + LEGEND.gap + LEGEND.year);
-  const baseline = frame.temperature.top - TITLE_LIFT;
-  // The sample is centred on the text rather than sat on its baseline: a band
-  // hanging under the digits would read as an underline.
-  const top = baseline - 8;
-  const bottom = baseline - 1;
-  const edge = (at) =>
-    svg("line", {
-      className: "chart-line past",
-      attrs: { x1: round(left), x2: round(left + LEGEND.swatch), y1: at, y2: at },
-    });
+/**
+ * The samples, one per panel: what the grey looks like on the panel it labels.
+ *
+ * Each is given the left edge of the slot and the text's baseline, and returns
+ * the marks that fill it. **They are the page's own classes and not a drawing
+ * of them** — the band, the bar and the line here are the same declarations as
+ * the marks they stand for, so a colour or a width changed in the stylesheet
+ * moves the sample with the panel. A swatch that has to be kept in step by hand
+ * is the second copy CLAUDE.md rule 3 is about.
+ *
+ * The sample is centred on the text rather than sat on its baseline: anything
+ * hanging under the digits reads as an underline.
+ */
+const SAMPLES = {
+  // Two edges and the fill between them, which is what the temperature panel
+  // draws.
+  band: (left, baseline) => {
+    const top = baseline - 8;
+    const bottom = baseline - 1;
+    const edge = (at) =>
+      svg("line", {
+        className: "chart-line past",
+        attrs: { x1: round(left), x2: round(left + LEGEND.swatch), y1: at, y2: at },
+      });
 
-  return svg("g", { className: "chart-legend" }, [
+    return [
+      svg("rect", {
+        className: "chart-past-band",
+        attrs: { x: round(left), y: top, width: LEGEND.swatch, height: bottom - top },
+      }),
+      edge(top),
+      edge(bottom),
+    ];
+  },
+  // One bar, narrow enough to read as a bar and not as a block — the block is
+  // the band above, and the two must not be taken for one another.
+  bar: (left, baseline) => [
     svg("rect", {
-      className: "chart-past-band",
+      className: "chart-bar past",
       attrs: {
-        x: round(left),
-        y: top,
-        width: LEGEND.swatch,
-        height: bottom - top,
+        x: round(left + LEGEND.swatch / 2 - 3),
+        y: baseline - 9,
+        width: 6,
+        height: 8,
       },
     }),
-    edge(top),
-    edge(bottom),
+  ],
+  // A line, which is what a running total is.
+  line: (left, baseline) => [
+    svg("line", {
+      className: "chart-line past cumulative",
+      attrs: {
+        x1: round(left),
+        x2: round(left + LEGEND.swatch),
+        y1: baseline - 4,
+        y2: baseline - 4,
+      },
+    }),
+  ],
+};
+
+/**
+ * The label, on the title line of the panel it belongs to.
+ *
+ * Three panels now carry the compared year, so three carry its name: a grey
+ * mark on a panel whose only legend is two panels higher is a mark the reader
+ * has to go and identify. The placement is computed once and the sample is
+ * passed in, which is what keeps the three labels on one vertical.
+ */
+function pastLegend(frame, year, top, sample) {
+  const left = frame.plot.to - (LEGEND.swatch + LEGEND.gap + LEGEND.year);
+  const baseline = top - TITLE_LIFT;
+
+  return svg("g", { className: "chart-legend" }, [
+    ...sample(left, baseline),
     svg("text", {
       className: "chart-legend-year",
       text: year,
@@ -689,12 +761,23 @@ function millimetres(frame, base, ceiling, height) {
  * vertical scale — that is the whole rule this drawing is built on — so it is
  * the panel that computes it.
  */
-function rain(frame, days) {
-  const ceiling = rainCeiling(days);
-  const height = (value) => (value / ceiling) * frame.box.rain;
-  const scale = millimetres(frame, frame.rain.base, ceiling, height);
-  const bars = days.flatMap((day, index) => {
-    if (missing(day.precipitation)) {
+/**
+ * One year's rain, bar by bar, on the columns the whole drawing shares.
+ *
+ * `tone` is the only difference between the two years — same columns, same
+ * scale, one function called twice, which is what keeps them comparable and
+ * what CLAUDE.md rule 3 asks for.
+ *
+ * **The notches belong to the drawn year alone.** A notch says *this series has
+ * no reading here*, under the baseline where nothing else sits; a second row of
+ * them, for the other year, under the same baseline, would be read as belonging
+ * to the year asked for. The compared year says its holes where it says
+ * everything else: by breaking.
+ */
+function bars(frame, days, height, { tone = "", notches = true } = {}) {
+  return days.flatMap((day, index) => {
+    if (missing(day?.precipitation)) {
+      if (!notches) return [];
       // A missing reading and a dry day both draw no bar, so the missing one
       // says so: a notch under the baseline, where nothing else sits.
       return [
@@ -712,7 +795,7 @@ function rain(frame, days) {
     if (day.precipitation === 0) return [];
     return [
       svg("rect", {
-        className: "chart-bar",
+        className: ["chart-bar", tone].filter(Boolean).join(" "),
         attrs: {
           x: round(edgeOf(frame, index) + frame.column * 0.15),
           y: round(frame.rain.base - height(day.precipitation)),
@@ -722,8 +805,26 @@ function rain(frame, days) {
       }),
     ];
   });
+}
 
-  return svg("g", { className: "chart-rain" }, [...scale.rules, ...bars, ...scale.foot]);
+function rain(frame, days, compared) {
+  const ceiling = rainCeiling(days, compared);
+  const height = (value) => (value / ceiling) * frame.box.rain;
+  const scale = millimetres(frame, frame.rain.base, ceiling, height);
+
+  // **The compared year is drawn last here, where on the panel above it is
+  // drawn first.** Two bars stand on the same baseline, so the shorter is
+  // inside the taller and not beside it: laid underneath, the grey would be
+  // invisible on every day the drawn year beat it, and the reader would see it
+  // only where the past was wetter — half a comparison. Laid over, and
+  // translucent, both heights are readable at once and the overlap is a third
+  // shade that belongs to neither.
+  return svg("g", { className: "chart-rain" }, [
+    ...scale.rules,
+    ...bars(frame, days, height),
+    ...(compared ? bars(frame, compared, height, { tone: "past", notches: false }) : []),
+    ...scale.foot,
+  ]);
 }
 
 /**
@@ -747,16 +848,25 @@ function rain(frame, days) {
  * series would be a drawing that changes shape for reasons the reader cannot
  * see.
  */
-function cumul(frame, days) {
-  const ceiling = cumulativeCeiling(days);
+function cumul(frame, days, compared) {
+  const ceiling = cumulativeCeiling(days, compared);
   const height = (value) => (value / ceiling) * frame.box.cumul;
   const scale = millimetres(frame, frame.cumul.base, ceiling, height);
   const y = (value) => frame.cumul.base - height(value);
-  const curve = cumulative(days).flatMap((run) =>
-    stroke(frame, run, y, "cumulative", { points: false }),
-  );
+  const total = (list, tone) =>
+    cumulative(list).flatMap((run) =>
+      stroke(frame, run, y, [tone, "cumulative"].filter(Boolean).join(" "), { points: false }),
+    );
 
-  return svg("g", { className: "chart-cumul" }, [...scale.rules, ...curve, ...scale.foot]);
+  // Under, unlike the bars: two curves are thin and cross, they do not stand on
+  // the baseline hiding one another. The grey is the ground here as it is on
+  // the temperature panel, and the year asked for runs over it.
+  return svg("g", { className: "chart-cumul" }, [
+    ...scale.rules,
+    ...(compared ? total(compared, "past") : []),
+    ...total(days),
+    ...scale.foot,
+  ]);
 }
 
 /**
@@ -815,8 +925,13 @@ function dates(frame, days, base, row) {
   return svg("g", { className: "chart-dates" }, marks);
 }
 
-/** The months, named where they turn — the strip's own reading mark, under it. */
-function months(frame, days) {
+/**
+ * The months, named where they turn, on the row given.
+ *
+ * Called once per panel, like `dates`, and for the same reason: what makes the
+ * three rows one axis is that they are one function reading the same days.
+ */
+function months(frame, days, row) {
   let month = null;
   const labels = [];
 
@@ -833,7 +948,7 @@ function months(frame, days) {
       svg("text", {
         className: "chart-month",
         text: present.monthLabel(day.date),
-        attrs: { x: round(x), y: round(frame.months) },
+        attrs: { x: round(x), y: round(row) },
       }),
     );
   }

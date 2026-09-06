@@ -30,6 +30,7 @@ import { loadConfig, search, SearchError } from "./fetch.js";
 import { sources, strip } from "./band.js";
 import { chart } from "./chart.js";
 import { ORDINARY_YEAR, alignByCalendar, selectableYears, shiftRange } from "./compare.js";
+import { toCsv, fileName } from "./csv.js";
 import { applyTexts, el } from "./dom.js";
 import { texts } from "./i18n.js";
 import { fullDate } from "./present.js";
@@ -55,6 +56,9 @@ const compareLegend = document.getElementById("compare-legend");
 const compareLegendText = document.getElementById("compare-legend-text");
 const compareLink = document.getElementById("compare-link");
 const compareFailure = document.getElementById("compare-failure");
+
+const exportBlock = document.getElementById("export");
+const exportButton = document.getElementById("export-button");
 
 applyTexts();
 
@@ -132,6 +136,12 @@ async function show(series) {
   warning.hidden = !series.has_simulated;
   count.textContent = texts.results.count(series.days.length);
   band.append(...strip(series.days));
+
+  // Offered as soon as the days are on screen, and before the chart: what the
+  // file carries is the series, and a config that never arrives costs the
+  // drawing without costing the days.
+  exportButton.addEventListener("click", () => take(series));
+  exportBlock.hidden = false;
 
   // After the strip, always: the days are what the visitor came for, and the
   // drawing waits on a call of its own.
@@ -247,6 +257,47 @@ function redraw(series, compared) {
   const next = chart(series.days, scale, { compared });
   drawn.replaceWith(next);
   drawn = next;
+}
+
+/**
+ * What the visitor takes away: the days on screen, and the year laid under them.
+ *
+ * **The compared year goes in the file when it is on the panel, and only then.**
+ * The button says *my data*, which is what is being looked at — a year fetched
+ * once and since put away is no longer that. Its rows carry their own dates, so
+ * the two years never have to be told apart by a column.
+ */
+function take(series) {
+  const year = Number(compareYear.value);
+  const compared = comparePanel.hidden ? [] : (kept.get(year) ?? []);
+
+  download(
+    toCsv([...series.days, ...compared]),
+    fileName(asked.place, asked.start, asked.end),
+  );
+}
+
+/**
+ * Hand the file to the browser.
+ *
+ * **The byte order mark is not decoration.** Without it a French spreadsheet
+ * reads the accented headers as mojibake, and the reader this file is written
+ * for is the one who double-clicks it. It is the same trade the separator makes
+ * — `read_csv` wants `encoding="utf-8-sig"` where a spreadsheet wants the mark.
+ *
+ * The anchor is made, clicked and dropped rather than left in the markup: its
+ * href is a blob that does not exist until the button is pressed, and the object
+ * URL has to be revoked or the file is held in memory until the page is left.
+ */
+function download(text, name) {
+  const blob = new Blob([`\uFEFF${text}`], { type: "text/csv;charset=utf-8" });
+  const href = URL.createObjectURL(blob);
+  const link = el("a", { attrs: { href, download: name } });
+
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(href);
 }
 
 /** The same search, on the compared year — this page's own URL, other dates. */

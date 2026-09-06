@@ -460,10 +460,13 @@ describe("the drawing as a whole", () => {
     //
     // Checked in both gaps: a third panel means a second place this can go
     // wrong, and it would go wrong invisibly in the one nobody re-measured.
+    // Measured from the *lowest* row of the panel above, which is the row of
+    // month names since they were repeated under every panel — measuring the
+    // numbers would leave the names to collide with the title unwatched.
     const geometry = frame(25);
     const gaps = [
-      [geometry.temperature.dates, geometry.rain.top],
-      [geometry.rain.dates, geometry.cumul.top],
+      [geometry.temperature.months, geometry.rain.top],
+      [geometry.rain.months, geometry.cumul.top],
     ];
 
     for (const [row, top] of gaps) {
@@ -494,7 +497,10 @@ describe("the drawing as a whole", () => {
     assert.deepEqual(written, ["1", "10", "1", "10", "1", "10"]);
   });
 
-  it("names the months where they turn, once each", () => {
+  it("names the months where they turn, once each and under every panel", () => {
+    // Named once under the lowest panel, the row above it read "1, 10, 20, 1,
+    // 10" and there was no telling which 1 was which without leaving the panel
+    // being read. Each axis now carries its own two rows: numbers, then names.
     const days = [
       ...series(3),
       day("2026-09-01", "observed"),
@@ -502,7 +508,21 @@ describe("the drawing as a whole", () => {
     ];
     const names = byClass(chart(days, SCALE), "chart-month").map((node) => node.textContent);
 
-    assert.deepEqual(names, ["août", "septembre"]);
+    assert.deepEqual(names, ["août", "septembre", "août", "septembre", "août", "septembre"]);
+  });
+
+  it("puts the names of a panel under its own numbers, never in the next panel", () => {
+    const geometry = frame(25);
+    const rows = [geometry.temperature, geometry.rain, geometry.cumul];
+    const feet = [geometry.temperature.bottom, geometry.rain.base, geometry.cumul.base];
+
+    for (const [index, row] of rows.entries()) {
+      assert.ok(row.dates > feet[index], "the numbers hang below their own foot");
+      assert.ok(row.months > row.dates, "the names sit under the numbers");
+    }
+    // The lowest row of the temperature panel still clears the rain panel.
+    assert.ok(geometry.temperature.months < geometry.rain.top);
+    assert.ok(geometry.rain.months < geometry.cumul.top);
   });
 
   it("says nothing above the days: no total, no average, no count", () => {
@@ -559,9 +579,13 @@ describe("the year laid under the one asked for", () => {
 
     // Paths only: the legend borrows the same class for its two sample edges,
     // deliberately — one declaration of the colour and the width, not two — and
-    // those are `line` elements.
+    // those are `line` elements. The running total is grey too and is counted
+    // on its own panel, below.
     const lines = byClass(node, "chart-line").filter(
-      (mark) => mark.className.includes("past") && mark.tag === "path",
+      (mark) =>
+        mark.className.includes("past") &&
+        !mark.className.includes("cumulative") &&
+        mark.tag === "path",
     );
     assert.equal(lines.length, 2, "a maximum and a minimum");
 
@@ -636,6 +660,25 @@ describe("the year laid under the one asked for", () => {
     assert.equal(byClass(chart(series(10), SCALE), "chart-legend-year").length, 0);
   });
 
+  it("names the year over every panel that carries it", () => {
+    // Three panels draw the compared year, so three name it: a grey mark whose
+    // only legend is two panels higher has to be gone and identified.
+    const geometry = frame(10);
+    const node = chart(series(10), SCALE, { compared: past(10) });
+    const labels = byClass(node, "chart-legend-year");
+
+    assert.deepEqual(
+      labels.map((label) => label.textContent),
+      ["1991", "1991", "1991"],
+    );
+    // One on each title line, and all three on the same vertical.
+    assert.deepEqual(
+      labels.map((label) => Number(label.attrs.y)),
+      [geometry.temperature.top, geometry.rain.top, geometry.cumul.top].map((top) => top - 12),
+    );
+    assert.equal(new Set(labels.map((label) => label.attrs.x)).size, 1);
+  });
+
   it("names the compared year in its own label too", () => {
     const node = chart(series(10), SCALE, { compared: past(10) });
 
@@ -669,14 +712,54 @@ describe("the year laid under the one asked for", () => {
     }
   });
 
-  it("keeps the rain panel to the year asked for", () => {
-    // The compared year is soaked; its rain is never drawn, so the ceiling of
-    // the panel does not move. Its selection was made on temperature alone.
+  it("lays the compared year over the rain, and frames both on one ceiling", () => {
+    // The compared year is soaked. Its bars are drawn, so the ceiling has to
+    // rise to hold them: framed on the drawn year alone they would run off the
+    // top of the panel, and a bar taller than its own panel says nothing.
     const days = series(10, () => ({ precipitation: 1 }));
     const wet = past(10, () => ({ precipitation: 200 }));
+    const node = chart(days, SCALE, { compared: wet });
 
     assert.equal(rainCeiling(days), RAIN_FLOOR_MM);
-    const bars = byClass(chart(days, SCALE, { compared: wet }), "chart-bar");
-    assert.equal(bars.length, 10);
+    assert.equal(rainCeiling(days, wet), 200);
+
+    // Counted inside the panel: the legend's own sample is a real `chart-bar
+    // past`, deliberately — one declaration of what a compared bar looks like,
+    // not two — and it would be counted with the days otherwise.
+    const [panel] = byClass(node, "chart-rain");
+    const drawn = byClass(panel, "chart-bar").filter((bar) => !bar.className.includes("past"));
+    const grey = byClass(panel, "chart-bar").filter((bar) => bar.className.includes("past"));
+    assert.equal(drawn.length, 10);
+    assert.equal(grey.length, 10);
+
+    // Over, not under: the shorter bar stands inside the taller one, so the
+    // grey has to be laid on top to be readable at all where the drawn year is
+    // the wetter of the two.
+    const bars = byClass(panel, "chart-bar");
+    assert.ok(bars.indexOf(grey[0]) > bars.indexOf(drawn.at(-1)));
+  });
+
+  it("totals the compared year too, under the curve of the year asked for", () => {
+    const days = series(10, () => ({ precipitation: 1 }));
+    const wet = past(10, () => ({ precipitation: 20 }));
+    const node = chart(days, SCALE, { compared: wet });
+
+    const totals = byClass(node, "cumulative").filter((mark) => mark.tag === "path");
+    // One run apiece, the grey first so the drawn year runs over it.
+    assert.equal(totals.length, 2);
+    assert.ok(totals[0].className.includes("past"));
+    assert.ok(!totals[1].className.includes("past"));
+
+    // Ten days at 20 mm is 200 mm of total, and the axis has to reach it.
+    assert.equal(cumulativeCeiling(days, wet), 200);
+  });
+
+  it("draws no grey rain at all when no year is compared", () => {
+    const node = chart(series(10, () => ({ precipitation: 1 })), SCALE);
+
+    assert.deepEqual(
+      byClass(node, "chart-bar").filter((bar) => bar.className.includes("past")),
+      [],
+    );
   });
 });
