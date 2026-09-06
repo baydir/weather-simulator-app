@@ -35,7 +35,6 @@ from weather_simulator.domain.correction import (
     MonthlyCorrection,
 )
 
-
 # How many decimals a node's coordinates carry, in the file and in memory alike.
 #
 # **One number for two operations that have to agree.** :meth:`CorrectionTable.write`

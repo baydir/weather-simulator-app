@@ -274,7 +274,9 @@ def test_a_range_reaching_past_the_forecast_is_refused_there(client, frozen_toda
 
 def test_the_past_and_the_forecast_come_back_together_off_the_grid(client, frozen_today) -> None:
     """A range straddling today, uncovered: served whole, and nothing simulated."""
-    response = _run(client, _search(TODAY - timedelta(days=10), TODAY + timedelta(days=5), SANTIAGO))
+    response = _run(
+        client, _search(TODAY - timedelta(days=10), TODAY + timedelta(days=5), SANTIAGO)
+    )
     assert response.status_code == 200, response.json()
     body = response.json()
 

@@ -54,7 +54,8 @@ SITES = {
     "Briançon": (45.0, 6.5),
 }
 
-MONTHS = "janv févr mars avr mai juin juil août sept oct nov déc".split()
+MONTHS = ["janv", "févr", "mars", "avr", "mai", "juin",
+          "juil", "août", "sept", "oct", "nov", "déc"]
 
 
 def node_file(lat: float, lon: float) -> Path:
@@ -70,7 +71,7 @@ def monthly_gap(path: Path) -> list[float | None]:
     }
     for side in ("reference", "model"):
         daily = node[side]["daily"]
-        for day, cover in zip(daily["time"], daily["cloud_cover_mean"]):
+        for day, cover in zip(daily["time"], daily["cloud_cover_mean"], strict=True):
             # The model runs to 2050; the reanalysis stops at the overlap, and
             # only the shared window can be differenced.
             if cover is None or day > OVERLAP_END:
