@@ -96,9 +96,10 @@ graphe, où la superposition *est* la comparaison, et la ligne de synthèse est
 tombée avec le problème qu'elle devait résoudre : c'était une agrégation, que
 [`application.md`](application.md) refuse à l'interface.
 
-Deux autres suppositions sont tombées. Le déclenchement ne suit pas la règle du
-refus hors grille : une plage passée n'exige aucune correction, donc la
-comparaison marche partout dans le monde, y compris là où le futur est refusé.
+Deux autres suppositions sont tombées. Le déclenchement ne suit pas la
+couverture de la grille : une plage passée n'exige aucune correction, donc la
+comparaison marche partout dans le monde, et elle y est exacte là même où la
+projection ne l'est pas, l'année comparée étant observée.
 Et l'année n'est pas codée en dur par grande région : le menu s'ouvre sur celle
 qui a été mesurée comme ordinaire et laisse choisir.
 

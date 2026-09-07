@@ -1,27 +1,23 @@
 """What a request has to satisfy before anything is fetched or computed.
 
-Two rules are worth stating out loud, the rest being bounds checks.
+One rule is worth stating out loud, the rest being bounds checks — and one
+absence, which used to be a rule and no longer is.
 
 **Ninety-two days at most.** One whole season, and docs/application.md asks for
 the bound in the interface *and* in the API, never in the browser alone — a limit
 only the browser enforces is not a limit.
 
-**The refusal outside the grid depends on the range, not on the place.** A
-request reaching the climate model needs a correction and is refused where there
-is none: showing an uncorrected future would mean showing an artificially sunny
-one, and quietly borrowing the nearest node's coefficients would be worse still
-— wrong without saying so.
+**Nothing here looks at the correction grid any more, and that is a deliberate
+retreat.** A search reaching past the forecast used to be refused wherever the
+grid had no nodes, which meant refused everywhere but metropolitan France. The
+project owner chose an answer over a refusal: outside the grid the projection is
+served raw. Where the days are corrected is therefore no longer a matter of
+validation at all — it is decided at the moment the correction is resolved, in
+:mod:`weather_simulator.api.app`, and carried explicitly to the pipeline.
 
-**It stops there, and the boundary is the plan's own.** A range lying wholly in
-the past calls for no coefficient, and neither does the fortnight ahead — that
-one is ECMWF IFS, which needs no debiasing — so both are served everywhere in
-the world, as docs/application.md requires. What decides is therefore not
-"does this range pass today", which would refuse a forecast nothing corrects; it
-is whether the plan carries a simulated segment at all. :func:`split_range` is
-asked, rather than the horizon being worked out a second time here.
-
-The refusal happens here, before the plan is handed out, so that a visitor does
-not spend their Open-Meteo quota on a search that was never going to be served.
+What survives here is what a request must satisfy whatever the place: the two
+bounds above. A search is now refused only for what it asks, never for where it
+asks it.
 """
 
 from __future__ import annotations
@@ -32,9 +28,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 
 from weather_simulator.api import errors
-from weather_simulator.calibration.grid import CorrectionGrid
 from weather_simulator.sources import openmeteo
-from weather_simulator.sources.series import split_range
 
 # One season, and the number is measured rather than rounded: at the astronomical
 # bounds the interface offers — the 21st — winter runs 90 days, autumn 91, spring
@@ -75,17 +69,3 @@ class Fetched(Search):
     today: date
     payloads: dict[str, dict[str, Any]]
 
-
-def refuse_uncovered(search: Search, today: date, grid: CorrectionGrid) -> None:
-    """Refuse a range that needs a correction where the grid has none.
-
-    The range is cut by the same function the plan is built from, and only its
-    third part — the days the climate model would answer for — decides. A search
-    reaching no further than the forecast carries none, so it is served wherever
-    it is asked from.
-    """
-    _, _, simulated = split_range(search.start, search.end, today)
-    if simulated is None:
-        return
-    if not grid.covers(search.latitude, search.longitude):
-        raise errors.OutOfGrid(search.latitude, search.longitude)

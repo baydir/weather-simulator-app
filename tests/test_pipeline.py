@@ -134,6 +134,39 @@ def test_a_future_without_a_correction_stops_the_request() -> None:
     assert raised.value.status_code == 500
 
 
+def test_outside_the_grid_the_projection_passes_through_raw() -> None:
+    """The one case where a correction-less future is served, and it must be asked for.
+
+    ``outside_grid`` is the caller saying the place has no nodes and the raw
+    model was chosen over a refusal. The day comes back untouched, and ``grid``
+    is null so the response says no table applied.
+
+    The two cloud covers are picked either side of the overcast threshold on
+    purpose: 65 is what the model says, 75 is what the correction would have
+    made of it, and they are not the same sky. That is the cost of the trade,
+    written where a regression would trip over it.
+    """
+    records = [_record(date(2046, 6, 1), Origin.SIMULATED, cloud_cover=65.0)]
+
+    served = _run(records, correction=None, metadata=None, outside_grid=True)
+    assert served.days[0].cloud_cover == pytest.approx(65.0)
+    assert served.days[0].sky is SkyClass.CLOUDY
+    assert served.grid is None
+    assert served.has_simulated is True
+
+    corrected = _run(records)
+    assert corrected.days[0].cloud_cover == pytest.approx(75.0)
+    assert corrected.days[0].sky is SkyClass.OVERCAST
+
+
+def test_the_pass_through_has_to_be_asked_for_by_name() -> None:
+    """Defaulting to it would serve a French search uncorrected the day one broke."""
+    records = [_record(date(2046, 6, 1), Origin.SIMULATED)]
+
+    with pytest.raises(errors.UncorrectedFuture):
+        _run(records, correction=None, outside_grid=False)
+
+
 def test_a_month_the_table_is_short_of_stops_the_request() -> None:
     """Correcting from a hole would be a different correction under the same name."""
     records = [_record(date(2046, 6, 1), Origin.SIMULATED)]

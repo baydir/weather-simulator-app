@@ -144,15 +144,17 @@ class PlanOut(BaseModel):
 
 
 @app.post("/api/plan", response_model=PlanOut)
-def plan(search: validation.Search, grid: Grid) -> PlanOut:
+def plan(search: validation.Search) -> PlanOut:
     """Validate a search, then say exactly what to fetch for it.
 
-    The refusal for an uncovered place happens here rather than after the fact,
-    so a visitor does not spend their own Open-Meteo quota on a search that was
-    never going to be answered.
+    **The grid is no longer consulted here**, and the parameter that carried it
+    is gone with the refusal it served. A search reaching past the forecast used
+    to be turned away wherever the grid had no nodes; it is now answered
+    everywhere, uncorrected where there is nothing to correct with. Nothing
+    about a place can stop a plan any more, so this endpoint has no use for a
+    table.
     """
     today = today_in_reference_zone()
-    validation.refuse_uncovered(search, today, grid)
 
     built = planning.build(search.latitude, search.longitude, search.start, search.end, today)
     return PlanOut(
@@ -173,7 +175,6 @@ def days(fetched: validation.Fetched, grid: Grid) -> Series:
     if abs((today_in_reference_zone() - fetched.today).days) > 1:
         raise errors.StalePlan(fetched.today, today_in_reference_zone())
 
-    validation.refuse_uncovered(fetched, fetched.today, grid)
     built = planning.build(
         fetched.latitude, fetched.longitude, fetched.start, fetched.end, fetched.today
     )
@@ -181,15 +182,24 @@ def days(fetched: validation.Fetched, grid: Grid) -> Series:
         raise errors.PayloadMismatch(built.ids, set(fetched.payloads))
 
     records = planning.assemble(built, fetched.payloads)
+
+    # Where the grid reaches decides whether the projection is corrected, no
+    # longer whether it is served at all. ``covers`` is asked before
+    # ``correction_at`` so that the ordinary case outside France is a decision
+    # rather than a caught exception, and ``outside_grid`` carries that decision
+    # to the pipeline — which still refuses to serve a correction-less future
+    # that nobody asked for.
     simulated = any(segment.id == planning.PROJECTION for segment in built.segments)
-    correction = grid.correction_at(fetched.latitude, fetched.longitude) if simulated else None
+    covered = simulated and grid.covers(fetched.latitude, fetched.longitude)
+    correction = grid.correction_at(fetched.latitude, fetched.longitude) if covered else None
 
     return pipeline.run(
         records,
         latitude=fetched.latitude,
         longitude=fetched.longitude,
         correction=correction,
-        metadata=grid.table.metadata if simulated else None,
+        metadata=grid.table.metadata if covered else None,
+        outside_grid=simulated and not covered,
     )
 
 

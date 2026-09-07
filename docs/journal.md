@@ -499,6 +499,64 @@ suivant.
 
 ---
 
+## Le futur servi partout, non corrigé hors grille
+
+**Ce qui a changé.** Une recherche dépassant la prévision était refusée partout
+où la grille n'a pas ses quatre nœuds, c'est-à-dire partout sauf la France
+métropolitaine et ses abords. Elle est désormais servie, et la projection y est
+rendue **telle que le modèle la produit**. Un lieu ne fait plus jamais refuser
+une recherche ; seul ce qu'elle demande le peut.
+
+**Ce qui a fait pencher, et ce n'est pas un argument de méthode.** Le motif du
+refus reste vrai et la mesure ne bouge pas : le modèle est en retrait de 8 à 11
+points de nébulosité, et trois des cinq classes de ciel en dépendent. Ce qui a
+changé, c'est l'alternative, une fois chiffrée. Étendre la grille au monde au pas
+de 0,5° demande de l'ordre de cent mille nœuds, soit **deux à cinq ans** de quota
+au débit mesuré ; même desserrée à 3°, la collecte prend vingt à soixante jours.
+Le refus n'était donc pas une attente, c'était un refus définitif hors de France.
+Une réponse imparfaite et signalée a été préférée à une absence de réponse.
+
+**Trois mesures faites à cette occasion**, sur les 438 nœuds servis, en comparant
+chaque simplification à la correction par nœud. Aucune correction laisse 9,00
+points d'erreur moyenne et fait changer de classe 21,1 % des jours secs ; un
+décalage mensuel national, 3,68 points et 6,3 % ; une grille QDM desserrée à 3°,
+1,68 point et 3,6 %. **Desserrer la grille coûte donc moins cher que simplifier
+la méthode**, ce qui n'allait pas de soi : à budget de nœuds donné, la méthode
+est gratuite, les deux requêtes par nœud rapportant la série journalière entière
+quoi qu'on en fasse ensuite. Le seul levier sur le quota est le nombre de nœuds.
+
+**Le décalage mensuel global a donc été envisagé, puis écarté.** Douze nombres
+tirés des nœuds existants rattraperaient 59 % de l'écart au modèle brut, mesuré
+en France, et supprimeraient la rupture visible à la couture. Ils ont été écartés
+parce que rien ne prouve que le biais du modèle se transporte hors de France, et
+qu'une correction non validée présentée comme une correction vaut moins qu'une
+absence de correction déclarée. C'est un arbitrage du porteur du projet.
+
+**Ce que le régime dégradé coûte, et il faut le dire.** Le passé et la quinzaine
+à venir sont des observations et restent justes partout ; seul le segment simulé
+est brut. La bande **s'éclaircit visiblement** là où la prévision passe la main à
+la simulation. C'est l'artefact de couture que tout le reste du dispositif
+combat, accepté ici en connaissance de cause, et **provisoire** : il tient
+jusqu'à ce qu'une grille mondiale existe.
+
+**Le garde-fou n'a pas été supprimé, il a été rendu intentionnel.** `pipeline.correct`
+levait `UncorrectedFuture` dès qu'une journée simulée arrivait sans correction.
+Le supprimer aurait suffi à servir le monde, et aurait fait disparaître avec lui
+le cinquième verrou : une recherche française perdant sa correction par un défaut
+aurait été servie en silence. Un mot-clé `outside_grid` porte donc la décision de
+l'appelant, et la levée subsiste pour tout le reste. Le silence est demandé,
+jamais subi.
+
+**Ce qui a suffi à l'interface : rien.** L'avertissement qu'exige la règle 1 est
+piloté par `has_simulated`, pas par la grille, donc il s'affiche hors couverture
+comme ailleurs. Et `sources(grid)` rend une liste vide quand la grille est nulle,
+donc le dépliant de provenance omet simplement son bloc de grille. Le contrat
+portait déjà la distinction, `grid` valant `null` quand rien n'a corrigé.
+
+→ [`application.md`](application.md), *Hors de la zone couverte*
+
+---
+
 ## Ce qui reste calé sur une base mince
 
 Aucune décision scientifique n'est en attente, mais deux points méritent d'être

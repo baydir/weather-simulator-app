@@ -714,9 +714,10 @@ les mêmes fonctions — [`CLAUDE.md`](../CLAUDE.md) règle 2 obtenue en ne calc
 rien de neuf.
 
 **Deux requêtes, et pas de grille.** Une plage entièrement passée coûte les deux
-requêtes d'archive, et le refus hors grille ne s'applique qu'aux plages atteignant
-l'avenir → [`donnees.md`](donnees.md). La comparaison marche donc **partout dans
-le monde**, y compris là où le futur est refusé. **Une requête par année, au
+requêtes d'archive et n'appelle aucun coefficient →
+[`donnees.md`](donnees.md). La comparaison marche donc **partout dans le monde**,
+et elle y est même exacte là où la projection ne l'est pas : l'année comparée est
+observée, elle ne passe pas par la correction. **Une requête par année, au
 plus** : ce qui est revenu est gardé en mémoire. Un échec ne touche pas la page —
 il s'écrit dans le bloc, les journées demandées étant déjà à l'écran.
 
@@ -905,16 +906,45 @@ pas, le volume du réseau, le débit de la collecte et ce qui les établit →
 
 ### Hors de la zone couverte
 
-L'application **refuse la recherche avec un message explicite**. Afficher des
-données non corrigées reviendrait à montrer un futur artificiellement ensoleillé ;
-se rabattre sur le nœud le plus proche serait silencieux et trompeur.
+**La recherche est servie, et la projection y est rendue telle que le modèle la
+donne, sans correction.** C'est un régime dégradé, assumé comme tel, et
+**provisoire** : il tient jusqu'à ce qu'une grille mondiale existe.
 
-**Ce refus ne porte que sur les journées simulées.** Une requête entièrement
-passée n'appelle aucun coefficient, et la quinzaine à venir vient d'ECMWF IFS, qui
-ne demande aucune correction : une recherche qui n'atteint pas le modèle
-climatique est servie **partout dans le monde**. Le message le dit — c'est « pour
-les dates lointaines » que le lieu n'est pas couvert, et « les dates passées et les
-jours à venir » restent consultables.
+Ce que ce choix a remplacé. L'application refusait la recherche, au motif qu'un
+futur non corrigé est un futur artificiellement ensoleillé. Le motif reste vrai,
+et la mesure ne bouge pas : le modèle est en retrait de 8 à 11 points de
+nébulosité, et trois des cinq classes de ciel dépendent de ce nombre. Ce qui a
+changé, c'est l'alternative. Étendre la grille au monde a été chiffré : au pas de
+0,5°, de l'ordre de cent mille nœuds, soit **deux à cinq ans** de quota au débit
+observé ; même desserrée à 3°, la collecte demande vingt à soixante jours. Le
+refus n'était donc pas une attente, c'était un refus définitif pour tout lieu hors
+de France. **Une réponse imparfaite et signalée a été préférée à une absence de
+réponse.**
+
+**Ce que le régime dégradé coûte, dit franchement.** Le passé et la quinzaine à
+venir sont des observations et restent justes partout. Seul le segment simulé est
+brut. La bande **s'éclaircit donc visiblement** là où la prévision passe la main à
+la simulation, et c'est exactement l'artefact de couture que le reste du
+dispositif combat. Il est ici la contrepartie acceptée, non un oubli.
+
+**Un décalage mensuel global a été envisagé et écarté.** Douze nombres tirés des
+nœuds déjà collectés rattraperaient 59 % de l'écart au modèle brut, mesuré en
+France. Ils ont été écartés parce que rien ne prouve que le biais du modèle se
+transporte hors de France, et qu'une correction non validée présentée comme une
+correction vaut moins qu'une absence de correction déclarée.
+
+**Comment les deux régimes se distinguent, dans le contrat.** Le champ `grid` de
+la réponse porte les métadonnées de la table quand elle a servi, et vaut `null`
+quand rien n'a corrigé. `has_simulated` reste vrai dans les deux cas :
+l'avertissement qu'exige la règle 1 de [`CLAUDE.md`](../CLAUDE.md) est piloté par
+lui, jamais par la grille, et il s'affiche donc hors couverture comme ailleurs.
+
+**Ce qui n'est plus jamais refusé, c'est un lieu.** Une recherche n'est écartée
+que pour ce qu'elle demande : une plage trop longue, des dates hors de
+1950-2050. Jamais pour l'endroit d'où elle est faite. Le refus hors grille
+subsiste dans le code à l'état de filet : il ne peut être atteint que si la grille
+déclare couvrir un point puis se découvre un nœud manquant, ce qui serait un
+défaut et non un lieu.
 
 ### Métadonnées et table provisoire
 

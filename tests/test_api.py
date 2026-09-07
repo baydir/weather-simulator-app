@@ -233,11 +233,25 @@ def test_a_malformed_body_is_refused_in_french_too(client, frozen_today, body: d
     assert "mal formées" in response.json()["message"]
 
 
-def test_a_place_outside_the_grid_is_refused_for_the_future(client, frozen_today) -> None:
-    """An uncorrected future would be an artificially sunny one. Not shown."""
-    response = client.post("/api/plan", json=_search(date(2046, 7, 1), date(2046, 7, 31), SANTIAGO))
-    assert response.status_code == 400
-    assert "pas encore couvert" in response.json()["message"]
+def test_a_place_outside_the_grid_is_served_for_the_future(client, frozen_today) -> None:
+    """The refusal is gone: outside the grid the projection is served raw.
+
+    The project owner chose an answer over a refusal, the grid being years of
+    quota away from reaching the world. What the response must still say is that
+    nothing corrected these days — ``grid`` is null — while ``has_simulated``
+    stays true so the warning rule 1 requires is unaffected.
+
+    The number is the assertion that matters. Paris comes back at ``6.0 +
+    SHIFT`` two tests below; Santiago comes back at 6.0, the model untouched.
+    """
+    response = _run(client, _search(date(2046, 7, 1), date(2046, 7, 31), SANTIAGO))
+    assert response.status_code == 200, response.json()
+    body = response.json()
+
+    assert body["has_simulated"] is True
+    assert body["grid"] is None
+    assert {day["origin"] for day in body["days"]} == {"simulated"}
+    assert body["days"][0]["cloud_cover"] == pytest.approx(6.0)
 
 
 def test_the_same_place_is_served_for_the_past(client, frozen_today) -> None:
@@ -262,14 +276,20 @@ def test_the_same_place_is_served_for_the_fortnight_ahead(client, frozen_today) 
     assert [r["id"] for r in response.json()["requests"]] == [planning.FORECAST]
 
 
-def test_a_range_reaching_past_the_forecast_is_refused_there(client, frozen_today) -> None:
-    """One day beyond the horizon is one simulated day, and that needs the grid."""
+def test_a_range_reaching_past_the_forecast_is_served_there_too(client, frozen_today) -> None:
+    """One day beyond the horizon is one simulated day, and it no longer refuses.
+
+    This is the range that shows the shortfall at its plainest: the fortnight is
+    ECMWF IFS and needs no debiasing, the day after it is the raw climate model.
+    The seam between the two is where an uncovered place lightens, and serving it
+    is the trade that was accepted.
+    """
     horizon = TODAY + timedelta(days=openmeteo.FORECAST_DAYS)
     response = client.post(
         "/api/plan", json=_search(TODAY + timedelta(days=1), horizon + timedelta(days=1), SANTIAGO)
     )
-    assert response.status_code == 400
-    assert "pas encore couvert" in response.json()["message"]
+    assert response.status_code == 200, response.json()
+    assert planning.PROJECTION in [r["id"] for r in response.json()["requests"]]
 
 
 def test_the_past_and_the_forecast_come_back_together_off_the_grid(client, frozen_today) -> None:

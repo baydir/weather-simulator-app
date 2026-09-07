@@ -70,15 +70,17 @@ os.environ.setdefault("PLAYWRIGHT_BROWSERS_PATH", str(ROOT / ".playwright"))
 
 from playwright.sync_api import Page, sync_playwright  # noqa: E402
 
+# The season bound is served, never copied: the refusal view builds its range
+# from the same constant the API enforces.
+from weather_simulator.api import validation  # noqa: E402
+
 OUT = ROOT / "shots"
 
-# Paris sits inside the three cells the collection has closed, so its future is
-# served. Pontarlier does not, which is what makes it the refusal case.
 PARIS = {"lieu": "Paris", "lat": "48.8566", "lon": "2.3522"}
-# Well outside the French box, and it has to be: Pontarlier stood here until the
-# grid reached it, and a refusal photographed at a covered place is a picture of
-# nothing. Santiago is the example docs/application.md itself uses when it says
-# a wholly past search must stay served anywhere in the world.
+# Well outside the French box. It used to be the refusal case — the grid had no
+# nodes there, so a far future was turned away — and it is now the opposite: the
+# place that proves a search is answered anywhere in the world. What it shows is
+# an uncorrected projection, which is why the shot is worth taking.
 SANTIAGO = {"lieu": "Santiago", "lat": "-33.4489", "lon": "-70.6693"}
 
 DESKTOP = {"width": 1440, "height": 960}
@@ -327,17 +329,22 @@ def results_compare(page: Page, base: str) -> None:
 
 
 def results_refused(page: Page, base: str) -> None:
-    """Outside the grid, and far enough ahead to need it.
+    """What a refusal looks like, now that the out-of-grid one is gone.
 
-    Two conditions, and the view is worth nothing if either lapses. The range
-    must clear the forecast horizon — a fortnight anywhere carries no simulated
-    day, asks the grid for nothing, and leaves nothing to refuse. And the place
-    must be one the grid will not reach: Pontarlier stood here until the
-    collection covered it, and this shot quietly became a picture of a page that
-    loads fine.
+    This view photographed a place the correction grid could not reach until the
+    projection began being served there uncorrected. There is no longer any
+    refusal that turns on *where* a search is made, so the subject had to move
+    to one that turns on what it asks: a range longer than the season the API
+    serves.
+
+    The range is built from ``MAX_DAYS`` rather than from a number typed here,
+    so the day that bound moves this view follows it instead of quietly
+    photographing a page that loads fine — which is exactly how the previous
+    subject decayed.
     """
     today = date.today()
-    page.goto(results_url(base, SANTIAGO, today, today + timedelta(days=40)))
+    too_long = today + timedelta(days=validation.MAX_DAYS + 30)
+    page.goto(results_url(base, PARIS, today, too_long))
     page.wait_for_selector(".failure:not([hidden])", timeout=90_000)
 
 

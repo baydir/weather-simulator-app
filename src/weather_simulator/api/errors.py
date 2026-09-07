@@ -72,14 +72,17 @@ class RangeTooLong(ApiError):
 class OutOfGrid(ApiError):
     """A simulated segment was asked for where the correction grid has no nodes.
 
-    The wording says the place is not covered *yet*, which is true — step 8
-    widens the grid to the world — and it does not offer to show the future
-    uncorrected, because there is no honest version of that.
+    **No request reaches this any more, and that is the point of keeping it.**
+    Being outside the grid stopped being a refusal the day the project owner
+    chose an answer over silence: the projection is served there uncorrected,
+    and ``app.days`` asks ``covers`` before ``correction_at`` so the ordinary
+    case never raises. What remains is the belt-and-braces handler, for a grid
+    that answered ``covers`` and then found a node missing anyway — a bug, not a
+    place.
 
-    **It no longer says the past alone remains available.** Only the simulated
-    days need the grid, so the fortnight ahead is served here as anywhere: it is
-    ECMWF IFS, which needs no debiasing. Naming no number, per rule 3 — how far
-    the forecast reaches is the server's to know.
+    The wording is therefore the wording of a fault the visitor should never
+    see, kept rather than reworded so that a regression restoring the refusal
+    still has a French sentence to show.
     """
 
     def __init__(self, latitude: float, longitude: float) -> None:

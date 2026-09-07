@@ -178,9 +178,22 @@ porte les 438.
 
 **Ce que l'étape 7 a changé de cette contrainte.** La quinzaine à venir vient
 d'ECMWF IFS et ne demande aucune correction : elle est donc servie **partout dans
-le monde**, sans attendre la grille. Le passé aussi. Ce que la grille conditionne
-encore, c'est le futur **au-delà de la prévision**, et lui seul — c'est ce que
-dit le refus hors grille.
+le monde**, sans attendre la grille. Le passé aussi.
+
+**Et le refus hors grille n'existe plus.** Le futur au-delà de la prévision est
+désormais servi partout lui aussi, **brut là où la grille n'atteint pas**. Un
+lieu ne fait plus jamais refuser une recherche ; seul ce qu'elle demande le peut.
+
+Ce régime est **dégradé et provisoire**, et il faut le tenir pour tel. La
+projection non corrigée est ensoleillée de 8 à 11 points de trop, et la bande
+s'éclaircit visiblement à la couture entre la prévision et la simulation. Il
+tient jusqu'à ce qu'une **grille mondiale** existe, ce qui n'est pas fait pour
+une raison de temps et non de méthode : au pas de 0,5° la collecte demanderait
+deux à cinq ans de quota, vingt à soixante jours même desserrée à 3°. Le refus
+n'était donc pas une attente, c'était un refus définitif hors de France, et une
+réponse imparfaite et signalée lui a été préférée. Le détail, les mesures et ce
+qui a été écarté → [`docs/application.md`](docs/application.md), *Hors de la zone
+couverte*.
 
 **Le débit est plafonné par jour, non par heure.** Open-Meteo le dit lui-même —
 `HTTP 429 : Daily API request limit exceeded` — et laisse passer entre cinquante
