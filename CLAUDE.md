@@ -69,7 +69,9 @@ initial — rouvre la divergence que la règle 2 interdit.
 Le nombre d'appels a changé le jour où la prévision est devenue un segment, et
 c'est précisément ce que la règle protège : il n'y a rien eu à modifier, la
 fonction étant appelée là où les segments sont assemblés et non recopiée dans
-chacun.
+chacun. **Le nombre de fonctions a changé de même** le jour où la température
+humide s'est ajoutée : deux règles désormais, appelées quatre fois chacune au
+même endroit, et la seconde n'a rien coûté à la première.
 
 **Le navigateur dérive ce dont le serveur ne détient pas de version** : mise en
 forme, repères de lecture, ordonnancement, cache. Le critère n'est pas la
@@ -194,6 +196,17 @@ n'était donc pas une attente, c'était un refus définitif hors de France, et u
 réponse imparfaite et signalée lui a été préférée. Le détail, les mesures et ce
 qui a été écarté → [`docs/application.md`](docs/application.md), *Hors de la zone
 couverte*.
+
+**La chaleur humide est servie, et son entrée n'est pas calibrée.** Une
+température humide est dérivée sur chaque journée, et deux niveaux paraissent sur
+la carte au-delà de 26 °C et de 30 °C de moyenne journalière. La formule est
+réglée : c'est celle d'Open-Meteo, transcrite, donc fausse de la même façon sur
+les quatre segments et sans marche aux coutures. **L'entrée ne l'est pas** : sur
+les journées simulées, elle repose sur l'humidité du modèle climatique, mesurée
+en un seul point. C'est le même problème que l'étape 4, pris un cran plus tôt, et
+c'est l'**étape 9**. Le premier seuil résiste au biais plausible, le second varie
+d'un facteur trois → [`docs/regles.md`](docs/regles.md), *L'humidité reste à
+calibrer*.
 
 **Le débit est plafonné par jour, non par heure.** Open-Meteo le dit lui-même —
 `HTTP 429 : Daily API request limit exceeded` — et laisse passer entre cinquante

@@ -5,8 +5,9 @@
  * hands back nodes, which a test can walk without a browser. What is left in
  * results.js is the page's wiring — the URL, the call, the waiting.
  *
- * **Two reading marks are added, and only two.** The month name where the month
- * turns, and the seam where the observed stops. The server holds no version of
+ * **Three reading marks are added, and only three.** The month name where the
+ * month turns, the seam where the observed stops, and whether the humid-heat
+ * line is reserved at all. The server holds no version of
  * either — CLAUDE.md rule 3 turns on the double copy, and there is none here.
  * Everything else on a card arrived decided.
  *
@@ -31,9 +32,10 @@ import { seamIndex } from "./series.js";
  * has to mark the same crossing at the same day. What is left here is what that
  * mark looks like in a strip of cards.
  */
-export function strip(days) {
+export function strip(days, humidHeatPeak = 0) {
   const nodes = [];
   const seam = seamIndex(days);
+  const reservesHumidHeat = humidHeatPeak > 0;
   let month = null;
 
   for (const [index, day] of days.entries()) {
@@ -42,7 +44,7 @@ export function strip(days) {
     }
     const turned = present.monthKey(day.date) !== month;
     month = present.monthKey(day.date);
-    nodes.push(card(day, turned));
+    nodes.push(card(day, turned, reservesHumidHeat));
   }
   return nodes;
 }
@@ -60,7 +62,7 @@ export function strip(days) {
  * `source` rides along as a title attribute: it is what tells one seam from the
  * other when something looks wrong, and it has no business on screen otherwise.
  */
-export function card(day, namesMonth) {
+export function card(day, namesMonth, reservesHumidHeat = false) {
   const { emoji, label } = present.sky(day.sky);
   const { celsius, millimetres, kilometresPerHour } = texts.units;
 
@@ -68,6 +70,13 @@ export function card(day, namesMonth) {
     // The tinted band. The month line is rendered on every card, empty where the
     // month has not turned, so the cards keep one height and the dates line up
     // across the strip.
+    //
+    // **Written out on the turn alone, and that only works because the day
+    // carries the month in figures.** Naming it on every card was tried first
+    // and it cost the turn its salience: "AOÛT" among a run of "JUILLET" no
+    // longer marks anything. Two digits on the date line — "lundi 01/08" — say
+    // the month wherever the reader has scrolled to, and leave the name to the
+    // one card that has news.
     el("div", { className: "card-head" }, [
       el("p", {
         className: "card-month",
@@ -105,8 +114,61 @@ export function card(day, namesMonth) {
         // maximum, and its label says so — neither an average nor a gust.
         ...measure(texts.measure.windMax, day.wind_speed_max, present.wind, kilometresPerHour),
       ]),
+      // Under the wind, and reserved on every card of the strip or on none.
+      ...(reservesHumidHeat ? [humidHeat(day)] : []),
     ]),
   ]);
+}
+
+/**
+ * The humid-heat line: a word where there is one, an empty line where there is
+ * not, and never a number.
+ *
+ * **Empty rather than absent.** The cards are stretched to the tallest, so a
+ * line appearing on one day alone would grow the other eighty-nine and move the
+ * strip under the reader. The month line above already answers that the same
+ * way. What keeps this from costing anything is one rank up: `strip` reserves
+ * nothing at all on a range that carries no level, which is every range in
+ * France.
+ *
+ * **The word first, then the figure under it.** A wet bulb has no scale a
+ * reader can call on: 31 °C is lethal and reads as mild, and the card already
+ * carries two temperatures in large type, so a third bare number would read as
+ * a third air temperature. The order is what answers that. The word arrives
+ * first and names what follows, and the figure is set as a measure rather than
+ * as a headline — the type of "0,4 mm" and not that of the maximum — so the eye
+ * takes it for what it is. The project owner asked for the number on 2026-09-07,
+ * against the earlier arbitration; what is kept of that arbitration is that the
+ * number never stands alone.
+ *
+ * **The level arrives decided.** `humid_heat` is the server's answer, not a
+ * comparison made here: a threshold is a rule a displayed quantity turns on, and
+ * CLAUDE.md rule 3 keeps those on one side. This file knows there are levels,
+ * never where they start.
+ */
+function humidHeat(day) {
+  const level = day.humid_heat;
+  if (!level) return el("p", { className: "card-humid" });
+
+  const shown = present.temperature(day.wet_bulb_mean);
+  const reading = texts.humidHeat.reading(shown);
+  return el(
+    "p",
+    { className: "card-humid", attrs: { "data-humid": String(level), title: reading } },
+    [
+      el("span", { text: `${texts.humidHeat.mark} `, attrs: { "aria-hidden": "true" } }),
+      el("span", { text: texts.humidHeat.level[level] }),
+      // The name of the quantity, read aloud and not shown — the division
+      // `measure` already makes between a label and the bare number a card
+      // prints. Without it the figure arrives with no word at all for anyone
+      // who cannot see the line it sits under.
+      el("span", { className: "sr-only", text: texts.humidHeat.valueLabel }),
+      el("span", { className: "card-humid-value" }, [
+        el("span", { className: "value", text: shown }),
+        el("span", { className: "unit", text: texts.units.celsius }),
+      ]),
+    ],
+  );
 }
 
 /** One number, and what to say instead of it when there is none. */

@@ -1,10 +1,12 @@
 # Règles — ce qu'on dérive des données
 
-Les seules grandeurs que l'application calcule elle-même : **la classe de ciel**
-et **la correction de nébulosité**. Tout le reste est affiché tel que servi.
+Les seules grandeurs que l'application calcule elle-même : **la classe de ciel**,
+**la température humide** et **la correction de nébulosité**. Tout le reste est
+affiché tel que servi.
 
 D'où viennent les données → [`donnees.md`](donnees.md) ; ce qu'elles valent →
-[`science.md`](science.md). Chiffres établis par `scripts/sky_thresholds/`.
+[`science.md`](science.md). Chiffres de la classe de ciel établis par
+`scripts/sky_thresholds/`.
 
 ---
 
@@ -140,6 +142,127 @@ de trop** → [`idees.md`](idees.md).
 
 ---
 
+## La température humide, et les deux niveaux de chaleur humide
+
+**Pourquoi elle est reconstruite.** Open-Meteo sert
+`wet_bulb_temperature_2m_mean` en variable journalière sur ERA5-Land, ERA5 et
+ECMWF IFS, prévision comprise. L'API Climate l'accepte, répond HTTP 200 et
+renvoie une colonne de nuls — la même absence silencieuse que le `weather_code`.
+Trois segments sur quatre est exactement le cas que la règle 2 refuse. Elle est
+donc redérivée des variables que les quatre sources servent.
+
+**La même formule que celle d'Open-Meteo, délibérément.** Stull (2011), avec la
+garde `min(twet, t)`, transcrite de `Meteorology.swift`. Une copie du fichier
+source est conservée dans `scripts/verification/reference/`, à côté de celle du
+`weather_code` et pour la même raison : que la transcription reste vérifiable.
+
+Employer la même formule importe plus que d'avoir raison : l'erreur d'un
+ajustement empirique est héritée à l'identique sur les quatre segments, donc elle ne produit aucune marche aux coutures. Être faux de la même
+façon partout est l'exigence ; être juste ne l'est pas. Ce que coûte Stull face à
+la psychrométrie exacte : −1,0 à +0,65 °C, écart absolu moyen sous 0,3 °C, hors
+du coin froid et sec que l'article exclut, plus l'absence de terme de pression
+qui atteint 0,9 °C à 1500 m en air chaud et sec. Les deux tombent là où les
+seuils ne sont pas : sur les colonnes humides qui décident d'un niveau,
+l'ajustement et la solution exacte s'accordent à mieux de 0,5 °C.
+
+**Alimentée par le point de rosée**, quand Open-Meteo l'alimente par l'humidité
+relative. Sa fonction tourne à l'heure, où l'humidité relative est la grandeur
+réelle ; la nôtre tourne sur des agrégats journaliers, et dans une journée
+l'humidité relative varie en sens inverse de la température, si bien que sa
+moyenne résume mal la journée. Le point de rosée suit la vapeur réellement
+présente, à peu près conservée sur vingt-quatre heures. Mesuré contre la moyenne
+horaire d'Open-Meteo, cinq climats et 1826 jours chacun : **0,04 à 0,08 °C
+d'erreur quadratique par le point de rosée, contre 0,07 à 0,42 par l'humidité
+relative**. L'erreur de formule s'annule dans cette comparaison, les deux côtés
+appliquant Stull ; ce qui reste est l'agrégation et rien d'autre.
+
+**La moyenne journalière, jamais le maximum.** Deux raisons, dont chacune
+suffirait. Le maximum ne se reconstruit qu'à 0,75 à 0,95 °C près, dix fois plus
+mal. Et la moyenne est de toute façon la meilleure grandeur : la chaleur
+n'éprouve pas par sa pointe mais par sa dose, la moyenne sur vingt-quatre heures
+*est* l'intégrale d'exposition, et elle contient la nuit, dont l'absence comme
+fenêtre de récupération est ce que l'épidémiologie des canicules identifie comme
+le plus meurtrier.
+
+### Les deux seuils, 26 °C et 30 °C
+
+Ils lisent une moyenne, et c'est ce qui fixe leurs valeurs. Une moyenne se tient
+1,4 à 2,5 °C sous le maximum du même jour, si bien qu'un nombre emprunté à la
+littérature, qui parle surtout de pointes, signifie autre chose une fois écrit
+ici. Chacun a donc été placé en mesurant la correspondance.
+
+| | Condition | Niveau |
+|---|---|---|
+| 1 | température humide moyenne ≥ 26 °C | **chaleur humide** |
+| 2 | ≥ 30 °C | **chaleur humide extrême** |
+
+**26** — mesuré sur ERA5 2015-2024, huit sites : une moyenne à 26 porte un
+maximum dont la médiane court de 27,4 à 29,3 °C, soit la bande que Raymond,
+Matthews et Horton (2020) analysent comme portant des effets sanitaires et de
+productivité sérieux. Les deux valeurs voisines ont été essayées et écartées : 27
+est presque muet, déclenchant sur 0,1 % des jours à Singapour et 0,0 % à Bamako
+quand ces lieux comptent des centaines de journées sévères, et 25 déclenche sur
+65 % des jours à Singapour, ce qui n'avertit plus.
+
+**30** — le seul seuil du projet mesuré sur des personnes et non sur la météo :
+30,55 ± 0,98 °C est la température humide critique au-delà de laquelle la
+contrainte thermique cesse d'être compensable, pour des adultes jeunes et sains
+au métabolisme de la vie courante (Vecellio et coll., 2022, projet PSU HEAT).
+Aucun sujet n'a atteint les 35 °C théoriques de Sherwood et Huber (2010), et la
+limite est plus basse pour les personnes âgées ou malades : ce seuil décrit donc
+la population la plus résistante. Une *moyenne* journalière au-dessus signifie
+que la journée entière, nuit comprise, s'est tenue au-delà de cette limite.
+
+**La lecture est à sens unique**, et l'interface doit la respecter : une valeur
+élevée est un danger certain, une valeur modérée n'exclut pas quelques heures
+difficiles. Le niveau est un plancher de sévérité, jamais un certificat
+d'innocuité. Le corollaire vaut d'être écrit : **le wet-bulb est aveugle à la
+chaleur sèche**, qui est pourtant la forme des canicules françaises. Une journée
+à 40 °C et 25 % d'humidité donne environ 24 °C, sous le premier niveau. Sur
+2015-2024, aucune journée n'atteint le premier niveau à Strasbourg ni à Brest,
+quatre à Marseille.
+
+### L'humidité reste à calibrer, comme la nébulosité l'a été
+
+**C'est le même problème que celui de l'étape 4, à un stade antérieur.** La règle
+de classe de ciel n'a jamais été en doute ; ce qui était faux, c'était l'entrée,
+le modèle étant court de 8 à 11 points de nébulosité. Toute la grille existe à
+cause de cela. Ici la formule est réglée par la transcription, et c'est l'entrée
+qui n'est pas mesurée : sur les journées simulées, la température humide repose
+sur l'humidité produite par MRI_AGCM3_2_S.
+
+**Ce qu'on en sait, et c'est peu.** Un point : le modèle est sec de 0,62 °C sur
+le point de rosée à Strasbourg sur 1979-2014, ce qui pose sa température humide
+0,80 °C trop bas. La littérature encadre sans trancher : les sorties CMIP6 brutes
+sous-estiment le wet-bulb de 0,5 à 2,5 °C aux moyennes et hautes latitudes
+eurasiennes, mais dans les tropiques et subtropiques les biais de température et
+d'humidité **se compensent** et le signe n'y est pas établi — or c'est là que les
+seuils déclenchent.
+
+**Ce qui rend la mesure nécessaire plutôt que confortable.** À Dubaï sur
+2040-2050, décaler la série de 0,6 °C fait varier le compte au-dessus de 26 de
+11 %, et le compte au-dessus de 30 de 111 à 364 journées. **Le premier niveau est
+robuste au biais plausible, le second ne l'est pas.**
+
+**Une différence avec la nébulosité, et elle est encourageante.** La correction
+d'Open-Meteo échoue sur la nébulosité parce que celle-ci est la seule variable
+bornée des *deux* côtés et se fait rogner à 0 et à 100. Le point de rosée n'est
+pas borné ainsi et devrait donc se corriger comme la température, additivement.
+**Devrait** : personne n'a vérifié. Si cela se confirme, aucune grille n'est
+nécessaire et les deux seuils restent où ils sont. Si cela se dément, il faut
+une correction d'humidité, et c'est une étape de l'ampleur de la 4.
+
+**En attendant, les deux seuils ne vivent qu'à un endroit**, `domain/thresholds.py`,
+et les déplacer ne touche pas une ligne de logique. Ils ne sont *pas* servis par
+`/api/config`, à la différence de la borne de 92 jours et des bornes de l'échelle
+de température : le navigateur n'applique aucune de ces deux règles, il reçoit le
+niveau déjà décidé. Une constante partagée est servie ; celle-ci ne l'est pas,
+donc elle ne voyage pas. Ce régime est provisoire et se tient pour tel,
+exactement comme le futur non corrigé hors grille
+→ [`application.md`](application.md), *Hors de la zone couverte*.
+
+---
+
 ## La correction de nébulosité
 
 **C'est la seule correction appliquée.** Elle est nécessaire parce que la
@@ -212,8 +335,12 @@ Après l'assemblage des quatre segments décrit dans [`donnees.md`](donnees.md) 
    avant, pas un modèle climatique biaisé. Lui appliquer la correction
    inventerait un biais qu'elle n'a pas.
 2. Classe de ciel appliquée **aux quatre segments, par la même fonction**.
+3. Température humide et niveau de chaleur humide, **aux quatre segments, par la
+   même fonction**. Après la correction comme la classe de ciel, quoique rien de
+   ce qui est corrigé aujourd'hui n'entre dans son calcul : le jour où
+   l'humidité sera corrigée, l'ordre sera déjà le bon.
 
-Cette fonction unique, appelée quatre fois, n'est pas négociable : toute
+Ces fonctions uniques, appelées quatre fois chacune, ne sont pas négociables : toute
 duplication de cette logique rouvrirait la divergence que tout le dispositif
 vise à interdire. Le nombre d'appels est passé de trois à quatre le jour où la
 prévision est devenue un segment, sans qu'il y ait rien à modifier — c'est la
@@ -228,6 +355,9 @@ preuve de la règle plutôt qu'une exception à elle.
   sans les supposer, en suivant le changement de source d'un jour au suivant.
 - **Continuité** : ni trou ni doublon aux raccords, et un jour porte les mêmes
   champs renseignés quelle que soit la source qui l'a servi.
+- **Une température humide sur chaque journée, quelle que soit sa source** :
+  c'est la forme que prend la règle 2 sur cette grandeur, et un test la vérifie
+  sur une fenêtre de quatre-vingt-douze jours qui traverse les quatre segments.
 - **Vraisemblance des classes de ciel** — non contre leur seule fréquence, mais
   contre la lumière reçue : les trois classes sèches doivent rester séparées
   d'environ 90 %, 80 % et 60 % du rayonnement d'un ciel clair, comme sur la

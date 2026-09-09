@@ -94,6 +94,48 @@ CLOUDY_PERCENT = 30.0
 TEMPERATURE_BAND_STEP_C = 5.0
 TEMPERATURE_BAND_EDGES = tuple(5.0 + TEMPERATURE_BAND_STEP_C * step for step in range(8))
 
+# Humid heat: two levels on the daily mean wet-bulb temperature, in degrees
+# Celsius. Settled by the project owner on 2026-09-07, on the measurements below.
+#
+# **They read a mean, and that is what fixes their values.** Only the daily mean
+# wet bulb is reconstructible from daily aggregates — the maximum costs ten times
+# the error — and a mean sits 1.4 to 2.5 °C under the maximum of the same day. A
+# number borrowed from the literature, which mostly speaks of peaks, therefore
+# means something else once written here, and each of these was placed by
+# measuring the correspondence rather than by transcription.
+#
+# **26 marks the first level.** Measured over ERA5 2015-2024, eight sites, a
+# daily mean at 26 carries a daily maximum whose median runs 27.4 to 29.3 °C,
+# which is the band Raymond, Matthews & Horton (2020) analyse as carrying serious
+# health and productivity effects. The two neighbouring values were tried and
+# rejected: 27 is nearly silent, firing on 0.1 % of days at Singapore and 0.0 %
+# at Bamako while those places record hundreds of severe days, and 25 fires on
+# 65 % of days at Singapore, which is no longer a warning.
+#
+# **30 marks the second.** The only threshold here taken from a measurement on
+# human subjects rather than on weather: 30.55 +/- 0.98 °C is the critical wet
+# bulb at which heat stress stops being compensable for young, healthy adults at
+# the metabolic rate of ordinary daily activity (Vecellio et al. 2022, PSU HEAT).
+# No subject reached the theoretical 35 °C of Sherwood & Huber (2010), and the
+# limit is lower again for the old and the ill, so this describes the most
+# resistant population. A *daily mean* above it means the whole day, night
+# included, sat past that limit.
+#
+# **What is not settled, and rides on these two numbers.** On simulated days the
+# wet bulb is built from the climate model's own humidity, whose bias is measured
+# at one site: MRI_AGCM3_2_S runs 0.62 °C dry on the dew point at Strasbourg over
+# 1979-2014, which puts its wet bulb 0.80 °C low there. The published range for
+# raw CMIP6 is -0.5 to -2.5 °C over mid-latitude Eurasia, so that point is
+# credible, but temperature and humidity biases compensate in the subtropics and
+# the sign there is not settled by the literature — and the subtropics are where
+# these thresholds fire. Sensitivity, at Dubai over 2040-2050: shifting the
+# series by 0.6 °C moves the count above 26 by 11 %, and the count above 30 from
+# 111 to 364. The first level is robust to the plausible bias; the second is not.
+# The measurement is a step in itself and is not done. Until it is, these are
+# constants an interface displays, not quantities a projection has earned.
+HUMID_HEAT_C = 26.0
+HUMID_HEAT_EXTREME_C = 30.0
+
 # What the design document originally called a snow day, and what the criterion
 # above is calibrated to reproduce. The climate model serves snow depth too
 # irregularly to read it directly — hence the derived rule — but the reanalyses

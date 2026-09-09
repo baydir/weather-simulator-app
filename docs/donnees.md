@@ -60,12 +60,13 @@ Communs aux cinq requêtes : `latitude`, `longitude`, `start_date`, `end_date`
 cinq requêtes par la même fonction.
 
 ```
-models=era5_land      daily=temperature_2m_max,temperature_2m_min,temperature_2m_mean
+models=era5_land      daily=temperature_2m_max,temperature_2m_min,temperature_2m_mean,
+                            dew_point_2m_mean
 models=era5           daily=precipitation_sum,snowfall_sum,cloud_cover_mean,
                             wind_speed_10m_max,wind_speed_10m_mean
-models=ecmwf_ifs      daily=<les huit>
-models=ecmwf_ifs025   daily=<les huit>          (API Forecast)
-models=MRI_AGCM3_2_S  daily=<les huit>          (API Climate)
+models=ecmwf_ifs      daily=<les neuf>
+models=ecmwf_ifs025   daily=<les neuf>          (API Forecast)
+models=MRI_AGCM3_2_S  daily=<les neuf>          (API Climate)
 ```
 
 Trois règles sans exception :
@@ -95,13 +96,13 @@ côté navigateur en production.
 
 ---
 
-## 3. Les huit variables extraites
+## 3. Les neuf variables extraites
 
-Huit variables, **toutes au pas journalier** (`daily`), jamais horaire — l'API
+Neuf variables, **toutes au pas journalier** (`daily`), jamais horaire — l'API
 Climate ne sert pas l'horaire, et s'en servir côté passé seulement rouvrirait
 une couture.
 
-Trois de température, cinq de surface. Le partage n'est pas de commodité : il
+Quatre de température, cinq de surface. Le partage n'est pas de commodité : il
 décide de quelle requête sert quoi dans le passé ancien.
 
 **Températures — requête `era5_land` dans le passé ancien**
@@ -111,6 +112,7 @@ décide de quelle requête sert quoi dans le passé ancien.
 | `temperature_2m_max` | `temperature_max` | °C | maximum de la journée locale à 2 m | affiché |
 | `temperature_2m_min` | `temperature_min` | °C | minimum de la journée locale à 2 m | affiché |
 | `temperature_2m_mean` | `temperature_mean` | °C | moyenne de la journée locale à 2 m | critère de neige, **non affiché** |
+| `dew_point_2m_mean` | `dew_point_mean` | °C | point de rosée moyen de la journée à 2 m | température humide, **non affiché** |
 
 **Surface — requête `era5` dans le passé ancien**
 
@@ -123,9 +125,24 @@ décide de quelle requête sert quoi dans le passé ancien.
 | `wind_speed_10m_mean` | `wind_speed_mean` | km/h | vent moyen sur la journée à 10 m | **servi, non affiché** → [`application.md`](application.md) |
 
 **Les segments récent (`ecmwf_ifs`), prévision (`ecmwf_ifs025`) et futur
-(`MRI_AGCM3_2_S`) demandent les huit d'un coup**, en une requête chacun : les
+(`MRI_AGCM3_2_S`) demandent les neuf d'un coup**, en une requête chacun : les
 trois sources les servent toutes. Vérifié sur la prévision, `cloud_cover_mean`
 et `temperature_2m_mean` comprises, qui étaient les deux à craindre.
+
+**Le point de rosée est la neuvième, et la seule arrivée après coup.** ERA5-Land
+le sert aussi volontiers que les trois températures — un point de rosée *est* une
+température, quoi que suggère la formule « ERA5-Land ne sert que la
+température ». Il est demandé sur la même requête pour que les deux entrées de la
+température humide viennent d'un seul système physique, au lieu d'apparier une
+température à 11 km et une humidité à 25 km comme le critère de neige y est
+contraint → §8.
+
+Une conséquence dans le code : `TEMPERATURE_VARIABLES` désigne les trois
+températures et `TEMPERATURE_REQUEST_VARIABLES` ce que la requête demande
+réellement. Les deux noms ne sont pas un défaut de rangement.
+`scripts/model_selection/` est gelé et rejoue un cache de 2026 qui porte les
+trois colonnes seules ; replier la quatrième sous le premier nom transformait ce
+rejeu en erreur, c'est-à-dire une mesure cessant d'être reproductible.
 
 Trois précisions qui coûtent cher si on les découvre en route :
 
@@ -148,10 +165,19 @@ Trois précisions qui coûtent cher si on les découvre en route :
 | `wind_gusts_10m_max` | servie par les trois sources, mais non retenue pour l'instant |
 | `weather_code` | nulle côté Climate |
 | `sunshine_duration` | non servie côté Climate |
+| `wet_bulb_temperature_2m_mean` | **nulle côté Climate**, servie par les trois autres — d'où sa reconstruction → [`regles.md`](regles.md) |
+| `relative_humidity_2m_mean` | servie partout, mais sa moyenne journalière résume mal la journée : le point de rosée lui est préféré |
 | `shortwave_radiation_sum` | sert au calage hors ligne, pas à la requête |
 
 **Principe qui commande tout le reste :** une grandeur disponible d'un seul côté
 est écartée, jamais exploitée. Le passé est ramené au niveau du futur.
+
+**Écartée ne veut pas dire perdue.** Une grandeur absente d'un côté peut revenir
+si elle se reconstruit des variables que les quatre sources servent, à condition
+que la reconstruction soit la même partout. C'est ce qui est arrivé à la
+température humide, et cela ne retire rien au principe : ce qui est servi d'un
+seul côté reste écarté, et c'est une grandeur *dérivée des neuf* qui est affichée
+→ [`regles.md`](regles.md).
 
 ---
 
@@ -159,7 +185,10 @@ est écartée, jamais exploitée. Le passé est ramené au niveau du futur.
 
 **L'absence est silencieuse, et de deux manières.** L'API Climate accepte
 `weather_code`, répond HTTP 200 et renvoie une colonne entière de `null` avec
-une unité `undefined`. Elle accepte de même `hourly` et `temporal_resolution`,
+une unité `undefined`. Elle fait exactement de même avec
+`wet_bulb_temperature_2m_mean` et `apparent_temperature_max`, que les trois
+autres sources servent — le piège n'était donc pas une singularité du
+`weather_code`, c'est le comportement de l'API pour toute variable dérivée. Elle accepte de même `hourly` et `temporal_resolution`,
 répond HTTP 200, et ne renvoie aucun bloc horaire. **Le statut HTTP ne dit rien
 — l'absence doit être détectée explicitement.**
 
@@ -211,8 +240,8 @@ porte : la correction de l'étape 4 ne s'applique qu'aux journées `simulated`, 
 l'interface doit avertir sur celles-là sans avertir sur les autres.
 
 Ce qui vient après — correction de nébulosité sur le seul segment futur, puis
-classe de ciel appliquée aux quatre segments par une fonction unique — sort du
-cadre de ce fichier.
+classe de ciel et température humide appliquées aux quatre segments par une
+fonction unique chacune — sort du cadre de ce fichier.
 
 ---
 
@@ -284,4 +313,5 @@ résolues que celles du futur.
 | `sources/series.py` | découpage de la plage, assemblage des quatre segments |
 | `sources/errors.py` | `FetchError`, `MissingVariableError`, `CoverageError` |
 | `domain/records.py` | `DailyRecord`, `Origin`, unités |
+| `domain/humidity.py` | température humide et niveau de chaleur humide |
 | `scripts/inspect_seam.py` | lecture des coutures sur requête réelle |

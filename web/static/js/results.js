@@ -40,6 +40,7 @@ const place = document.getElementById("place");
 const range = document.getElementById("range");
 const count = document.getElementById("count");
 const warning = document.getElementById("warning");
+const note = document.getElementById("humid-note");
 const wait = document.getElementById("wait");
 const failure = document.getElementById("failure");
 const band = document.getElementById("days");
@@ -131,11 +132,34 @@ async function run() {
   }
 }
 
+/**
+ * The one sentence that explains the mark on the cards, or nothing at all.
+ *
+ * `humid_heat_peak` arrives on the response rather than being read back off the
+ * days, exactly as `has_simulated` does — the server has already been through
+ * them. It says two things at once here: whether the strip reserved its line,
+ * and which of the two wordings this range has earned.
+ *
+ * It describes the air and not the reader, which is what puts it out of reach of
+ * rule 1 on a simulated day, and it names no survival threshold: that would be a
+ * medical claim about a dated day.
+ */
+function humidNote(peak) {
+  if (!peak) return;
+  note.append(
+    el("span", { text: texts.humidHeat.mark, attrs: { "aria-hidden": "true" } }),
+    el("span", { text: ` ${texts.humidHeat.note[peak]} ` }),
+    el("a", { text: texts.humidHeat.noteLink, attrs: { href: "/documentation" } }),
+  );
+  note.hidden = false;
+}
+
 async function show(series) {
   wait.hidden = true;
   warning.hidden = !series.has_simulated;
   count.textContent = texts.results.count(series.days.length);
-  band.append(...strip(series.days));
+  band.append(...strip(series.days, series.humid_heat_peak));
+  humidNote(series.humid_heat_peak);
 
   // Offered as soon as the days are on screen, and before the chart: what the
   // file carries is the series, and a config that never arrives costs the

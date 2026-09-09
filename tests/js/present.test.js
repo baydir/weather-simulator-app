@@ -96,7 +96,7 @@ describe("the gaps", () => {
 
 describe("the dates", () => {
   it("carry the day, the month and the year in French", () => {
-    assert.equal(present.dayLabel("2046-07-14"), "samedi 14");
+    assert.equal(present.dayLabel("2046-07-14"), "samedi 14/07");
     assert.equal(present.monthLabel("2046-07-14"), "juillet");
     assert.equal(present.fullDate("2046-07-14"), "14 juillet 2046");
   });
@@ -120,7 +120,7 @@ describe("the dates", () => {
         encoding: "utf8",
       },
     ).trim();
-    assert.equal(west, "samedi 14 | 14 juillet 2046");
+    assert.equal(west, "samedi 14/07 | 14 juillet 2046");
   });
 
   it("the month marker turns on the month, not on the day", () => {

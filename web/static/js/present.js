@@ -87,9 +87,16 @@ export function wind(value) {
 // local zone, `new Date("2046-07-14")` lands on midnight UTC and slides back a
 // day for any visitor west of Greenwich — the card would carry the wrong date
 // while the server had it right.
+// The numeric month rides on the day, and that is what lets the month line stay
+// rare. A strip of ninety scrolls sideways, and a reader who scrolls past the
+// turn used to lose the month with nothing to bring it back; naming it on every
+// card fixed that and cost the turn its salience. Two digits after the day cost
+// neither: the month is legible on any card, and the name written out still
+// belongs to the day it changes.
 const DAY = new Intl.DateTimeFormat("fr-FR", {
   weekday: "long",
-  day: "numeric",
+  day: "2-digit",
+  month: "2-digit",
   timeZone: "UTC",
 });
 const MONTH = new Intl.DateTimeFormat("fr-FR", { month: "long", timeZone: "UTC" });
@@ -100,7 +107,7 @@ const FULL = new Intl.DateTimeFormat("fr-FR", {
   timeZone: "UTC",
 });
 
-/** "samedi 14" — what a card carries. Spelled out: the card has the room. */
+/** "samedi 14/07" — what a card carries: the weekday spelled out, the date not. */
 export function dayLabel(iso) {
   return DAY.format(new Date(iso));
 }

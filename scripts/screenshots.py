@@ -82,6 +82,11 @@ PARIS = {"lieu": "Paris", "lat": "48.8566", "lon": "2.3522"}
 # place that proves a search is answered anywhere in the world. What it shows is
 # an uncorrected projection, which is why the shot is worth taking.
 SANTIAGO = {"lieu": "Santiago", "lat": "-33.4489", "lon": "-70.6693"}
+# The one place in the set where the humid-heat line has anything to say. Paris
+# never reaches the first level and never will in this century, so every other
+# view photographs the mark's absence — which is worth photographing, and is not
+# a substitute for seeing it drawn.
+DUBAI = {"lieu": "Dubaï", "lat": "25.2048", "lon": "55.2708"}
 
 DESKTOP = {"width": 1440, "height": 960}
 PHONE = {"width": 360, "height": 780}
@@ -121,6 +126,13 @@ def _invent(day: date, latitude: float, variable: str) -> float | None:
         return round(max(0.0, wobble * 9 - 3), 1)
     if variable == "snowfall_sum":
         return round(max(0.0, wobble * 4 - 3), 1) if warmth < 2 else 0.0
+    if variable == "dew_point_2m_mean":
+        # Tied to the day's own mean temperature rather than wandering on a seed
+        # of its own: a dew point free of the temperature beside it would put fog
+        # on a hot afternoon and hand the wet bulb combinations no place on Earth
+        # produces. What varies is the spread between the two, which is what
+        # decides whether a day carries a humid-heat level at all.
+        return round(_invent(day, latitude, "temperature_2m_mean") - (2 + abs(wobble) * 9), 1)
     if variable == "wind_speed_10m_max":
         return round(12 + abs(wobble) * 38, 1)
     if variable == "wind_speed_10m_mean":
@@ -306,6 +318,19 @@ def results_forecast(page: Page, base: str) -> None:
     page.wait_for_selector(".card", timeout=90_000)
 
 
+def results_humid(page: Page, base: str) -> None:
+    """A Gulf summer, where the humid-heat line is not empty.
+
+    The view exists because every other one is Paris, and Paris never crosses
+    the first level — so the whole set would photograph the mark's absence and
+    nothing else. Here the strip reserves its line and fills some of it, which
+    is the case the reserving was built for: the cards must keep one height and
+    the calm days must read as calm rather than as unrendered.
+    """
+    page.goto(results_url(base, DUBAI, date(2046, 7, 15), date(2046, 8, 25)))
+    page.wait_for_selector(".card-humid[data-humid]", timeout=90_000)
+
+
 def results_seam(page: Page, base: str) -> None:
     """The strip scrolled to where the observed stops — otherwise it is off-screen."""
     results(page, base)
@@ -392,6 +417,8 @@ VIEWS = {
     "results-compare": (results_compare, DESKTOP, "light"),
     "results-narrow": (results, PHONE, "light"),
     "results-refused": (results_refused, DESKTOP, "light"),
+    "results-humid": (results_humid, DESKTOP, "light"),
+    "results-humid-dark": (results_humid, DESKTOP, "dark"),
     **{
         f"results-{name}": (season_view(start, end), DESKTOP, "light")
         for name, (start, end) in SEASON_RANGES.items()

@@ -222,12 +222,27 @@ export const texts = {
       "Nébulosité (%)",
       `Vent moyen (${texts.units.kilometresPerHour})`,
       `${texts.measure.windMax} (${texts.units.kilometresPerHour})`,
+      `Température humide moyenne (${texts.units.celsius})`,
+      "Chaleur humide",
       "Ciel",
     ],
     origin: {
       observed: "Observé",
       forecast: "Prévision",
       simulated: "Simulation",
+    },
+
+    // **Le niveau part avec le nombre, et pour la raison qui fait partir
+    // l'origine.** Un fichier survit à la page qu'il a quittée. « 31,2 » dans un
+    // tableur, des années plus tard, se lit comme une douceur — c'est
+    // exactement la fuite que la colonne d'origine existe pour fermer, et le
+    // même remède la ferme : la qualification voyage sur la ligne, contre le
+    // nombre qu'elle qualifie. Vide là où il n'y a rien à signaler, comme là
+    // où il n'y a rien eu à mesurer.
+    humidHeat: {
+      0: "",
+      1: "Chaleur humide",
+      2: "Chaleur humide extrême",
     },
   },
 
@@ -362,6 +377,48 @@ export const texts = {
     windMax: "Vent maximal",
     missing: "—",
     missingLabel: "donnée manquante",
+  },
+
+  // La chaleur humide, et le fait qu'on n'en écrive jamais le nombre.
+  //
+  // **Le mot porte le sens, le nombre non.** Une température humide n'a pas
+  // d'échelle pour un lecteur : 31 °C est mortel et se lit comme une douceur, et
+  // la carte porte déjà deux températures en gros. Les deux s'affichent depuis le
+  // 7 septembre 2026, à la demande du porteur du projet, et c'est l'ordre qui
+  // tient ce que l'arbitrage précédent visait : le mot arrive d'abord et nomme
+  // ce qui suit, le nombre est composé comme une mesure et non comme un titre.
+  //
+  // **Deux niveaux, dits par le mot et par le poids.** Pas de second pictogramme
+  // et surtout pas de tête de mort : une carte qui annonce une mort au 16 août
+  // 2043 est l'assertion sur une date déterminée que la règle 1 proscrit, et
+  // c'est aussi l'élément qui voyagerait le plus loin en copie d'écran, sans
+  // l'avertissement qui l'entoure.
+  //
+  // **`note` décrit l'air et non le lecteur**, ce qui est ce qui la met hors
+  // d'atteinte de la règle 1 sur une journée simulée. Elle n'énonce aucun seuil
+  // de survie : ce serait une affirmation médicale sur une date.
+  humidHeat: {
+    mark: "⚠️",
+    level: {
+      1: "Chaleur humide",
+      2: "Chaleur humide extrême",
+    },
+    // Read aloud in front of the figure, and never shown: the word above it on
+    // the card already says which quantity this is, and writing the full name
+    // twice would leave no room for anything else on a hundred-pixel card. Same
+    // division as `measure.windMax`, which labels a number the card prints bare.
+    valueLabel: "Température humide moyenne",
+    reading: (value) => `Température humide moyenne : ${value} ${texts.units.celsius}`,
+    note: {
+      1:
+        "Chaleur humide : l'air est assez chargé en vapeur d'eau pour que la " +
+        "transpiration ne suffise plus à refroidir le corps.",
+      2:
+        "Chaleur humide : l'air est assez chargé en vapeur d'eau pour que la " +
+        "transpiration ne suffise plus à refroidir le corps. Au niveau extrême, " +
+        "elle n'y suffit plus même au repos, et la nuit n'apporte pas de répit.",
+    },
+    noteLink: "Comment cette valeur est calculée",
   },
 
   units: {

@@ -27,6 +27,8 @@ function day(over = {}) {
     cloud_cover: 12.5,
     wind_speed_mean: 9,
     wind_speed_max: 24.2,
+    wet_bulb_mean: 27.8,
+    humid_heat: 1,
     sky: "clear",
     ...over,
   };
@@ -63,8 +65,35 @@ describe("the days as a file", () => {
       "12,5",
       "9",
       "24,2",
+      "27,8",
+      "Chaleur humide",
       "Dégagé",
     ]);
+  });
+
+  it("keeps the humid-heat level beside the figure it qualifies", () => {
+    // The same leak the origin column closes, and the same remedy. A file
+    // outlives the page it left, and "31,2" alone in a spreadsheet reads as
+    // mild — a wet bulb has no scale a reader can call on. The word rides on
+    // the row, against the number, where sorting and filtering cannot part them.
+    const [, row] = lines(toCsv([day({ wet_bulb_mean: 31.2, humid_heat: 2 })]));
+    const written = cells(row);
+
+    assert.ok(written.includes("31,2"));
+    assert.equal(written.at(-2), "Chaleur humide extrême");
+  });
+
+  it("writes nothing where there is nothing to report, and where there is no reading", () => {
+    // Zero and null say different things in the contract and the same thing
+    // here: a spreadsheet has no room for the difference, and the wet-bulb
+    // column beside it already tells them apart by carrying a figure or a blank.
+    const quiet = cells(lines(toCsv([day({ wet_bulb_mean: 18.3, humid_heat: 0 })]))[1]);
+    const absent = cells(lines(toCsv([day({ wet_bulb_mean: null, humid_heat: null })]))[1]);
+
+    assert.equal(quiet.at(-2), "");
+    assert.equal(quiet.at(-3), "18,3");
+    assert.equal(absent.at(-2), "");
+    assert.equal(absent.at(-3), "");
   });
 
   it("names what produced every day, whatever produced it", () => {

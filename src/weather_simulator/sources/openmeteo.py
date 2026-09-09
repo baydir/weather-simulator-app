@@ -85,6 +85,29 @@ TEMPERATURE_VARIABLES = {
     "temperature_2m_min": "temperature_min",
     "temperature_2m_mean": "temperature_mean",
 }
+
+# The dew point, which ERA5-Land serves as readily as the three above — a dew
+# point is a temperature, whatever "ERA5-Land serves temperature only" suggests.
+# It is asked for on the same request so that the two inputs of the wet bulb come
+# from one physical system, rather than pairing an 11 km temperature with a 25 km
+# humidity as the snow criterion is obliged to.
+DEW_POINT_VARIABLES = {
+    "dew_point_2m_mean": "dew_point_mean",
+}
+
+# **What the old past's temperature request actually asks for, and why it is not
+# TEMPERATURE_VARIABLES.** The dew point arrived at step 8, long after step 2 had
+# frozen; scripts/model_selection/ replays its cache through
+# TEMPERATURE_VARIABLES, and that cache holds the three columns collected in
+# 2026. Folding the fourth into that name turned the frozen replay into a
+# MissingVariableError — the measurement stopped being reproducible to buy a
+# shorter constant list.
+#
+# Tolerating a missing dew point instead was the other way out, and it is worse:
+# a variable served on three segments and quietly absent from the fourth is the
+# seam artefact rule 2 exists to prevent, arriving through the one door built to
+# let gaps through.
+TEMPERATURE_REQUEST_VARIABLES = {**TEMPERATURE_VARIABLES, **DEW_POINT_VARIABLES}
 SURFACE_VARIABLES = {
     "precipitation_sum": "precipitation",
     "snowfall_sum": "snowfall",
@@ -92,7 +115,7 @@ SURFACE_VARIABLES = {
     "wind_speed_10m_max": "wind_speed_max",
     "wind_speed_10m_mean": "wind_speed_mean",
 }
-ALL_VARIABLES = {**TEMPERATURE_VARIABLES, **SURFACE_VARIABLES}
+ALL_VARIABLES = {**TEMPERATURE_REQUEST_VARIABLES, **SURFACE_VARIABLES}
 
 # Snowfall is kept — the reanalyses serve it faithfully, and step 3 needs that
 # record to calibrate the derived criterion against. But nothing depends on it
@@ -101,7 +124,7 @@ ALL_VARIABLES = {**TEMPERATURE_VARIABLES, **SURFACE_VARIABLES}
 # to half a year at Christchurch, winter included.
 OPTIONAL_VARIABLES = frozenset({"snowfall_sum"})
 
-TEMPERATURE_MODEL = "era5_land"  # ~11 km, temperature only
+TEMPERATURE_MODEL = "era5_land"  # ~11 km, temperatures and dew point
 SURFACE_MODEL = "era5"  # ~25 km, everything else
 
 # The reanalyses run five to six days behind — a documented latency, not an
@@ -188,7 +211,7 @@ def archive_temperature_request(
     of it, against -0.75 to +0.43 °C of plain ERA5.
     """
     return ARCHIVE_URL, _params(
-        latitude, longitude, start, end, TEMPERATURE_VARIABLES, TEMPERATURE_MODEL, timezone
+        latitude, longitude, start, end, TEMPERATURE_REQUEST_VARIABLES, TEMPERATURE_MODEL, timezone
     )
 
 

@@ -174,14 +174,37 @@ La valeur ne s'écrit qu'à un endroit, `MAX_DAYS`, et voyage par `/api/config`
 jusqu'au libellé du refus.
 
 Chaque journée porte un pictogramme, les températures minimale et maximale, le
-cumul de précipitations et la vitesse de vent maximale. **Sous la bande, les
-mêmes journées dessinées** → [Le graphe sous la bande](#le-graphe-sous-la-bande).
+cumul de précipitations et la vitesse de vent maximale — et, sur les seules
+journées qui franchissent un seuil, un bandeau de chaleur humide. **Sous la
+bande, les mêmes journées dessinées** → [Le graphe sous la bande](#le-graphe-sous-la-bande).
 
 **Deux choses sont mises en avant : l'allure du ciel et les deux
 températures** — le pictogramme d'abord, les degrés dessous, en corps supérieur
 au reste. Une carte lue d'un coup d'œil, parcourue par dizaines, a besoin d'un
 point d'entrée pour le regard. Les précipitations et le vent suivent, **à poids
 égal entre eux**.
+
+**Le mois est dit deux fois, et de deux façons.** En chiffres sur la ligne de
+date, à chaque carte — « lundi 01/08 » — et **écrit en toutes lettres au seul
+changement de mois**, la ligne du dessus restant vide ailleurs pour que les
+cartes gardent une hauteur.
+
+Le partage est le remède à une gêne réelle : la bande défile horizontalement, et
+un lecteur qui dépasse la bascule perdait le mois sans rien pour l'y ramener.
+**Deux réponses ont été essayées avant celle-là**, et ce qu'elles ont coûté
+explique la forme retenue.
+
+- *Un nom tous les sept jours* échoue là où la gêne est la plus forte : une
+  fenêtre étroite montre deux cartes à la fois, donc cinq libellés sur sept
+  seraient hors de l'écran.
+- *Le nom sur chaque carte* règle la gêne et **coûte au repère qu'il devait
+  servir** : « AOÛT » au milieu d'une suite de « JUILLET » ne marque plus rien,
+  là où le même mot seul contre trente lignes vides se voyait de loin.
+
+Deux chiffres sur la date disent le mois où que le lecteur se soit arrêté, sans
+dépenser un mot, et laissent le nom à la seule carte qui a quelque chose à
+annoncer. Longueur vérifiée aux deux largeurs : « dimanche 30/08 » tient dans sa
+carte à 1440 px comme à 360.
 
 **La maximale au-dessus, la minimale en dessous**, empilées et non côte à côte.
 L'ordre de lecture suit l'œil : un lecteur d'écran entend la maximale en premier,
@@ -232,6 +255,7 @@ qu'une agrégation. Elle est prise, et la voici :
 | Grandeur | Affiché |
 |---|---|
 | Températures | entier — `21 °C` |
+| Température humide | entier — `28 °C`, une température comme les autres |
 | Vents | entier — `8 km/h` |
 | Précipitations | **une décimale** — `0,4 mm` |
 | Nébulosité | non affichée |
@@ -243,6 +267,50 @@ portant le pictogramme de la pluie serait une contradiction visible à l'écran,
 où « 0,4 » et « 1,2 » se distinguent. Cette règle vaut partout où un millimètre
 s'écrit, cartes et graphe compris : deux règles d'arrondi pour une seule grandeur
 seraient une divergence de plus.
+
+### Le bandeau de chaleur humide
+
+**Il ne paraît que sur les journées qui franchissent un seuil**, et les deux
+seuils sont dans [`regles.md`](regles.md) avec ce qui les a placés. La grandeur
+est sans objet le reste du temps : l'afficher partout mettrait un nombre sans
+portée sur quatre-vingt-neuf cartes sur quatre-vingt-dix.
+
+**La ligne est réservée sur toutes les cartes de la bande, ou sur aucune.** Les
+cartes sont étirées à la plus haute, si bien qu'une ligne apparaissant sur la
+seule journée chaude d'une plage déplacerait la bande sous l'œil du lecteur.
+C'est la réponse que la ligne de mois donne déjà au même problème : rendue vide
+là où le mois n'a pas tourné. Ce qui évite au bandeau d'en coûter le prix se
+décide un
+rang plus haut — une plage qui ne porte aucun niveau ne réserve rien du tout, et
+c'est le cas de toute recherche française. La réponse porte donc
+`humid_heat_peak`, sur le modèle de `has_simulated` : le serveur a déjà parcouru
+les journées, le navigateur ne les reparcourt pas.
+
+**Le mot d'abord, le nombre dessous.** Une température humide n'a pas d'échelle
+pour un lecteur — 31 °C est mortel et se lit comme une douceur — et la carte
+porte déjà deux températures en corps supérieur, si bien qu'un troisième nombre
+nu se lirait comme une troisième température de l'air. Deux choses l'évitent : le
+mot arrive d'abord et nomme ce qui suit, et le nombre est composé comme une
+mesure, dans le corps de « 0,4 mm » et non dans celui des maximales. Arbitrage du
+porteur du projet, le 7 septembre 2026 ; l'ordre et le corps sont ce qui reste de
+l'arbitrage antérieur, lequel gardait le nombre hors de la carte.
+
+**Deux niveaux, dits par le mot et par le poids, jamais par un second
+pictogramme.** Une tête de mort sur une journée datée annoncerait une mort le
+16 août 2043, ce que la règle 1 interdit ; et ce serait l'élément le plus emporté
+en copie d'écran, hors de l'avertissement qui l'entoure.
+
+**Une phrase sous la bande dit ce que la marque signifie**, et paraît avec elle.
+Elle décrit l'air et non le lecteur, ce qui la met hors d'atteinte de la règle 1
+sur une journée simulée, et elle n'énonce aucun seuil de survie : ce serait une
+affirmation médicale sur une date déterminée.
+
+**Le contraste du bandeau n'est pas dans la table publiée**, et ce n'est pas un
+oubli : l'élément n'existe pas sur la page que `scripts/ink_contrast.py` mesure,
+et y amener le script changerait la géométrie de référence, donc toutes les
+lignes déjà publiées. Mesuré à part, l'encre `--warm` sur le papier de la carte
+donne 4,88 à 6,00:1 selon le thème et l'origine de la journée, au-dessus du
+plancher de 4,5.
 
 ### Ce que l'interface ne calcule pas
 
@@ -820,6 +888,14 @@ plus tard comme une mesure. Sur la ligne et non en tête de fichier, la marque n
 peut pas être séparée du nombre qu'elle qualifie, et elle survit à un tri, à un
 filtre et à un copier-coller vers une autre feuille. Les trois mots sont ceux du
 site : *observé*, *prévision*, *simulation*.
+
+**Le niveau de chaleur humide part avec le nombre, et pour la même raison.**
+« 31,2 » seul dans un tableur, des années plus tard, se lit comme une douceur :
+c'est exactement la fuite que la colonne d'origine ferme, et le même remède la
+ferme. Le mot voyage sur la ligne, contre le nombre qu'il qualifie. Vide là où il
+n'y a rien à signaler comme là où il n'y a rien eu à mesurer — un tableur n'a pas
+la place de distinguer les deux, et la colonne voisine le fait déjà en portant un
+chiffre ou un blanc.
 
 **Rien n'est calculé.** Chaque colonne est un champ servi par l'API. Le cumul
 des précipitations reste sur le graphe : c'est la seule agrégation admise ici,

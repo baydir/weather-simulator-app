@@ -124,7 +124,7 @@ def build(
                             latitude, longitude, first, reanalysed_end, timezone
                         )
                     ),
-                    variables=openmeteo.TEMPERATURE_VARIABLES,
+                    variables=openmeteo.TEMPERATURE_REQUEST_VARIABLES,
                     model=openmeteo.TEMPERATURE_MODEL,
                     origin=Origin.OBSERVED,
                     allow_trailing_gap=True,
@@ -274,8 +274,13 @@ def fetch_series(
     Open-Meteo's rate limiter watches for.
     """
     built = build(
-        latitude, longitude, start, end, today or today_in_reference_zone(),
-        model=model, timezone=timezone,
+        latitude,
+        longitude,
+        start,
+        end,
+        today or today_in_reference_zone(),
+        model=model,
+        timezone=timezone,
     )
     series = assemble(built, {segment.id: fetch(segment.url) for segment in built.segments})
     if not series:

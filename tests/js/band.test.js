@@ -47,7 +47,7 @@ describe("the daily card", () => {
     // on each of the two now, which is what stacking costs.
     assert.equal(
       reads(only).replace(/\s+/g, " "),
-      "juillet samedi 14 Maximale 28 °C Minimale 14 °C Dégagé " +
+      "juillet samedi 14/07 Maximale 28 °C Minimale 14 °C Dégagé " +
         "Précipitations 0,4 mm Vent maximal 19 km/h",
     );
   });
@@ -168,7 +168,7 @@ describe("the seam", () => {
 });
 
 describe("the month marker", () => {
-  it("names the month only where it turns", () => {
+  it("writes the month name only where it turns", () => {
     const nodes = strip([
       day("2046-07-30", "observed"),
       day("2046-07-31", "observed"),
@@ -178,6 +178,22 @@ describe("the month marker", () => {
       nodes.map((node) => textOf(node, "card-month")),
       ["juillet", "", "août"],
     );
+  });
+
+  it("says the month in figures on every card, so scrolling never loses it", () => {
+    // Naming it on every card was tried on 2026-09-08 and reversed the same day:
+    // it answered the reader who scrolls past the turn, and cost the turn its
+    // salience — a name among a run of identical names marks nothing. Two digits
+    // on the date line say the month wherever the reader is, at no such price. A
+    // cadence of one card in seven was the third candidate and fails on a narrow
+    // window, which shows two cards at a time.
+    const written = strip([
+      day("2046-07-30", "observed"),
+      day("2046-07-31", "observed"),
+      day("2046-08-01", "observed"),
+    ]).map((node) => textOf(node, "card-day"));
+
+    assert.deepEqual(written, ["lundi 30/07", "mardi 31/07", "mercredi 01/08"]);
   });
 
   it("names the month on the first card, whatever happens", () => {
@@ -215,5 +231,87 @@ describe("where the days come from", () => {
 
   it("says nothing when nothing was corrected", () => {
     assert.deepEqual(sources(null), []);
+  });
+});
+
+describe("the humid-heat line", () => {
+  const hot = (level, value) => day("2046-08-16", "simulated", { humid_heat: level, wet_bulb_mean: value });
+  const calm = day("2046-08-17", "simulated", { humid_heat: 0, wet_bulb_mean: 18.2 });
+
+  it("is absent from a strip that has nothing to mark", () => {
+    // Which is every strip in France. The line costs a rule of height on ninety
+    // cards, and a range that will never fill it must not pay for it: the peak
+    // arrives on the response, so the decision is taken once for the strip.
+    const nodes = strip([calm, calm], 0);
+
+    assert.equal(nodes.flatMap((node) => byClass(node, "card-humid")).length, 0);
+  });
+
+  it("is reserved on every card as soon as one day carries it", () => {
+    // The cards stretch to the tallest. A line on the one hot day of the range
+    // would grow the others and shift the strip under the reader, so the empty
+    // ones are rendered empty rather than left out — the answer the month line
+    // above already gives to the same problem.
+    const nodes = strip([calm, hot(1, 27.6), calm], 1);
+    const lines = nodes.flatMap((node) => byClass(node, "card-humid"));
+
+    assert.equal(lines.length, 3);
+    assert.deepEqual(
+      lines.map((line) => line.attrs["data-humid"]),
+      [undefined, "1", undefined],
+    );
+    assert.equal(lines[0].textContent, "");
+  });
+
+  it("shows the figure, and never before the word that names it", () => {
+    // The project owner asked for the number on 2026-09-07. What survives of the
+    // arbitration it reverses is the order: a wet bulb has no scale a reader can
+    // call on, and the card already carries two temperatures in large type, so a
+    // bare third figure would read as a third air temperature. The word arrives
+    // first and says which quantity this is.
+    const line = byClass(card(hot(2, 31.4), false, true), "card-humid")[0];
+    const seen = walk(line)
+      .filter((node) => !node.className.split(" ").includes("sr-only"))
+      .map((node) => node.textContent)
+      .join("");
+
+    assert.ok(seen.includes(texts.humidHeat.level[2]));
+    assert.ok(seen.includes("31"));
+    assert.ok(seen.indexOf(texts.humidHeat.level[2]) < seen.indexOf("31"));
+  });
+
+  it("rounds the figure as every other temperature on the card is rounded", () => {
+    // `docs/application.md` fixes whole degrees for a temperature and a tenth for
+    // a millimetre. A wet bulb is a temperature, and a second rounding rule for
+    // one figure among three would be the divergence rule 3 is about.
+    const line = byClass(card(hot(1, 27.6), false, true), "card-humid")[0];
+
+    const written = walk(byClass(line, "card-humid-value")[0])
+      .map((node) => node.textContent)
+      .join("");
+
+    assert.equal(written, `28${texts.units.celsius}`);
+  });
+
+  it("gives the figure to whoever cannot see the ink that carries the level", () => {
+    // The tooltip needs a pointer, and the colour needs eyes. The reading goes
+    // off-screen beside the word, which is what `measure` already does with the
+    // label the card does not print.
+    const line = byClass(card(hot(1, 27.6), false, true), "card-humid")[0];
+
+    assert.match(reads(line), /28/);
+    assert.equal(line.attrs.title, texts.humidHeat.reading("28"));
+  });
+
+  it("says nothing on a day with no reading, in a strip that reserves the line", () => {
+    // Null is not zero: the day was not measured, and a card must no more invent
+    // a level than it invents a sky class.
+    const line = byClass(
+      card(day("2046-08-18", "simulated", { humid_heat: null, wet_bulb_mean: null }), false, true),
+      "card-humid",
+    )[0];
+
+    assert.equal(line.textContent, "");
+    assert.equal(line.attrs["data-humid"], undefined);
   });
 });

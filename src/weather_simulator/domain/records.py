@@ -5,7 +5,12 @@ One record is one day, whatever its origin. The three origins differ by the
 value was computed. That is the whole point of the homogeneity rule in
 CLAUDE.md: a quantity available on one side only would produce a step at the
 seam, so it is dropped rather than exploited. All four sources serve the same
-eight variables, which is what makes a single record type possible at all.
+nine variables, which is what makes a single record type possible at all.
+
+The ninth is the dew point, and it is the only one added after the fact. It
+came in for the wet bulb, which Open-Meteo itself serves on three segments of
+four and leaves null on the climate model — so the rule above sent it back to be
+rebuilt from ingredients all four sources do carry.
 
 Units follow Open-Meteo and are *not* normalised here:
 
@@ -66,6 +71,12 @@ class DailyRecord:
     temperature_min: float | None = None
     temperature_max: float | None = None
     temperature_mean: float | None = None
+    # Requested for the wet bulb and read by nothing else. A temperature, so
+    # ERA5-Land serves it in the old past alongside the other three rather than
+    # ERA5 at 25 km — which is what keeps the two inputs of one derived quantity
+    # inside one physical system, an asymmetry the snow criterion has to live
+    # with and this one does not.
+    dew_point_mean: float | None = None
     precipitation: float | None = None
     # Served faithfully by the reanalyses, irregularly by the climate model.
     # Kept as the yardstick the derived snow criterion is calibrated against,

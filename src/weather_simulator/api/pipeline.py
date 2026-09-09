@@ -4,8 +4,8 @@
    happened; only the projection is corrected.
 2. **The transformation block**, on the whole series. Neutral by default, and
    the project owner's to fill.
-3. **The sky class, on all four segments, through one function.** That single
-   call site is the point of the module. The old past, the recent past, the
+3. **The sky class and the wet bulb, on all four segments, through one function
+   each.** Those single call sites are the point of the module. The old past, the recent past, the
    fortnight ahead and the far future are classified by the same code path, or
    the seams that ``sources`` works to erase reappear here, one branch at a
    time. The count went from three to four the day the forecast became a
@@ -124,12 +124,19 @@ def run(
     days = [Day.from_record(record, classify_record(record)) for record in transformed]
 
     has_simulated = any(record.origin is Origin.SIMULATED for record in transformed)
+    # The strip reserves its humid-heat line on every card or on none, so what it
+    # needs is one number for the whole range rather than a scan of the days it
+    # already holds. Read here for the same reason has_simulated is: the server
+    # has been through every day, and a second pass in the browser would be the
+    # duplication rule 3 is about wearing a loop rather than a threshold.
+    humid_heat_peak = max((day.humid_heat or 0 for day in days), default=0)
     return Series(
         latitude=latitude,
         longitude=longitude,
         start=days[0].date,
         end=days[-1].date,
         has_simulated=has_simulated,
+        humid_heat_peak=humid_heat_peak,
         grid=Grid.from_metadata(metadata) if has_simulated and metadata else None,
         days=days,
     )

@@ -5,7 +5,7 @@ chart, a running total or a map can branch onto this later without touching the
 pipeline — which means the shape here is a commitment, not an implementation
 detail.
 
-Four things it carries and three it refuses to.
+Five things it carries and three it refuses to.
 
 **It carries the class, never the pictogram.** ``sky`` is one of five words, and
 the emoji lives on the display side alone, so that moving to a drawn icon set
@@ -31,6 +31,17 @@ question for itself — it is what sends it looking for a cloud-cover correction
 so the answer is shipped as a boolean rather than worked out a second time from
 the days. It is also the fact CLAUDE.md rule 1 hangs on, and rule 1 outranks
 everything else here.
+
+**It carries the wet bulb and the level it crosses, which is the same division
+as the sky class.** ``wet_bulb_mean`` is a measurement and ``humid_heat`` is the
+rule read off it, exactly as ``cloud_cover`` travels beside ``sky``. The browser
+must not rederive the second from the first: a threshold is a rule a displayed
+quantity depends on, and CLAUDE.md rule 3 keeps those on this side.
+
+Both are printed on the card, the word above the figure, and that order is the
+contract's business only in so far as it explains why both travel. A reader has
+no scale for a wet bulb — 31 °C is lethal and reads as mild — so the level is
+what the number is read against.
 
 **It carries the grid's own metadata.** A corrected series read without knowing
 which model was corrected, over which calibration period, and when the table was
@@ -61,7 +72,7 @@ from datetime import date
 from pydantic import BaseModel, Field
 
 from weather_simulator.calibration.table import Metadata
-from weather_simulator.domain import temperature
+from weather_simulator.domain import humidity, temperature
 from weather_simulator.domain.records import DailyRecord, Origin
 from weather_simulator.domain.sky import SkyClass
 
@@ -103,6 +114,24 @@ class Day(BaseModel):
             "commonly runs to twice this. Never label it 'rafale'."
         ),
     )
+    wet_bulb_mean: float | None = Field(
+        default=None,
+        description=(
+            "degrees Celsius, daily mean wet-bulb temperature. Derived on all four "
+            "segments by one function, the climate model serving no wet bulb of its "
+            "own. The mean and never the maximum: the maximum reconstructs ten times "
+            "worse from daily aggregates, and heat harms by dose rather than by peak."
+        ),
+    )
+    humid_heat: int | None = Field(
+        default=None,
+        description=(
+            "0, 1 or 2 — the humid-heat level the wet bulb crosses, or null when "
+            "there is no reading. Zero is an answer and null is the absence of one. "
+            "A floor on severity, never a certificate of safety: a high value is "
+            "certain danger, a moderate one does not rule out a difficult few hours."
+        ),
+    )
 
     sky: SkyClass | None = Field(
         default=None,
@@ -137,9 +166,13 @@ class Day(BaseModel):
 
         The two bands are worked out here rather than passed in, unlike ``sky``:
         each depends on that day's own temperature and on nothing else, so there
-        is no full series to decide them against.
+        is no full series to decide them against. The wet bulb joins them for the
+        same reason, and its level is read off the *full* value before the tenth
+        is taken — the rounding orders that ``cloud_cover`` obeys apply here
+        unchanged, a day at 25.97 must not become level 1 by being tidied up.
         """
         low_band, high_band = temperature.bands_of(record)
+        wet_bulb = humidity.wet_bulb_of_record(record)
         return cls(
             date=record.date,
             origin=record.origin,
@@ -150,6 +183,8 @@ class Day(BaseModel):
             cloud_cover=None if record.cloud_cover is None else round(record.cloud_cover, 1),
             wind_speed_mean=record.wind_speed_mean,
             wind_speed_max=record.wind_speed_max,
+            wet_bulb_mean=None if wet_bulb is None else round(wet_bulb, 1),
+            humid_heat=humidity.humid_heat(wet_bulb),
             sky=sky,
             temperature_min_band=low_band,
             temperature_max_band=high_band,
@@ -194,6 +229,16 @@ class Series(BaseModel):
             "reaches no further than the forecast, which carries no projection to "
             "warn about. Shipped rather than derived."
         )
+    )
+    humid_heat_peak: int = Field(
+        default=0,
+        description=(
+            "The highest humid-heat level anywhere in the range: 0, 1 or 2. Shipped "
+            "rather than derived, exactly as has_simulated is — the server has "
+            "already read every day. The interface reserves its line on the whole "
+            "strip when this is non-zero, so that one hot day changes what a card "
+            "says and never how tall it is."
+        ),
     )
     grid: Grid | None = Field(
         default=None,

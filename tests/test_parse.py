@@ -25,6 +25,38 @@ def test_bare_keys_are_read():
     assert set(columns.columns) == {"temperature_max", "temperature_min", "temperature_mean"}
 
 
+def test_the_temperature_request_asks_for_the_dew_point_too() -> None:
+    """What ERA5-Land is asked for is a superset of the three temperatures.
+
+    The two names are not a tidying accident. The dew point joined the request at
+    step 8; ``scripts/model_selection/`` is frozen and replays a 2026 cache that
+    holds the three columns alone, through ``TEMPERATURE_VARIABLES``. Folding the
+    fourth into that name turned the frozen replay into a MissingVariableError,
+    which is a measurement stopping being reproducible.
+    """
+    params = {**PARAMS, "daily": list(openmeteo.TEMPERATURE_REQUEST_VARIABLES)}
+    columns = parse_daily(
+        payload(params), openmeteo.TEMPERATURE_REQUEST_VARIABLES, source="era5_land"
+    )
+
+    assert set(openmeteo.TEMPERATURE_VARIABLES) < set(openmeteo.TEMPERATURE_REQUEST_VARIABLES)
+    assert "dew_point_mean" in columns.columns
+
+
+def test_the_frozen_step_two_cache_still_parses() -> None:
+    """A payload with the three columns and no dew point, read as step 2 reads it.
+
+    The regression this pins is silent from the application's side: everything
+    served today carries the dew point, so nothing fails until someone replays
+    the model comparison from ``data/model_selection/`` and finds it will no
+    longer load.
+    """
+    columns = parse_daily(payload(PARAMS), openmeteo.TEMPERATURE_VARIABLES, source="era5_land")
+
+    assert "dew_point_mean" not in columns.columns
+    assert len(columns.dates) == 3
+
+
 def test_model_suffixed_keys_are_read():
     """The Climate API appends the model name to every key."""
     params = {**PARAMS, "models": ["MRI_AGCM3_2_S"]}
@@ -68,7 +100,14 @@ def test_a_payload_without_daily_block_is_refused():
 
 
 def test_merging_the_two_past_requests_joins_on_the_date():
-    temperature = parse_daily(payload(PARAMS), openmeteo.TEMPERATURE_VARIABLES, source="era5_land")
+    # The request set and not the three temperatures: what the two old-past calls
+    # actually bring back together is what ALL_VARIABLES names.
+    temperature_params = {**PARAMS, "daily": list(openmeteo.TEMPERATURE_REQUEST_VARIABLES)}
+    temperature = parse_daily(
+        payload(temperature_params),
+        openmeteo.TEMPERATURE_REQUEST_VARIABLES,
+        source="era5_land",
+    )
     surface_params = {**PARAMS, "daily": list(openmeteo.SURFACE_VARIABLES), "models": ["era5"]}
     surface = parse_daily(payload(surface_params), openmeteo.SURFACE_VARIABLES, source="era5")
     merged = merge_columns(temperature, surface, source="archive")

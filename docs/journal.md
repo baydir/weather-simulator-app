@@ -13,6 +13,12 @@ fonctionne.** Le passé est servi partout, la quinzaine à venir aussi depuis
 l'étape 7 ; la collecte de l'étape 4 étant inachevée, seul le futur au-delà de la
 prévision reste borné à ce que la grille a refermé.
 
+L'étape 9 est née de la chaleur humide, ajoutée hors numérotation : elle a fait
+apparaître une seconde entrée du modèle climatique dont le biais n'est pas
+mesuré, l'humidité, là où l'étape 4 s'occupe de la nébulosité. Le besoin est
+identique, il est simplement pris un cran plus tôt — la formule est réglée, c'est
+l'entrée qui ne l'est pas.
+
 L'ordre effectif s'écarte de l'ordre annoncé : l'étape 5 a été menée avant que la
 collecte de l'étape 4 soit finie. Elle le pouvait sans la table provisoire, la
 collecte ayant déjà refermé trois mailles autour de Paris — de quoi éprouver la
@@ -29,6 +35,7 @@ chaîne complète sur une correction authentique.
 | 6 | Interface : accueil, résultats, bande journalière | 5 | **fait** |
 | 7 | La quinzaine à venir, servie par ECMWF IFS | 1, 6 | **fait** |
 | 8 | Élargissement mondial de la grille | 4 | à faire |
+| 9 | Calibration de l'humidité du modèle | 1 | à faire |
 
 L'ordre est imposé par les dépendances, non par le contenu : celui-ci se décide
 au moment d'aborder l'étape, à la lumière de ce que la précédente a révélé. La
@@ -557,10 +564,52 @@ portait déjà la distinction, `grid` valant `null` quand rien n'a corrigé.
 
 ---
 
+## La chaleur humide
+
+**Ce qui a été ajouté.** Une température humide sur chaque journée, dérivée du
+point de rosée et de la température moyenne par la formule de Stull, celle-là
+même qu'Open-Meteo applique ; et, sur les seules journées qui franchissent
+26 °C ou 30 °C, un bandeau sur la carte. La règle, les seuils et ce qui les a
+placés → [`regles.md`](regles.md) ; la forme à l'écran →
+[`application.md`](application.md).
+
+**Ce que cette étape a corrigé de ce qu'on supposait.** Trois choses.
+
+La grandeur *est* servie par Open-Meteo, contrairement à ce qu'on aurait pu
+croire d'une variable aussi dérivée — mais nulle côté Climate, comme le
+`weather_code`. Le piège de l'absence silencieuse n'est donc pas une singularité
+de ce dernier : c'est le comportement de l'API pour **toute** variable dérivée,
+`apparent_temperature` comprise. Le §4 de [`donnees.md`](donnees.md) le dit
+désormais dans ces termes.
+
+Le maximum journalier paraissait la grandeur à servir, puisque c'est de lui que
+parle la littérature. Il ne se reconstruit qu'à 0,8 °C près depuis des agrégats
+journaliers, contre 0,05 pour la moyenne — et la moyenne s'est révélée la
+meilleure grandeur pour une autre raison, indépendante de sa précision : la
+chaleur éprouve par la dose et non par la pointe, et une moyenne sur
+vingt-quatre heures contient la nuit.
+
+Enfin, **ajouter une variable a cassé le rejeu d'un dossier gelé.** Replier le
+point de rosée sous `TEMPERATURE_VARIABLES` a transformé la relecture du cache de
+l'étape 2 en erreur : une mesure cessait d'être reproductible pour raccourcir une
+liste de constantes. Deux listes distinctes, et deux tests qui les épinglent.
+
+**Ce qui reste.** L'humidité du modèle climatique n'est pas calibrée, et c'est le
+même problème que celui de l'étape 4, pris un cran plus tôt : la formule est
+réglée, c'est l'entrée qui ne l'est pas. Un seul point mesuré, et une sensibilité
+qui rend le second seuil fragile. Le détail et ce qu'il faudrait mesurer →
+[`regles.md`](regles.md), *L'humidité reste à calibrer*.
+
+---
+
 ## Ce qui reste calé sur une base mince
 
-Aucune décision scientifique n'est en attente, mais deux points méritent d'être
+Aucune décision scientifique n'est en attente, mais trois points méritent d'être
 réexaminés le moment venu :
 
 - **le seuil de neige de 1,5 °C**, établi sur deux sites et une seule saison ;
+- **les deux seuils de chaleur humide**, dont le second varie d'un facteur trois
+  sous le biais d'humidité plausible du modèle, lequel n'est mesuré qu'en un
+  point. C'est le seul de ces points qui appelle une collecte plutôt qu'une
+  relecture ;
 - **l'ensemble des mesures du projet**, qui reposent sur dix sites.

@@ -27,6 +27,13 @@ STEP = 0.5
 SAMPLE = [float(v) for v in range(0, 101, 2)] * 3
 SHIFT = 10.0
 
+# conftest numbers the requested variables in order, so what a variable comes
+# back with is its own position in the request. Read from the list rather than
+# written out: this stood as a literal 6.0 with a comment saying it was the sixth
+# variable, and adding a ninth ahead of it turned three tests red at once — the
+# comment stayed true and the number stopped being.
+RAW_CLOUD = 1.0 + list(openmeteo.ALL_VARIABLES).index("cloud_cover_mean")
+
 # One covered cell, and Paris inside it — the same corner of the real table that
 # the collection has actually reached.
 COVERED = [(48.5, 2.0), (48.5, 2.5), (49.0, 2.0), (49.0, 2.5)]
@@ -241,8 +248,8 @@ def test_a_place_outside_the_grid_is_served_for_the_future(client, frozen_today)
     nothing corrected these days — ``grid`` is null — while ``has_simulated``
     stays true so the warning rule 1 requires is unaffected.
 
-    The number is the assertion that matters. Paris comes back at ``6.0 +
-    SHIFT`` two tests below; Santiago comes back at 6.0, the model untouched.
+    The number is the assertion that matters. Paris comes back at ``RAW_CLOUD +
+    SHIFT`` two tests below; Santiago at ``RAW_CLOUD``, the model untouched.
     """
     response = _run(client, _search(date(2046, 7, 1), date(2046, 7, 31), SANTIAGO))
     assert response.status_code == 200, response.json()
@@ -251,7 +258,7 @@ def test_a_place_outside_the_grid_is_served_for_the_future(client, frozen_today)
     assert body["has_simulated"] is True
     assert body["grid"] is None
     assert {day["origin"] for day in body["days"]} == {"simulated"}
-    assert body["days"][0]["cloud_cover"] == pytest.approx(6.0)
+    assert body["days"][0]["cloud_cover"] == pytest.approx(RAW_CLOUD)
 
 
 def test_the_same_place_is_served_for_the_past(client, frozen_today) -> None:
@@ -346,8 +353,7 @@ def test_a_future_search_is_corrected_and_flagged(client, frozen_today) -> None:
     assert body["has_simulated"] is True
     assert body["grid"]["model"] == openmeteo.DEFAULT_MODEL
     assert {day["origin"] for day in body["days"]} == {"simulated"}
-    # conftest serves cloud_cover as the 6th requested variable, so 6.0 raw.
-    assert body["days"][0]["cloud_cover"] == pytest.approx(6.0 + SHIFT)
+    assert body["days"][0]["cloud_cover"] == pytest.approx(RAW_CLOUD + SHIFT)
 
 
 def test_a_straddling_search_has_no_hole_and_no_duplicate(client, frozen_today) -> None:
@@ -411,9 +417,52 @@ def test_a_forecast_day_is_never_corrected(client, frozen_today) -> None:
     """Only the climate model is short of cloud; correcting IFS would invent a bias."""
     response = _run(client, _search(TODAY + timedelta(days=1), TODAY + timedelta(days=40)))
     days = {d["origin"]: d for d in reversed(response.json()["days"])}
-    # conftest serves cloud_cover as the 6th requested variable, so 6.0 raw.
-    assert days["forecast"]["cloud_cover"] == pytest.approx(6.0)
-    assert days["simulated"]["cloud_cover"] == pytest.approx(6.0 + SHIFT)
+    assert days["forecast"]["cloud_cover"] == pytest.approx(RAW_CLOUD)
+    assert days["simulated"]["cloud_cover"] == pytest.approx(RAW_CLOUD + SHIFT)
+
+
+def test_the_wet_bulb_is_carried_on_all_four_segments(client, frozen_today) -> None:
+    """One function, four segments — the rule 2 assertion, on the new quantity.
+
+    A ninety-two day window centred on today crosses every source the series
+    has: the two reanalyses, the IFS analysis that covers their latency, the
+    fortnight of IFS forecast, and the climate model past it. Every day must
+    carry a reading, and they must all carry the *same* one — conftest numbers
+    the variables by position, so the mean temperature and the dew point come
+    back identical whichever request served them, and a wet bulb that differed
+    between two origins could only mean two code paths.
+
+    This is the test that would have caught the old prototype, where the sky
+    class lived once in Python and once in JavaScript and the two drifted.
+    """
+    response = _run(client, _search(TODAY - timedelta(days=51), TODAY + timedelta(days=40)))
+    assert response.status_code == 200, response.json()
+    days = response.json()["days"]
+
+    assert {day["origin"] for day in days} == {"observed", "forecast", "simulated"}
+    assert {day["source"] for day in days} == {
+        "reanalysis",  # the two old-past requests, joined on the date alone
+        "ecmwf_ifs",
+        "ecmwf_ifs025",
+        openmeteo.DEFAULT_MODEL,
+    }
+    assert all(day["wet_bulb_mean"] is not None for day in days)
+    assert all(day["humid_heat"] is not None for day in days)
+    assert len({day["wet_bulb_mean"] for day in days}) == 1
+
+
+def test_the_peak_is_the_highest_level_the_range_carries(client, frozen_today) -> None:
+    """What the strip reserves its line on. Zero when there is nothing to mark.
+
+    The fixture's days are cool — a mean temperature of 3 °C — so nothing fires,
+    and that is the case worth pinning: a French search must reserve nothing, or
+    ninety cards pay a rule of height for a mark they will never show.
+    """
+    response = _run(client, _search(date(2020, 6, 1), date(2020, 6, 30)))
+    body = response.json()
+
+    assert body["humid_heat_peak"] == 0
+    assert {day["humid_heat"] for day in body["days"]} == {0}
 
 
 def test_today_belongs_to_the_observed_half(client, frozen_today) -> None:
@@ -439,6 +488,11 @@ def test_the_contract_never_carries_a_pictogram(client, frozen_today) -> None:
         "cloud_cover",
         "wind_speed_mean",
         "wind_speed_max",
+        # The measurement and the rule read off it, exactly as cloud_cover sits
+        # beside sky. The card prints neither number, and both travel all the
+        # same: one for the export, one for the line the strip reserves.
+        "wet_bulb_mean",
+        "humid_heat",
         "sky",
         # The band, not the colour — the same division as the class and the
         # pictogram, one step further.

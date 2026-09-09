@@ -42,9 +42,15 @@ patientent. Ne pas les lancer en parallèle.
 | `20_climate_snow_gaps.py` | La neige manque par plages, ni saisonnières ni uniformes — 61 jours d'été à Marseille, la moitié de l'année à Christchurch, rien à Ushuaia ; l'ampleur dépend aussi du modèle, `NICAM16_8S` seul étant complet |
 | `21_snow_threshold.py` | Calage du critère neige sur 35 hivers à Strasbourg et Briançon ; le `weather_code` sature en altitude et ne peut servir de référence |
 
-`reference/open_meteo_WeatherCode.swift` est une copie du fichier source
-d'Open-Meteo dont la règle de dérivation a été transcrite dans le script 09.
-Il est conservé pour que la transcription reste vérifiable.
+Deux copies de fichiers source d'Open-Meteo sont conservées dans `reference/`,
+pour que les transcriptions restent vérifiables :
+
+- `open_meteo_WeatherCode.swift`, dont la règle de dérivation est transcrite dans
+  le script 09 ;
+- `open_meteo_Meteorology.swift`, dont `wetBulbTemperature` est transcrite dans
+  `domain/humidity.py` — même formule, même garde `min(twet, t)`, parce que
+  l'erreur d'un ajustement empirique doit être héritée à l'identique sur les
+  quatre segments plutôt que corrigée sur un seul → [`docs/regles.md`](../../docs/regles.md).
 
 ## Réserves
 

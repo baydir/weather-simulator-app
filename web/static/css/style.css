@@ -1391,6 +1391,14 @@ button[type="submit"]:hover {
   border-bottom-color: var(--rule-strong);
 }
 
+/*
+ * The month name, on the turn alone, the line held open elsewhere so the cards
+ * keep one height. It was briefly written on every card, to answer a reader who
+ * scrolled past the turn and lost the month; that answer worked and cost the
+ * turn its salience, a name among a run of identical names marking nothing. The
+ * month now rides on the date line in figures — "lundi 01/08" — which says it
+ * everywhere without spending a word on it.
+ */
 .card-month {
   height: 1.15rem;
   line-height: 1.15rem;
@@ -1458,6 +1466,88 @@ button[type="submit"]:hover {
   font-size: 0.9375rem;
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
+}
+
+/*
+ * The humid-heat line, under the wind.
+ *
+ * **Reserved on every card of the strip, or on none.** The cards stretch to the
+ * tallest, so a line appearing on the one hot day of ninety would grow the other
+ * eighty-nine and shift the strip under the reader. `min-height` is what holds
+ * the empty ones open, exactly as the month line above is rendered empty where
+ * the month has not turned. And the whole line is left off a strip that carries
+ * no level at all, so a French search pays nothing for a mark it never shows.
+ *
+ * **The level is said by ink and weight, never by a second pictogram.** A skull
+ * on a dated card would announce a death on 16 August 2043, which is the
+ * assertion CLAUDE.md rule 1 exists to refuse — and it would be the element that
+ * travelled furthest in a screenshot, stripped of the warning around it. The
+ * attribute rather than a class is the choice `data-band` already made: the
+ * sheet can then say *any level* in one selector.
+ */
+.card-humid {
+  /* Block and not flex: as two flex children the mark held a column of its own
+     and the label wrapped into what was left, which took "chaleur humide
+     extrême" to three lines where "chaleur humide" took two — and the cards,
+     which do not stretch to one another here, ended at different heights. Inline
+     the mark is just the first glyph of a paragraph that uses the whole width.
+
+     The height is then reserved for the longest of the two labels plus the
+     figure under it, so that a strip keeps one silhouette whichever levels it
+     happens to carry. A calm day pays those empty lines, and only inside a strip
+     that already has something to say — a French search reserves nothing at
+     all. */
+  min-height: 6em;
+  line-height: 1.35;
+  margin-top: calc(var(--space) * 3);
+  padding-top: calc(var(--space) * 3);
+  border-top: 1px solid var(--rule);
+  font-family: var(--font);
+  font-size: var(--label-size);
+  font-weight: 500;
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--ink-soft);
+}
+
+.card-humid[data-humid] {
+  color: var(--warm);
+}
+
+/* Set as a measure and not as a headline. The card carries two temperatures in
+   large display type already, and a third figure in that register would be read
+   as a third air temperature — which is the misreading the word above it exists
+   to prevent, undone one line lower. So it takes the type of "0,4 mm": same
+   family, same size, tabular figures, and none of the label's capitals. */
+.card-humid-value {
+  display: block;
+  margin-top: calc(var(--space) * 1.5);
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  letter-spacing: normal;
+  text-transform: none;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+.card-humid[data-humid="2"] {
+  font-weight: 700;
+}
+
+/*
+ * The sentence under the strip that says what the mark means.
+ *
+ * It appears with the line and disappears with it: a page that never marks a
+ * card has nothing to explain, and an explanation with no object is noise on
+ * every French search. `hidden` is what results.js toggles, so the rule below
+ * only has to dress it.
+ */
+.humid-note {
+  max-width: 46rem;
+  margin-top: calc(var(--space) * 4);
+  font-size: 0.875rem;
+  color: var(--ink-soft);
 }
 
 /* The fallback, and only that: a day whose temperature is missing carries no

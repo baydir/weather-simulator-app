@@ -52,6 +52,8 @@ const FIELDS = [
   "cloud_cover",
   "wind_speed_mean",
   "wind_speed_max",
+  "wet_bulb_mean",
+  "humid_heat",
   "sky",
 ];
 
@@ -79,6 +81,11 @@ function row(day) {
   return FIELDS.map((field) => {
     if (field === "origin") return texts.export.origin[day.origin] ?? day.origin;
     if (field === "sky") return day.sky ? texts.sky[day.sky] : "";
+    // Null and zero write the same empty cell here, where the contract keeps
+    // them apart. A spreadsheet has no room for the difference between "nothing
+    // to report" and "nothing was measured", and the wet-bulb column beside it
+    // already says which of the two it is: a figure, or a blank.
+    if (field === "humid_heat") return texts.export.humidHeat[day.humid_heat] ?? "";
     return cell(day[field]);
   });
 }
