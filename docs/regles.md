@@ -266,7 +266,7 @@ exactement comme le futur non corrigé hors grille
 ## La correction de nébulosité
 
 **C'est la seule correction appliquée.** Elle est nécessaire parce que la
-nébulosité détermine trois des cinq classes et que le modèle la sous-estime de 5
+nébulosité détermine trois des cinq classes et que le modèle la sous-estime de 8
 à 11 points selon le site : appliquer les seuils bruts produirait un futur
 artificiellement ensoleillé.
 
