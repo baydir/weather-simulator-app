@@ -12,10 +12,17 @@ to Chrome's own flag — it is the flag that is the problem, not the browser.
 
 **The browser lives in the project**, under ``.playwright/``, not in the user
 cache: ``PLAYWRIGHT_BROWSERS_PATH`` is set below before Playwright starts. That
-directory is git-ignored and weighs about 560 MB. Reinstall it with::
+directory is git-ignored and weighs about 200 MB. Reinstall it with::
 
     ./venv/bin/pip install -e '.[screenshots]'
-    PLAYWRIGHT_BROWSERS_PATH=.playwright ./venv/bin/playwright install chromium
+    PLAYWRIGHT_BROWSERS_PATH=.playwright ./venv/bin/playwright install --only-shell chromium
+
+``--only-shell`` is deliberate: photographing and measuring are headless, and the
+shell alone serves them. Only ``--browse`` opens a window, and it needs the full
+browser, another 356 MB installed by dropping the flag. Both were kept until
+September 2026, when the two were measured against each other and agreed to the
+decimal on every contrast in ``ink_contrast.md`` — the headed half was disk spent
+on a window that the machine's own browser already provides.
 
 **It needs the network.** The browser fetches from Open-Meteo, exactly as a
 visitor's would — that is the whole architecture. Which also means the future is
