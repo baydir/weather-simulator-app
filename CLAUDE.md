@@ -137,6 +137,7 @@ introduite pour la performance. **En cas de doute, la validation est requise.**
 | classe de ciel, seuils, correction de nébulosité | [`docs/regles.md`](docs/regles.md) |
 | modèles, référence, biais, limites, références | [`docs/science.md`](docs/science.md) |
 | architecture, affichage, grille de correction | [`docs/application.md`](docs/application.md) |
+| hébergement, image, mise en ligne | [`docs/deploiement.md`](docs/deploiement.md) |
 | l'avancement, ce qu'une étape a établi | [`docs/journal.md`](docs/journal.md) |
 | une piste écartée ou une question ouverte | [`docs/idees.md`](docs/idees.md) |
 

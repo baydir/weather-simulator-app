@@ -1,0 +1,18 @@
+# Deny everything, then name what the image needs.
+#
+# An allowlist rather than a list of exclusions, and deliberately: the working
+# tree weighs 874 MB against 4.5 MB of payload, and a directory added to the
+# repository later cannot slip into the build context by being forgotten here.
+*
+
+!pyproject.toml
+!src
+!web
+
+# Re-excluded inside what was just let back in.
+**/__pycache__
+**/*.pyc
+
+# The neutral table, whose corrections are the identity. app.py refuses it at
+# boot, so shipping it could only ever fail late; it has no reason to travel.
+src/weather_simulator/calibration/data/cloud_correction_placeholder.json
