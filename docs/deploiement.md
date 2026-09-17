@@ -148,6 +148,13 @@ Arrêtées le 6 septembre 2026.
 | Domaine | sous-domaine de l'hébergeur d'abord, domaine propre acheté ensuite |
 | Visibilité | public et indexé, sous la réserve décrite ci-dessous |
 
+Deux décisions s'y sont ajoutées le 16 septembre 2026, à la mise en ligne.
+
+| Question | Décision |
+|---|---|
+| Plafond | **max-scale 1** : jamais plus d'une instance allumée |
+| Registre | espace **privé** |
+
 **La veille se décide après la mesure, non avant.** Le démarrage de
 l'application est chronométré, et il est court : 950 ms en natif, 1,6 s sous
 émulation. Ce n'est pas encore le réveil à froid de l'hébergeur, qui ajoute
@@ -178,10 +185,28 @@ consommerait 730 heures par mois et coûterait donc, franchise déduite, environ
 modeste ; la décision se prendra au vu de la mesure en ligne, sans que le coût
 pèse d'un côté ou de l'autre.
 
-Le registre d'images est gratuit jusqu'à 75 Go et l'image en occupe 0,19. **Un
-point à vérifier avant de pousser** : cette gratuité paraît conditionnée à des
-images publiques. Le code étant déjà public, la contrainte devrait être sans
-effet ici, mais elle n'a pas été confirmée.
+**Max-scale 1 fait de ce chiffre un plafond.** La facture du conteneur ne dépend
+que du temps d'instance allumée ; une seule instance au plus, c'est au pire une
+instance allumée tout le mois, soit ces 6,40 €, quel que soit le trafic. Une
+affluence ou une attaque ralentit le site sans le rendre plus cher. Une instance
+suffit : le serveur passe 5 ms par recherche complète. Sans limite, le coût
+n'aurait pas de borne ; avec max-scale 2, le pire cas serait de 15,60 €.
+
+**Le registre privé coûte un demi-centime par mois.** Vérifié le 16 septembre
+2026 : la gratuité jusqu'à 75 Go ne vaut que pour les images publiques, le
+stockage privé est facturé 0,027 € par Go et par mois, et l'image en occupe 0,19.
+Une image publique n'aurait rien divulgué que le dépôt ne montre déjà, mais
+n'aurait rien apporté non plus. Le conteneur la lit sans réglage, le registre
+étant dans le même projet.
+
+Les journaux et les mesures que Scaleway produit sur le conteneur sont gratuits
+à la conservation par défaut, 7 jours pour les journaux et 31 pour les mesures.
+
+**Le seul risque de dépense non borné n'est pas le site, c'est la clé d'API.**
+Celle qui a servi au déploiement a tous les droits sur le compte : volée, elle
+permettrait d'allumer des machines qu'aucun max-scale ne plafonne. Elle vit dans
+`~/.config/scw/config.yaml`, hors du dépôt. Une alerte de facturation prévient,
+elle ne coupe rien.
 
 ---
 
@@ -201,6 +226,10 @@ que le contrat porte déjà `grid: null` et permettrait de le dire.
 
 La question à trancher est donc : la réserve tombe-t-elle, ou se reporte-t-elle
 sur ce texte ? Le texte, s'il est écrit, sera de la main du porteur du projet.
+
+**La clé d'API est à restreindre.** Une fois le déploiement stabilisé, la
+remplacer par une clé limitée au registre et aux conteneurs, ou lui donner une
+date d'expiration.
 
 ---
 
@@ -232,17 +261,55 @@ lui-même le signal d'arrêt en tant que PID 1.
 
 ---
 
+## Ce que la mise en ligne a établi
+
+Le 16 septembre 2026, avec `scw` 2.62.
+
+| | |
+|---|---|
+| Adresse provisoire | `https://weathersimulatorb44c76e3-weather-simulator.functions.fnc.fr-par.scw.cloud` |
+| Registre | `rg.fr-par.scw.cloud/weather-simulator`, privé |
+| Image | `weather-simulator:<commit court>`, la première étant `bfe93f0` |
+| Espace de conteneurs, conteneur | `weather-simulator`, `weather-simulator` |
+| Instances | min-scale 0, max-scale 1 |
+| Mémoire, processeur | 500 Mo, 250 mvCPU |
+| Accès | public, HTTPS seul, `http://` redirigé |
+
+**L'image porte le commit dont elle est tirée**, et non `latest` : ce qui tourne
+en ligne se relie à une version du code, et revenir à la précédente revient à
+redonner son nom.
+
+**Un piège de l'outil.** `memory-limit-bytes` refuse un nombre d'octets et
+n'accepte qu'une valeur en Go. `0.5GB` s'entend en unités décimales : 500 Mo et
+non 512, sans effet ici.
+
+**Les vérifications faites en ligne.** L'accueil, `/api/config`, la feuille de
+style, l'icône, le script de l'accueil et la documentation répondent. Un essai
+de saturation a montré que le refus d'Open-Meteo arrive bien au navigateur du
+visiteur, avec le message prévu : l'appel part de sa machine et non du serveur.
+
+**Redéployer** tient en quatre commandes, rien ne se réglant dans la console :
+
+```
+docker build --platform linux/amd64 -t rg.fr-par.scw.cloud/weather-simulator/weather-simulator:<commit> .
+scw registry login region=fr-par
+docker push rg.fr-par.scw.cloud/weather-simulator/weather-simulator:<commit>
+scw container container update <container-id> image=rg.fr-par.scw.cloud/weather-simulator/weather-simulator:<commit> region=fr-par --wait
+```
+
+La dernière n'a pas encore servi : aucun redéploiement n'a eu lieu.
+
+---
+
 ## Les étapes
 
 1. **Ce document et la carte de `CLAUDE.md`.** Validation requise. *Écrit.*
 2. **`Dockerfile` et `.dockerignore`.** Autonomie de développement. *Fait.*
 3. **Construction `linux/amd64` et conteneur essayé en local.** *Fait*, résultats
    ci-dessus.
-4. **Registre et déploiement** en `fr-par`, min-scale 0. *En attente d'un compte
-   Scaleway*, que seul le porteur du projet peut créer. Dans l'ordre : compte
-   créé et vérifié, `brew install scw`, clé d'API produite dans la console, puis
-   `scw init` **lancé dans un terminal personnel** et non dans une session
-   d'assistance, la clé secrète n'ayant aucune raison d'être lue. Le reste
-   s'enchaîne : espace de registre, poussée de l'image, création du conteneur.
+4. **Registre et déploiement** en `fr-par`, min-scale 0. *Fait* le 16 septembre
+   2026, résultats ci-dessus. `scw init` a été **lancé dans un terminal
+   personnel** et non dans une session d'assistance, la clé secrète n'ayant
+   aucune raison d'être lue.
 5. **Mesure du réveil à froid** en ligne, qui tranche la question de la veille.
 6. **Domaine propre**, puis indexation, une fois la réserve levée.
