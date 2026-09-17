@@ -42,6 +42,12 @@ dist/
 # placeholder rule below, git never looking inside a directory it has excluded.
 /data/
 
+# A sandbox, not a measurement: it fetches every node of the French grid until
+# Open-Meteo refuses, to exhaust this machine's quota and try the site from two
+# networks. Nothing in the repository depends on it, and it establishes nothing a
+# document cites. Its payloads land under /data/, already excluded above.
+/scripts/france_maps/
+
 # OS
 .DS_Store
 
