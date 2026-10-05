@@ -1,0 +1,251 @@
+# AGENTS.md
+
+Ce fichier fournit les consignes de travail à Codex, Claude Code et aux autres
+agents de développement dans ce dépôt.
+
+Ce fichier ne porte que **les règles qui s'appliquent toujours** et **la carte
+des documents**. Tout le reste — l'intention, les données, les méthodes, la
+science, l'application — vit dans `docs/`, un document par sujet, à charger
+quand la tâche le touche.
+
+---
+
+## Les règles qui ne se négocient pas
+
+### 1. Une trajectoire ne se présente jamais comme une prévision
+
+Cette contrainte prime sur toutes les autres. Un modèle climatique ne prédit pas
+les conditions du 14 juillet 2046 : il produit une trajectoire plausible.
+
+**Le futur comporte deux régimes, et cette règle porte sur le second.** La
+quinzaine à venir vient d'ECMWF IFS : c'est une prévision météorologique, et la
+nommer ainsi est exact. Au-delà commence le modèle climatique. Les règles qui
+suivent s'appliquent aux **journées simulées**, au code comme aux textes de
+l'interface :
+
+- **Vocabulaire de la prévision proscrit pour les journées simulées** —
+  « prévision », « il fera ». Les termes retenus sont « simulation », « météo
+  plausible », « scénario ».
+- **Tout écran affichant une journée simulée porte un avertissement explicite et
+  visible.** Une recherche qui ne dépasse pas la prévision n'en porte pas :
+  l'avertissement y serait faux.
+- **Aucune assertion d'exactitude portant sur une date déterminée n'est admise,
+  dans les deux régimes.** Une prévision énonce une probabilité, jamais ce que
+  sera la journée. « Il fera » reste donc proscrit partout.
+
+**La frontière entre les deux régimes est une donnée du serveur**, jamais un
+nombre recopié dans l'interface — c'est la règle 3, et l'origine de chaque
+journée voyage déjà dans le contrat.
+
+**Ce que cet amendement ne fait pas.** Il ne retire rien au futur lointain : les
+trois obligations y sont inchangées. Il retire la seule chose devenue fausse —
+qu'une journée à venir soit nécessairement une simulation. La contrepartie est
+réelle et assumée : un lecteur qui vérifie J+3 contre une autre source et trouve
+juste peut reporter cette confiance sur 2046. Ce qui la contient, c'est que la
+couture reste marquée dans la bande, et que la transition à la fin de la
+prévision devient l'endroit qui montre où la prévisibilité s'arrête.
+
+Le pourquoi → [`docs/projet.md`](docs/projet.md).
+
+### 2. Toute grandeur affichée se calcule identiquement sur toute la série
+
+Quelle que soit la source qui a fourni la journée. **Ce principe prime sur la
+précision.**
+
+Il en découle une règle contre-intuitive : lorsqu'une information n'existe que
+du côté du passé, **elle est écartée plutôt qu'exploitée**. Le passé est
+délibérément ramené au niveau du futur, jamais l'inverse. Une richesse
+disponible d'un seul côté produirait une rupture à la couture — l'artefact que
+tout le dispositif vise à empêcher. La série comportant **deux coutures** et non
+une, le principe vaut à chacune.
+
+### 3. Ce qui est calculé une fois l'est au même endroit
+
+Une grandeur affichée, ou une règle dont dépend une grandeur affichée, se calcule
+côté serveur, par une fonction unique. **La classe de ciel en est le cas type :
+une fonction, appelée quatre fois** — une par segment. Toute duplication de cette
+logique — entre segments, ou entre Python et JavaScript comme dans le prototype
+initial — rouvre la divergence que la règle 2 interdit.
+
+Le nombre d'appels a changé le jour où la prévision est devenue un segment, et
+c'est précisément ce que la règle protège : il n'y a rien eu à modifier, la
+fonction étant appelée là où les segments sont assemblés et non recopiée dans
+chacun. **Le nombre de fonctions a changé de même** le jour où la température
+humide s'est ajoutée : deux règles désormais, appelées quatre fois chacune au
+même endroit, et la seconde n'a rien coûté à la première.
+
+**Le navigateur dérive ce dont le serveur ne détient pas de version** : mise en
+forme, repères de lecture, ordonnancement, cache. Le critère n'est pas la
+difficulté de la tâche, c'est le **double exemplaire**. La classe de ciel du
+prototype tenait en cinq comparaisons de seuils, et elle a divergé quand même :
+une règle triviale tenue à deux endroits diverge aussi sûrement qu'une règle
+savante, et moins visiblement — personne ne relit cinq lignes évidentes.
+
+Une constante partagée est **servie, jamais recopiée** ; un contrôle, lui, peut
+s'exercer des deux côtés — la borne de 92 jours vient de `/api/config` et se
+vérifie dans l'interface comme dans l'API. Les bornes de l'échelle de température
+suivent le même chemin depuis que le graphe gradue son axe dessus.
+
+**La règle vaut aussi entre deux modules du navigateur.** Le critère est le
+double exemplaire, pas la frontière franchie : la bande et le graphe doivent
+marquer la même couture au même jour, et cette règle vit dans un module que les
+deux appellent, quoique le serveur n'en détienne aucune version.
+
+**Et elle vaut à l'intérieur d'un seul fichier.** `season.js` lit les bornes des
+saisons dans les deux sens — une date vers une saison pour peindre la page de
+résultats, une saison vers deux dates pour que le formulaire la demande par son
+nom. Écrire « 21 juin au 20 septembre » une seconde fois pour le second sens
+aurait été le double exemplaire, à deux fonctions de distance. Les bornes sont
+donc déclarées une fois, et **un test referme le cycle** : demander une saison
+puis relire ce qui revient doit rendre la même saison. C'est la forme la plus
+resserrée du même constat — le prototype avait fait diverger cinq comparaisons de
+seuils tenues à deux endroits ; ici deux fonctions voisines suffiraient.
+
+### 4. Gouvernance : la science se valide, le développement s'autonomise
+
+**Domaine scientifique et traitement des données — validation obligatoire.** Le
+porteur du projet est compétent sur ces sujets et en conserve l'arbitrage. Y
+relèvent : le choix des modèles et du scénario, les méthodes de correction de
+biais, la reconstruction de variables absentes, l'homogénéisation des séries,
+les choix statistiques et les métriques de validation. Les options s'exposent
+avec leurs implications et leurs limites ; **la décision revient au porteur du
+projet**.
+
+**Développement logiciel — autonomie étendue.** Architecture, bibliothèques,
+organisation du code et modalités d'implémentation s'arrêtent sans validation
+préalable. Les difficultés et les compromis notables sont signalés.
+
+**Cas mixtes : le premier régime l'emporte.** Une décision de développement
+emportant une conséquence scientifique relève de la validation, quelle que soit
+son apparence technique — cache modifiant la granularité temporelle, agrégation
+ou arrondi côté interface, remplissage de valeurs manquantes, simplification
+introduite pour la performance. **En cas de doute, la validation est requise.**
+
+### 5. Conventions de langue
+
+- Code, identifiants, commentaires, messages de commit : **anglais**.
+- Interface et textes destinés à l'utilisateur : **français**.
+- Documentation : français ; traduction anglaise prévue ultérieurement.
+
+---
+
+## La carte des documents
+
+| Si la tâche touche à… | Lire |
+|---|---|
+| l'intention, la finalité, le public | [`docs/projet.md`](docs/projet.md) |
+| requêtes, sources, variables, assemblage, cache | [`docs/donnees.md`](docs/donnees.md) |
+| classe de ciel, seuils, correction de nébulosité | [`docs/regles.md`](docs/regles.md) |
+| modèles, référence, biais, limites, références | [`docs/science.md`](docs/science.md) |
+| architecture, affichage, grille de correction | [`docs/application.md`](docs/application.md) |
+| hébergement, image, mise en ligne | [`docs/deploiement.md`](docs/deploiement.md) |
+| l'avancement, ce qu'une étape a établi | [`docs/journal.md`](docs/journal.md) |
+| une piste écartée ou une question ouverte | [`docs/idees.md`](docs/idees.md) |
+
+Les chiffres restent attachés au script qui les mesure : chaque `README.md` de
+`scripts/` dit ce qui s'y démontre.
+
+| Dossier | Ce qu'il établit |
+|---|---|
+| `scripts/verification/` | les mesures de conception, antérieures à tout code — **gelé** |
+| `scripts/model_selection/` | le départage des cinq modèles, étape 2 |
+| `scripts/sky_thresholds/` | le calage des seuils de ciel, étape 3 |
+| `scripts/calibration_grid/` | la grille de correction, étape 4 |
+| `scripts/forecast_seam/` | la couture analyse / prévision, étape 7 |
+| `scripts/temperature_scale/` | les bornes de l'échelle de couleur des températures |
+| `scripts/inspect_seam.py` | lecture des coutures sur requête réelle |
+| `scripts/screenshots.py` | photographie l'interface, quinze vues — et `--offline`, qui invente les données pour travailler sans quota |
+| `scripts/ink_contrast.py` | les contrastes des deux pages ; les tables qu'il imprime sont dans [`scripts/ink_contrast.md`](scripts/ink_contrast.md) |
+
+Les trois premiers ne se ressemblent pas, et c'est délibéré. `verification/` date
+de la conception : aucune dépendance, `urllib` seul, chaque script isolé. Les
+autres sont postérieurs au paquet et s'appuient sur lui — refaire la
+construction des requêtes y aurait ouvert la porte à deux comportements
+divergents — et séparent la collecte, lente et limitée en débit, de l'analyse,
+qui se rejoue hors réseau depuis `data/`.
+
+---
+
+## Où on en est
+
+Étapes 0 à 3, **5, 6 et 7 faites**. **Étape 4 en cours** : la méthode de
+correction, la table et son interpolation sont écrites, la collecte avance —
+**438 nœuds sur 594, 365 mailles refermées**, soit **37 des 39 villes** de la
+liste de priorité. Ne manque plus que la Corse — Bastia et Ajaccio.
+
+**Un nœud collecté n'est pas un nœud servi.** La collecte remplit
+`data/calibration_grid/` ; c'est `build.py` qui en fait la table embarquée, et
+l'application la lit **une fois au démarrage**. Entre les deux, une ville peut
+être couverte dans le cache et refusée à l'écran — c'est arrivé, et le symptôme
+ne ressemble pas à un décalage mais à une panne de couverture. La table servie
+porte les 438.
+
+**Ce que l'étape 7 a changé de cette contrainte.** La quinzaine à venir vient
+d'ECMWF IFS et ne demande aucune correction : elle est donc servie **partout dans
+le monde**, sans attendre la grille. Le passé aussi.
+
+**Et le refus hors grille n'existe plus.** Le futur au-delà de la prévision est
+désormais servi partout lui aussi, **brut là où la grille n'atteint pas**. Un
+lieu ne fait plus jamais refuser une recherche ; seul ce qu'elle demande le peut.
+
+Ce régime est **dégradé et provisoire**, et il faut le tenir pour tel. La
+projection non corrigée est ensoleillée de 8 à 11 points de trop, et la bande
+s'éclaircit visiblement à la couture entre la prévision et la simulation. Il
+tient jusqu'à ce qu'une **grille mondiale** existe, ce qui n'est pas fait pour
+une raison de temps et non de méthode : au pas de 0,5° la collecte demanderait
+deux à cinq ans de quota, vingt à soixante jours même desserrée à 3°. Le refus
+n'était donc pas une attente, c'était un refus définitif hors de France, et une
+réponse imparfaite et signalée lui a été préférée. Le détail, les mesures et ce
+qui a été écarté → [`docs/application.md`](docs/application.md), *Hors de la zone
+couverte*.
+
+**La chaleur humide est servie, et son entrée n'est pas calibrée.** Une
+température humide est dérivée sur chaque journée, et deux niveaux paraissent sur
+la carte au-delà de 26 °C et de 30 °C de moyenne journalière. La formule est
+réglée : c'est celle d'Open-Meteo, transcrite, donc fausse de la même façon sur
+les quatre segments et sans marche aux coutures. **L'entrée ne l'est pas** : sur
+les journées simulées, elle repose sur l'humidité du modèle climatique, mesurée
+en un seul point. C'est le même problème que l'étape 4, pris un cran plus tôt, et
+c'est l'**étape 9**. Le premier seuil résiste au biais plausible, le second varie
+d'un facteur trois → [`docs/regles.md`](docs/regles.md), *L'humidité reste à
+calibrer*.
+
+**Le débit est plafonné par jour, non par heure.** Open-Meteo le dit lui-même —
+`HTTP 429 : Daily API request limit exceeded` — et laisse passer entre cinquante
+et cent trente nœuds par jour, quelle que soit la façon dont on s'y prend. La
+collecte se relance donc autant de fois que nécessaire ; elle mange le même quota
+que le navigateur, et se coupe avant d'essayer le site.
+
+Le détail, et ce que chaque étape a corrigé de ce que la précédente supposait →
+[`docs/journal.md`](docs/journal.md).
+
+---
+
+## Tenue du dépôt
+
+**`AGENTS.md` et `CLAUDE.md` restent synchronisés.** Toute modification de
+l'un est reportée dans l'autre dans le même changement et le même commit.
+Leur contenu doit être identique, à la première ligne de titre près. Cette
+duplication est une exception limitée aux points d’entrée des agents ; les
+faits du projet restent dans leurs documents de référence.
+
+**Un fait vit dans un seul fichier.** Une valeur contestée se remesure par le
+script correspondant, puis se corrige **sur place** — jamais ajoutée à côté de
+l'ancienne, jamais recopiée dans un second document.
+
+**Chaque document fait foi sur son domaine.** En cas de divergence entre un
+document et le code, c'est le document qui l'emporte et le code qui doit être
+corrigé — ou le document amendé, si c'est lui qui a pris du retard.
+
+**Les documents et les dossiers de mesure ne se modifient pas sans
+validation** : `docs/`, `AGENTS.md`, `CLAUDE.md`, `scripts/verification/`,
+`scripts/model_selection/`, `scripts/sky_thresholds/`. Le reste du code relève
+de l'autonomie de développement définie plus haut.
+
+**Environnement** : `./venv/bin/python`. Les tests tournent hors réseau, l'accès
+aux API étant injecté.
+
+**Node sert de lanceur aux tests de l'interface**, et à rien d'autre : ni
+construction, ni service des pages, ni `package.json`, ni dépendance à installer.
+`pytest` appelle `node --test` par sous-processus ; Node absent, ces tests se
+déclarent ignorés et le reste tourne.

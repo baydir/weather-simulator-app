@@ -72,7 +72,7 @@ français, un document par sujet.
 
 | Document | Sujet |
 |---|---|
-| [`CLAUDE.md`](CLAUDE.md) | les règles qui s'appliquent toujours, et la carte des documents |
+| [`AGENTS.md`](AGENTS.md), [`CLAUDE.md`](CLAUDE.md) | les règles qui s'appliquent toujours, et la carte des documents |
 | [`docs/projet.md`](docs/projet.md) | l'intention, la finalité, le public |
 | [`docs/donnees.md`](docs/donnees.md) | requêtes, sources, variables, assemblage |
 | [`docs/regles.md`](docs/regles.md) | classe de ciel, température humide, seuils, correction |
@@ -98,7 +98,8 @@ weather-simulator-app/
 ├── tests/               Python, et les tests d'interface lancés par node --test
 ├── scripts/             mesures, collectes, captures d'écran
 ├── docs/                les décisions et ce qui les fonde
-└── CLAUDE.md            les règles permanentes et la carte des documents
+├── AGENTS.md            les règles permanentes et la carte des documents
+└── CLAUDE.md            les mêmes consignes pour Claude Code
 ```
 
 ## Installation

@@ -1,6 +1,7 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Ce fichier fournit les consignes de travail à Codex, Claude Code et aux autres
+agents de développement dans ce dépôt.
 
 Ce fichier ne porte que **les règles qui s'appliquent toujours** et **la carte
 des documents**. Tout le reste — l'intention, les données, les méthodes, la
@@ -222,6 +223,12 @@ Le détail, et ce que chaque étape a corrigé de ce que la précédente supposa
 
 ## Tenue du dépôt
 
+**`AGENTS.md` et `CLAUDE.md` restent synchronisés.** Toute modification de
+l'un est reportée dans l'autre dans le même changement et le même commit.
+Leur contenu doit être identique, à la première ligne de titre près. Cette
+duplication est une exception limitée aux points d’entrée des agents ; les
+faits du projet restent dans leurs documents de référence.
+
 **Un fait vit dans un seul fichier.** Une valeur contestée se remesure par le
 script correspondant, puis se corrige **sur place** — jamais ajoutée à côté de
 l'ancienne, jamais recopiée dans un second document.
@@ -231,7 +238,7 @@ document et le code, c'est le document qui l'emporte et le code qui doit être
 corrigé — ou le document amendé, si c'est lui qui a pris du retard.
 
 **Les documents et les dossiers de mesure ne se modifient pas sans
-validation** : `docs/`, `CLAUDE.md`, `scripts/verification/`,
+validation** : `docs/`, `AGENTS.md`, `CLAUDE.md`, `scripts/verification/`,
 `scripts/model_selection/`, `scripts/sky_thresholds/`. Le reste du code relève
 de l'autonomie de développement définie plus haut.
 
