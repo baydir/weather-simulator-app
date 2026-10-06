@@ -199,6 +199,19 @@ def build(
     return Plan(today=today, model=model, segments=tuple(segments))
 
 
+def cache_max_age(segment: Segment, end: date, today: date) -> int | None:
+    """Raw-response freshness, independent of source selection and processing.
+
+    Recent data expire in fifteen minutes. The thirty-day safety margin exceeds
+    normal archive latency; it never determines the seam or changes a request.
+    """
+    if segment.id == PROJECTION or (
+        segment.id != FORECAST and end < today - timedelta(days=30)
+    ):
+        return None
+    return 15 * 60
+
+
 def assemble(plan: Plan, payloads: dict[str, dict[str, Any]]) -> list[DailyRecord]:
     """Read the fetched payloads back into one chronological series.
 

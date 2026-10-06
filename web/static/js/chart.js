@@ -61,6 +61,7 @@ import { svg } from "./dom.js";
 import { texts } from "./i18n.js";
 import * as present from "./present.js";
 import { seamIndex } from "./series.js";
+import { alignYears } from "./compare.js";
 
 /**
  * The drawing, in its own units. The page scales it; nothing here is pixels.
@@ -474,6 +475,70 @@ export function chart(days, scale, { compared = null, box = BOX } = {}) {
     },
     marks,
   );
+}
+
+/** Daily temperatures only, sharing a window across the selected years. */
+export function temperatureChart(days, scale, windowDays = days) {
+  const geometry = frame(days.length);
+  const span = temperatureWindow(windowDays, scale.step);
+  const y = (value) => geometry.temperature.top +
+    ((span.top - value) / (span.top - span.bottom)) * BOX.temperature;
+  const height = geometry.temperature.bottom + BOX.bottom;
+  const seamFrame = { ...geometry, cumul: { base: geometry.temperature.bottom } };
+  return svg("svg", {
+    className: "chart",
+    attrs: {
+      viewBox: `0 0 ${BOX.width} ${height}`,
+      role: "img",
+      "aria-label": texts.chart.temperatures,
+    },
+  }, [
+    title(geometry, geometry.temperature.top, texts.chart.temperatures),
+    ...(span ? [graduation(geometry, span, scale.edges, scale.step, y),
+      ...curves(geometry, days, y)] : []),
+    dates(geometry, days, geometry.temperature.bottom, geometry.temperature.dates),
+    months(geometry, days, geometry.temperature.months),
+    seamMark(seamFrame, days),
+  ].filter(Boolean));
+}
+
+/** All chosen years on one calendar axis and one temperature scale. */
+export function comparisonChart(entries, scale, range) {
+  const { axis, series } = alignYears(entries, range);
+  const geometry = frame(axis.length);
+  const span = temperatureWindow(entries.flatMap((entry) => entry.days), scale.step);
+  const y = (value) => geometry.temperature.top +
+    ((span.top - value) / (span.top - span.bottom)) * BOX.temperature;
+  const marks = [title(geometry, geometry.temperature.top, texts.chart.temperatures)];
+  if (span) marks.push(graduation(geometry, span, scale.edges, scale.step, y));
+  for (const entry of series) {
+    const group = svg("g", {
+      className: "year-curves",
+      attrs: {
+        "data-year": entry.year,
+        style: `--year-high: ${entry.colors.high}; --year-low: ${entry.colors.low}`,
+      },
+    }, [
+      svg("title", { text: String(entry.year) }),
+      ...(span ? curves(geometry, entry.aligned, y) : []),
+    ]);
+    // Find the original seam before calendar alignment introduces empty slots.
+    const seam = seamIndex(entry.days);
+    if (seam >= 0) {
+      const index = entry.aligned.indexOf(entry.days[seam]);
+      const marker = seamMark({ ...geometry, cumul: { base: geometry.temperature.bottom } },
+        entry.days, { index, label: `${entry.year} · ${texts.results.seam}` });
+      if (marker) group.append(marker);
+    }
+    marks.push(group);
+  }
+  marks.push(dates(geometry, axis, geometry.temperature.bottom, geometry.temperature.dates),
+    months(geometry, axis, geometry.temperature.months));
+  return svg("svg", {
+    className: "chart comparison-chart",
+    attrs: { viewBox: `0 0 ${BOX.width} ${geometry.temperature.bottom + BOX.bottom}`,
+      role: "img", "aria-label": `${texts.chart.temperatures} · ${entries.map((e) => e.year).join(", ")}` },
+  }, marks);
 }
 
 /** The year the compared series belongs to, read off its first real day. */
@@ -963,8 +1028,7 @@ function months(frame, days, row) {
  * top of the drawing to the last foot, which is what makes it one crossing and
  * not three — the day the data changes source is the same day in every panel.
  */
-function seamMark(frame, days) {
-  const index = seamIndex(days);
+function seamMark(frame, days, { index = seamIndex(days), label = texts.results.seam } = {}) {
   if (index < 0) return null;
 
   const x = edgeOf(frame, index);
@@ -982,7 +1046,7 @@ function seamMark(frame, days) {
     }),
     svg("text", {
       className: "chart-seam-label",
-      text: texts.results.seam,
+      text: label,
       attrs: {
         x: round(room ? x + 5 : x - 5),
         y: round(frame.temperature.top + 11),

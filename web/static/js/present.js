@@ -74,9 +74,18 @@ export function precipitation(value) {
   return present(value, TENTH);
 }
 
-/** One decimal, for a number that is not a measurement — the grid step. */
+/** One decimal for the grid step and the approved period-average presentation. */
 export function decimal(value) {
   return present(value, TENTH);
+}
+
+const SIGNED_TENTH = new Intl.NumberFormat("fr-FR", {
+  ...TENTH.resolvedOptions(), signDisplay: "exceptZero",
+});
+
+/** Display a server-calculated difference; suppress a rounded negative zero. */
+export function signedDecimal(value) {
+  return present(value, SIGNED_TENTH);
 }
 
 export function wind(value) {

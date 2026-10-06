@@ -172,3 +172,49 @@ describe("the years the menu may offer", () => {
     assert.ok(selectableYears(summer, CONFIG, "2026-08-14").includes(ORDINARY_YEAR));
   });
 });
+
+const { coveredYears } = await import("../../web/static/js/compare.js");
+describe("explicit exploration across all covered years", () => {
+  it("includes future years without inferring their origin from the clock", () => {
+    const years = coveredYears({ start: "2024-07-01", end: "2024-07-31" }, CONFIG);
+    assert.equal(years[0], 1950);
+    assert.equal(years.at(-1), 2050);
+  });
+  it("excludes a winter whose end would leave coverage", () => {
+    const years = coveredYears({ start: "2024-12-21", end: "2025-03-20" }, CONFIG);
+    assert.equal(years.at(-1), 2049);
+  });
+  it("honours partial coverage at both ends", () => {
+    const years = coveredYears({ start: "2024-07-01", end: "2024-07-31" }, {
+      ...CONFIG, coverage_start: "2000-08-01", coverage_end: "2003-06-30",
+    });
+    assert.deepEqual(years, [2001, 2002]);
+  });
+});
+
+const { alignYears, yearColors } = await import("../../web/static/js/compare.js");
+describe("multiple years on a shared calendar", () => {
+  it("keeps leap day without moving March, retaining every origin", () => {
+    const entries = [
+      { year: 2024, days: [day("2024-02-28"), day("2024-02-29"), day("2024-03-01")] },
+      { year: 2050, days: [day("2050-02-28", "simulated"), day("2050-03-01", "simulated")] },
+    ];
+    const aligned = alignYears(entries, { start: "2024-02-29" });
+    assert.deepEqual(aligned.axis.map((d) => d.date.slice(5)), ["02-28", "02-29", "03-01"]);
+    assert.deepEqual(dates(aligned.series[1].aligned), ["2050-02-28", null, "2050-03-01"]);
+  });
+  it("keeps December before January", () => {
+    const { axis } = alignYears([{ days: [day("2040-12-31"), day("2041-01-01")] }], { start: "2040-12-21" });
+    assert.deepEqual(axis.map((d) => d.date.slice(5)), ["12-31", "01-01"]);
+  });
+  it("leaves gaps even when all selected series miss a day", () => {
+    const { series } = alignYears([{ days: [day("2040-07-01"), day("2040-07-03")] }], { start: "2040-07-01" });
+    assert.deepEqual(dates(series[0].aligned), ["2040-07-01", null, "2040-07-03"]);
+  });
+  it("provides distinct red and blue pairs beyond the initial palette", () => {
+    const pairs = Array.from({ length: 20 }, (_, index) => yearColors(index));
+    assert.equal(new Set(pairs.map((pair) => pair.high)).size, 20);
+    assert.equal(new Set(pairs.map((pair) => pair.low)).size, 20);
+    assert.deepEqual(yearColors(0), pairs[0]);
+  });
+});

@@ -1,4 +1,4 @@
-"""The HTTP layer: three endpoints, no state, no database.
+"""The HTTP layer: stateless planning, daily processing and temperature summaries.
 
 A search takes two calls. ``/api/plan`` turns a place and a range into the list
 of Open-Meteo requests that cover it, already spelled out as URLs; the browser
@@ -34,7 +34,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, model_validator
 from starlette.responses import Response
 
 from weather_simulator.api import errors, pipeline, validation
@@ -42,7 +42,7 @@ from weather_simulator.api import plan as planning
 from weather_simulator.api.contract import Series
 from weather_simulator.calibration.grid import CorrectionGrid
 from weather_simulator.calibration.table import CorrectionTable, OutsideCoverage
-from weather_simulator.domain import thresholds
+from weather_simulator.domain import temperature_means, thresholds
 from weather_simulator.sources import openmeteo
 from weather_simulator.sources.errors import SourceError
 from weather_simulator.sources.series import today_in_reference_zone
@@ -102,6 +102,7 @@ class Config(BaseModel):
     coverage_start: str
     coverage_end: str
     max_days: int
+    climate_window_years: int
     temperature_band_edges: list[float]
     temperature_band_step: float
 
@@ -123,6 +124,7 @@ def config() -> Config:
         coverage_start=openmeteo.COVERAGE_START.isoformat(),
         coverage_end=openmeteo.COVERAGE_END.isoformat(),
         max_days=validation.MAX_DAYS,
+        climate_window_years=temperature_means.WINDOW_YEARS,
         temperature_band_edges=list(thresholds.TEMPERATURE_BAND_EDGES),
         temperature_band_step=thresholds.TEMPERATURE_BAND_STEP_C,
     )
@@ -132,10 +134,11 @@ def config() -> Config:
 
 
 class PlannedRequest(BaseModel):
-    """One call for the browser to make. It reads neither field, it just fetches."""
+    """A finished URL and the freshness policy for its raw response."""
 
     id: str
     url: str
+    cache_max_age_seconds: int | None = 0
 
 
 class PlanOut(BaseModel):
@@ -159,7 +162,14 @@ def plan(search: validation.Search) -> PlanOut:
     built = planning.build(search.latitude, search.longitude, search.start, search.end, today)
     return PlanOut(
         today=today.isoformat(),
-        requests=[PlannedRequest(id=s.id, url=s.url) for s in built.segments],
+        requests=[
+            PlannedRequest(
+                id=segment.id,
+                url=segment.url,
+                cache_max_age_seconds=planning.cache_max_age(segment, search.end, today),
+            )
+            for segment in built.segments
+        ],
     )
 
 
@@ -200,7 +210,44 @@ def days(fetched: validation.Fetched, grid: Grid) -> Series:
         correction=correction,
         metadata=grid.table.metadata if covered else None,
         outside_grid=simulated and not covered,
+        requested_start=fetched.start,
+        requested_end=fetched.end,
     )
+
+
+class TemperatureComparisonIn(BaseModel):
+    """Annual results already processed by /api/days, resubmitted without rounding."""
+
+    past: list[temperature_means.PeriodMeans] = Field(max_length=temperature_means.WINDOW_YEARS)
+    future: list[temperature_means.PeriodMeans] = Field(max_length=temperature_means.WINDOW_YEARS)
+
+    @model_validator(mode="after")
+    def check_periods(self) -> TemperatureComparisonIn:
+        from math import isfinite
+
+        for periods in (self.past, self.future):
+            if len({item.start.year for item in periods}) != len(periods):
+                raise ValueError("duplicate annual periods")
+            for item in periods:
+                count = (item.end - item.start).days + 1
+                if not 1 <= count <= validation.MAX_DAYS or item.requested_days != count:
+                    raise ValueError("invalid requested coverage")
+                if not (
+                    0 <= item.available_max_days <= count
+                    and 0 <= item.available_min_days <= count
+                ):
+                    raise ValueError("invalid available coverage")
+                for value in (item.temperature_max, item.temperature_min):
+                    if value is not None and not isfinite(value):
+                        raise ValueError("non-finite mean")
+        if {item.start.year for item in self.past} & {item.start.year for item in self.future}:
+            raise ValueError("overlapping windows")
+        return self
+
+
+@app.post("/api/temperature-comparison", response_model=temperature_means.ComparisonMeans)
+def temperature_comparison(periods: TemperatureComparisonIn) -> temperature_means.ComparisonMeans:
+    return temperature_means.compare(periods.past, periods.future)
 
 
 # --- the two pages, and the files they load ----------------------------------

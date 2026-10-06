@@ -763,3 +763,46 @@ describe("the year laid under the one asked for", () => {
     );
   });
 });
+
+describe("daily temperature exploration", () => {
+  it("uses the same vertical scale for different years", () => {
+    const cold = [day("1991-07-01", "observed", { temperature_min: 5, temperature_max: 15 })];
+    const warm = [day("2040-07-01", "simulated", { temperature_min: 25, temperature_max: 40 })];
+    const all = [...cold, ...warm];
+    const a = chartModule.temperatureChart(cold, SCALE, all);
+    const b = chartModule.temperatureChart(warm, SCALE, all);
+    assert.deepEqual(byClass(a, "chart-axis").map((n) => n.textContent),
+      byClass(b, "chart-axis").map((n) => n.textContent));
+    assert.equal(byClass(a, "chart-rain").length, 0);
+    assert.equal(byClass(a, "chart-cumul").length, 0);
+  });
+  it("keeps simulation seams inside the shorter temperature panel", () => {
+    const drawn = chartModule.temperatureChart([
+      day("2026-07-01", "forecast"), day("2026-07-02", "simulated"),
+    ], SCALE);
+    assert.equal(byClass(drawn, "chart-seam-rule")[0].attrs.y2,
+      String(BOX.top + BOX.temperature));
+  });
+  it("does not invent temperatures when the whole series is missing", () => {
+    const drawn = chartModule.temperatureChart([
+      day("2040-07-01", "simulated", { temperature_min: null, temperature_max: null }),
+    ], SCALE);
+    assert.equal(byClass(drawn, "chart-point").length, 0);
+    assert.ok(!JSON.stringify(drawn).includes("NaN"));
+  });
+});
+
+describe("overlaid daily temperatures", () => {
+  it("renders several years under a single graduation with their own colors", () => {
+    const entries = [1991, 2040, 2050].map((year, index) => ({
+      year, colors: { high: `red-${index}`, low: `blue-${index}` },
+      days: [day(`${year}-07-01`, year > 2026 ? "simulated" : "observed")],
+    }));
+    const node = chartModule.comparisonChart(entries, SCALE, { start: "2040-07-01" });
+    assert.equal(byClass(node, "chart-graduation").length, 1);
+    assert.equal(byClass(node, "year-curves").length, 3);
+    assert.equal(byClass(node, "chart-point").length, 6);
+    assert.match(byClass(node, "year-curves")[2].attrs.style, /red-2.*blue-2/);
+    assert.match(node.attrs["aria-label"], /1991, 2040, 2050/);
+  });
+});

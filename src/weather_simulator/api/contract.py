@@ -73,6 +73,8 @@ from pydantic import BaseModel, Field
 
 from weather_simulator.calibration.table import Metadata
 from weather_simulator.domain import humidity, temperature
+from weather_simulator.domain.heat_counts import HeatCount
+from weather_simulator.domain.temperature_means import PeriodMeans
 from weather_simulator.domain.records import DailyRecord, Origin
 from weather_simulator.domain.sky import SkyClass
 
@@ -244,4 +246,6 @@ class Series(BaseModel):
         default=None,
         description="The correction applied to the simulated days. Null when there are none.",
     )
+    heat_counts: list[HeatCount] = Field(default_factory=list)
+    temperature_means: PeriodMeans | None = None
     days: list[Day]

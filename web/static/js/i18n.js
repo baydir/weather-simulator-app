@@ -14,6 +14,38 @@
  */
 
 export const texts = {
+  climate: {
+    title: "La période, vue sur dix ans",
+    intro: "Comparez les températures habituelles de cette période entre le passé récent et un scénario climatique.",
+    past: "Passé récent",
+    future: "Années à venir",
+    years: (first, last) => first === undefined ? "Hors couverture" : `${first}–${last}`,
+    window: (count) => `${count} périodes par fenêtre, repérées par leur année de début. Celle en cours n’est pas sélectionnée.`,
+    reading: { temperature_max: "Moyenne des maximales", temperature_min: "Moyenne des minimales" },
+    high: "Maximales moyennes",
+    low: "Minimales moyennes",
+    start: "Comparer ces deux décennies",
+    resume: "Reprendre le chargement",
+    stop: "Arrêter",
+    stopping: "Arrêt après la période en cours…",
+    stopped: "Chargement arrêté ; les périodes reçues sont conservées.",
+    loading: (year) => `Chargement de la période ${year}…`,
+    progress: (done, total) => `${done} / ${total} périodes chargées`,
+    complete: (high, low, total) => `Périodes complètes : ${high}/${total} pour les maximales, ${low}/${total} pour les minimales.`,
+    difference: (high, low) => `Écart années à venir − passé : ${high} pour les maximales ; ${low} pour les minimales.`,
+    waiting: "Les moyennes apparaîtront après le chargement des périodes nécessaires.",
+    method: "Chaque température est moyennée sur une période entièrement renseignée, puis sur dix années à poids égal. Une donnée manquante laisse la moyenne concernée indisponible ; aucune valeur n’est remplacée.",
+    unloaded: "Non chargée",
+    coverage: "Journées renseignées",
+    days: (high, low, total) => `Max. ${high}/${total} · min. ${low}/${total}`,
+    chart: "Moyennes de température par année, passé et simulation sur un même axe",
+    chartNote: "Un point représente la moyenne de la période d’une année. Maximales en rouge, minimales en bleu ; pointillés pour la simulation. Aucun point n’est calculé pour l’année en cours, exclue des fenêtres.",
+    details: "Valeurs et couverture par année",
+    detailNote: "Sélectionnez une année chargée pour la retrouver dans les calendriers au-dessus.",
+    quota: "Ce chargement utilise le quota de votre connexion. Les données conservées dans ce navigateur sont réutilisées ; aucun réessai automatique n’est effectué en cas de limitation.",
+    rateLimited: "Limite du fournisseur atteinte. Les résultats reçus sont conservés. Réessayez plus tard ; une limite journalière peut durer jusqu’au lendemain.",
+    limit: "La couverture disponible ne permet pas de remplir les deux fenêtres. Les années disponibles restent consultables.",
+  },
   site: {
     skip: "Aller au formulaire",
     skipToDays: "Aller aux journées",
@@ -28,7 +60,7 @@ export const texts = {
     //
     // It sits under the warning on both pages, so it is worded as the answer to
     // the question that warning raises rather than as a menu entry.
-    documentation: "Tout comprendre sur les données affichées",
+    documentation: "Comprendre les données",
   },
 
   // The banner asks before it explains. A site name at the top said what the
@@ -38,6 +70,9 @@ export const texts = {
   // The name is not lost — it stays in <title>, so in the tab and in a search
   // result, which is where a name is actually read.
   home: {
+    title: "Votre ville, au fil du climat.",
+    eyebrow: "EXPLORER LE CLIMAT",
+    intro: "Choisissez un lieu et une période. Comparez ensuite les journées de plusieurs années.",
     // **Provisoire — à réécrire par le porteur du projet.** Un seul endroit.
     //
     // Deux contraintes. Une question porte un lieu et un horizon, sans quoi
@@ -90,7 +125,7 @@ export const texts = {
     placeHint: "Une commune, une ville",
     from: "Du",
     to: "Au",
-    submit: "Afficher la météo",
+    submit: "Explorer cette période",
     searching: "Recherche du lieu…",
     candidates: (n) =>
       n === 1 ? "1 lieu trouvé, à choisir" : `${n} lieux trouvés, à choisir`,
@@ -173,6 +208,44 @@ export const texts = {
   // the comparison on all three panels knowing this — and the note is what
   // keeps that honest. Without it a reader takes the grey bars for a normal,
   // misled by a selection that never looked at rain.
+  heatCounts: {
+    title: "Repères sur cette période",
+    reading: { temperature_max: "Maximale", temperature_min: "Minimale" },
+    comparison: { above: ">", at_least: "≥" },
+    days: (count) => `${count} ${count === 1 ? "jour" : "jours"}`,
+    coverage: (available, total) => `${available} / ${total} journées renseignées`,
+    unavailable: "Données indisponibles",
+    note: "Comptages sur les valeurs non arrondies. Les jours au-dessus du seuil le plus élevé sont aussi inclus dans le premier compteur.",
+  },
+  heatCalendar: {
+    title: "Vos étés, jour après jour",
+    periodTitle: "La chaleur, jour après jour",
+    intro: "Une case par jour. La même couleur représente la même température, quelle que soit l’année.",
+    highs: "Chaleur en journée",
+    lows: "Fraîcheur la nuit",
+    highNote: "Température maximale quotidienne",
+    lowNote: "Température minimale quotidienne, utilisée comme repère pour la nuit.",
+    tap: "Sélectionnez une journée pour lire sa température et son origine.",
+    weekdays: ["L", "M", "M", "J", "V", "S", "D"],
+    chart: "Explorer les courbes quotidiennes",
+    scale: "Échelle de température commune",
+  },
+  explorer: {
+    title: "Comparer les années",
+    intro: "La même période, à différentes époques. Ajoutez les années que vous souhaitez explorer.",
+    add: "Ajouter cette année",
+    year: "Année à comparer",
+    remove: (year) => `Retirer ${year}`,
+    daily: "La météo, jour par jour",
+    evolution: "Les températures au fil des années",
+    reading: "Les maximales sont en rouge, les minimales en bleu. Chaque année a ses nuances, sur les mêmes dates et la même échelle.",
+    variability: "Deux années peuvent se ressembler ou être très différentes. Leur comparaison seule ne mesure pas le réchauffement climatique : explorez plusieurs années.",
+    scroll: "Faites défiler le graphique pour parcourir toute la période →",
+    loading: (year) => `Chargement de ${year}…`,
+    empty: "Toutes les années disponibles ont été ajoutées.",
+    retry: "Réessayer",
+    period: (start, end) => `${start} – ${end}`,
+  },
   compare: {
     open: "Comparer avec une autre année",
     close: "Masquer la comparaison",

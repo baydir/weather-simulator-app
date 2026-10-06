@@ -26,7 +26,6 @@ import { DAY, at, iso, pad } from "./calendar.js";
 import { applyTexts, el } from "./dom.js";
 import { texts } from "./i18n.js";
 import { beforeFinalPunctuation } from "./present.js";
-import { rotate } from "./prompt.js";
 import { rangeOf, seasonOf, yearsFor } from "./season.js";
 
 const form = document.getElementById("search");
@@ -55,7 +54,7 @@ applyTexts();
 markPromise(document.getElementById("promise"));
 // After applyTexts, which fills every other slot: the heading is the one place
 // the dictionary is read as a list rather than as a single string.
-rotate(document.getElementById("prompt"), texts.home.questions);
+document.getElementById("prompt").textContent = texts.home.title;
 fillDefaultDates();
 fillSeasons();
 // Closed on arrival. The markup ships both panels open so the page works

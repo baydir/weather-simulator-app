@@ -24,7 +24,7 @@
  * world, including where the future is refused.
  */
 
-import { DAY, at, iso, span } from "./calendar.js";
+import { DAY, at, iso, span, eachDay } from "./calendar.js";
 
 /**
  * The year the menu opens on, and it was measured rather than picked.
@@ -132,4 +132,47 @@ export function selectableYears(range, config, today) {
     if (shifted.start >= config.coverage_start && shifted.end < today) years.push(year);
   }
   return years;
+}
+
+/** All covered years for an explicitly selected comparison, including simulations. */
+export function coveredYears(range, config) {
+  const years = [];
+  const first = Number(config.coverage_start.slice(0, 4));
+  const last = Number(config.coverage_end.slice(0, 4));
+  for (let year = first; year <= last; year += 1) {
+    const shifted = shiftRange(range, year, config.max_days);
+    if (shifted.start >= config.coverage_start && shifted.end <= config.coverage_end) {
+      years.push(year);
+    }
+  }
+  return years;
+}
+
+/** Align every series by month/day, retaining leap days and missing readings. */
+export function alignYears(entries, range) {
+  const first = `${range.start.slice(5, 7)}-01`;
+  const keys = new Map();
+  for (const { days } of entries) {
+    if (!days.length) continue;
+    for (const date of eachDay(days[0].date, days.at(-1).date)) keys.set(date.slice(5), date);
+  }
+  const ordered = [...keys.keys()].sort((a, b) => {
+    const left = `${a < first ? 1 : 0}-${a}`;
+    const right = `${b < first ? 1 : 0}-${b}`;
+    return left.localeCompare(right);
+  });
+  // These dates label the shared calendar axis only; no weather is synthesized.
+  const base = first <= "02-29" ? 2000 : 1999;
+  const axis = ordered.map((key) => ({ date: `${base + (key < first ? 1 : 0)}-${key}` }));
+  const series = entries.map((entry) => {
+    const found = new Map(entry.days.map((day) => [day.date.slice(5), day]));
+    return { ...entry, aligned: ordered.map((key) => found.get(key) ?? null) };
+  });
+  return { axis, series };
+}
+
+/** Presentation only: red/blue pairs assigned in selection order, never by year. */
+export function yearColors(index) {
+  const lightness = [42, 28, 56, 35, 49, 23][index] ?? 28 + ((index * 0.61803398875) % 1) * 28;
+  return { high: `hsl(4 72% ${lightness}%)`, low: `hsl(213 76% ${lightness}%)` };
 }

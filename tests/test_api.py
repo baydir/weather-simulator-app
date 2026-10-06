@@ -544,3 +544,57 @@ def test_the_config_serves_the_band_ladder_rather_than_leaving_it_to_be_copied(c
     assert body["temperature_band_step"] == thresholds.TEMPERATURE_BAND_STEP_C
     # Eight boundaries cut the line into the nine bands the ramp paints.
     assert len(body["temperature_band_edges"]) == temperature.BAND_COUNT - 1
+
+
+@pytest.mark.parametrize(
+    ("start", "end", "short_lived"),
+    [
+        (date(1960, 7, 1), date(1960, 7, 31), False),
+        (TODAY - timedelta(days=4), TODAY, True),
+        (TODAY + timedelta(days=1), TODAY + timedelta(days=10), True),
+        (date(2046, 7, 1), date(2046, 7, 31), False),
+    ],
+)
+def test_plan_supplies_raw_cache_freshness(client, frozen_today, start, end, short_lived):
+    body = client.post("/api/plan", json=_search(start, end)).json()
+    assert body["requests"]
+    for request in body["requests"]:
+        assert request["cache_max_age_seconds"] == (900 if short_lived else None)
+
+
+def test_days_ship_temperature_means_for_the_requested_period(client, frozen_today):
+    response = _run(client, _search(date(2020, 6, 1), date(2020, 6, 30)))
+    assert response.status_code == 200
+    body = response.json()
+    means = body["temperature_means"]
+    assert means["start"] == "2020-06-01"
+    assert means["requested_days"] == 30
+    assert means["available_max_days"] == 30
+    assert means["temperature_max"] == pytest.approx(
+        sum(day["temperature_max"] for day in body["days"]) / 30
+    )
+
+
+def test_temperature_comparison_endpoint_accepts_partial_loading_and_requires_ten_years(client):
+    from dataclasses import asdict
+
+    from weather_simulator.domain.temperature_means import PeriodMeans
+
+    def period(year, high):
+        return {
+            **asdict(PeriodMeans(date(year, 7, 1), date(year, 7, 31), 31, 31, 31, high, 20.0)),
+            "start": f"{year}-07-01", "end": f"{year}-07-31",
+        }
+
+    past = [period(year, 25.0) for year in range(2010, 2020)]
+    future = [period(year, 27.0) for year in range(2030, 2040)]
+    response = client.post("/api/temperature-comparison", json={"past": past, "future": future})
+    assert response.status_code == 200
+    assert response.json()["difference"]["temperature_max"] == 2
+    response = client.post("/api/temperature-comparison", json={"past": past[:-1], "future": future})
+    assert response.status_code == 200
+    assert response.json()["past"]["temperature_max"] is None
+    assert response.json()["difference"]["temperature_max"] is None
+    assert client.post("/api/temperature-comparison", json={"past": [past[0]] * 10, "future": []}).status_code == 422
+    past[0]["requested_days"] = 30
+    assert client.post("/api/temperature-comparison", json={"past": past, "future": []}).status_code == 422

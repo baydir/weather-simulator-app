@@ -26,6 +26,7 @@
  */
 
 import { texts } from "./i18n.js";
+import { weatherCache } from "./weather-cache.js";
 
 /** A refusal from the API, carrying the sentence meant for the visitor. */
 export class SearchError extends Error {
@@ -112,7 +113,9 @@ async function getJson(url, message, { timeout = UPSTREAM_TIMEOUT_MS } = {}) {
     throw new SearchError(reasonFor(cause, message), 0, { cause });
   }
   if (!response.ok) {
-    throw new SearchError(message, response.status);
+    const error = new SearchError(message, response.status);
+    error.retryAfter = response.headers?.get("Retry-After");
+    throw error;
   }
   // The body is under the same clock as the headers, a stalled stream being as
   // silent as a stalled request — and it is read inside the guard for that.
@@ -156,6 +159,35 @@ export async function geocode(name, config, { count = 5, language = "fr" } = {})
   return payload.results ?? [];
 }
 
+// All weather searches share one paced queue, including manual comparisons.
+// Cache hits still pass through the latest plan and processing on the server.
+let upstreamQueue = Promise.resolve();
+let nextUpstreamAt = 0;
+let blockedUntil = 0;
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+function upstream(request) {
+  const task = upstreamQueue.then(async () => {
+    const cached = weatherCache.read(request.url, request.cache_max_age_seconds);
+    if (cached !== null) return { payload: cached };
+    if (Date.now() < blockedUntil) throw new SearchError(texts.climate.rateLimited, 429);
+    await delay(Math.max(0, nextUpstreamAt - Date.now()));
+    try {
+      return { payload: await getJson(request.url, UPSTREAM_FAILED), saved: Date.now() };
+    } catch (error) {
+      if (error.status === 429) {
+        const seconds = Number(error.retryAfter);
+        const until = error.retryAfter && !Number.isFinite(seconds)
+          ? Date.parse(error.retryAfter) : Date.now() + seconds * 1000;
+        blockedUntil = Math.max(Date.now() + 60_000, until || 0,
+          error.retryAfter ? 0 : Date.now() + 60 * 60_000);
+      }
+      throw error;
+    } finally { nextUpstreamAt = Date.now() + 1000; }
+  });
+  upstreamQueue = task.catch(() => {});
+  return task;
+}
+
 /**
  * One search, end to end: ask what to fetch, fetch it, send it back.
  *
@@ -177,14 +209,26 @@ export async function search({ latitude, longitude, start, end }, onProgress = (
 
   const payloads = {};
   let done = 0;
+  const fresh = [];
   // Sequentially rather than in parallel: three or four requests hitting
   // Open-Meteo at once from one address is exactly the burst its rate limiter
   // watches for, and the wait saved would not be noticed.
   for (const request of plan.requests) {
-    payloads[request.id] = await getJson(request.url, UPSTREAM_FAILED);
+    const answer = await upstream(request);
+    payloads[request.id] = answer.payload;
+    if (answer.saved) fresh.push({ request, ...answer });
     onProgress(++done, plan.requests.length);
   }
 
   const series = await postJson("/api/days", { ...query, today: plan.today, payloads });
+  // Only persist responses accepted by the current server; never cache failures.
+  for (const { request, payload, saved } of fresh) {
+    weatherCache.write(request.url, payload, request.cache_max_age_seconds, saved);
+  }
   return { ...series, today: plan.today };
+}
+
+/** Aggregate already processed annual summaries on the server, never in JS. */
+export function summarizeClimate(periods) {
+  return postJson("/api/temperature-comparison", periods);
 }

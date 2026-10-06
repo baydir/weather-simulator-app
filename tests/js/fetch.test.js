@@ -123,3 +123,41 @@ describe("the other failures keep their own words", () => {
     });
   });
 });
+
+it("reuses exact raw data on a later search and reruns current server processing", async () => {
+  const { search } = await import("../../web/static/js/fetch.js?raw-cache-check");
+  const data = new Map();
+  globalThis.localStorage = {
+    get length() { return data.size; }, key: (i) => [...data.keys()][i],
+    getItem: (key) => data.get(key) ?? null, setItem: (key, value) => data.set(key, value),
+    removeItem: (key) => data.delete(key),
+  };
+  let processed = 0;
+  const raw = { daily: { temperature_2m_max: [30.12345, null] } };
+  stubFetch((url, options) => {
+    if (url === "/api/plan") return answers({ today: "2026-10-06", requests: [
+      { id: "projection", url: "https://fixture.invalid/stable", cache_max_age_seconds: null },
+    ] });
+    if (url === "/api/days") {
+      assert.deepEqual(JSON.parse(options.body).payloads.projection, raw);
+      return answers({ revision: ++processed, days: [] });
+    }
+    return answers(raw);
+  });
+  try {
+    assert.equal((await search(SEARCH)).revision, 1);
+    assert.equal((await search(SEARCH)).revision, 2);
+    assert.equal(calls.filter((call) => call.url.startsWith("https:")).length, 1);
+  } finally { delete globalThis.localStorage; }
+});
+
+it("halts after 429 and does not send another upstream request during cooldown", async () => {
+  const { search } = await import("../../web/static/js/fetch.js?quota-check");
+  stubFetch((url) => url === "/api/plan" ? answers({ today: "2026-10-06", requests: [
+    { id: "first", url: "https://fixture.invalid/limited" },
+    { id: "second", url: "https://fixture.invalid/unused" },
+  ] }) : answers(null, { ok: false, status: 429 }));
+  await assert.rejects(search(SEARCH), (error) => error.status === 429);
+  await assert.rejects(search(SEARCH), (error) => error.status === 429);
+  assert.equal(calls.filter((call) => call.url.startsWith("https:")).length, 1);
+});

@@ -12,19 +12,17 @@ les imprime.
 ## Nature du site
 
 Un site grand public volontairement restreint : **une page d'accueil portant le
-formulaire, une page de résultats**. Des pages explicatives viendront plus tard,
-statiques et peu interactives.
+formulaire, une page de résultats**, accompagnées d’une page documentaire statique.
 
 Le formulaire demande un lieu et une période, **et la période de deux façons** :
 une plage de dates, ou une saison et une année → [Deux façons de poser la même
 question](#deux-façons-de-poser-la-même-question). La seconde ne produit rien que
 la première ne produise : elle écrit les mêmes deux dates, dans la même URL.
 
-L'accueil n'annonce pas le site par son nom. Il pose une question qui tourne —
-« Pourrais-je faire pousser des tomates à Montpellier en 2050 ? » — et met la
-promesse dessous. Un nom dit comment la chose s'appelle et rien de ce à quoi elle
-sert ; le nom reste dans le titre de l'onglet, qui est l'endroit où un nom se lit
-vraiment.
+L'accueil invite à explorer le climat d'une ville. La recherche conduit à des
+journées météo et à des courbes de température, puis le visiteur ajoute les
+années qu'il souhaite comparer. Le parcours vise le grand public ; les détails
+techniques restent dans la documentation et le contrat serveur.
 
 Objectif de conception : simple d'abord, extensible ensuite. Chaque brique est
 pensée pour être remplacée sans que les autres bougent.
@@ -151,13 +149,9 @@ les bornes tombent sur le 21**, et `rangeOf` s'y appuie pour prendre la veille d
 la suivante — le 20 du même mois, sans arithmétique de date ni fuseau à lire. Une
 borne déplacée au 1ᵉʳ rendrait un jour zéro, en silence ; un test l'interdit.
 
-Les questions de l'accueil sont tenues **par deux tests** : `prompt.test.js`
-vérifie que chacune pose bien une question et que la promesse garde son verbe —
-« Simulez », l'un des trois termes que la règle 1 retient ; `present.test.js`
-porte la liste des mots proscrits et signale la fautive sous
-`home.questions.<rang>`. Ni l'un ni l'autre ne rattrape « Quel temps fera-t-il à
-Nice en 2050 ? », qui ne contient aucun mot interdit et promet pourtant la
-journée.
+Le titre de l'accueil est fixe. `prompt.js` et ses tests restent disponibles,
+mais la rotation des questions n'est plus utilisée dans le parcours principal.
+Les textes visibles restent centralisés dans `i18n.js`.
 
 ---
 
@@ -175,8 +169,8 @@ jusqu'au libellé du refus.
 
 Chaque journée porte un pictogramme, les températures minimale et maximale, le
 cumul de précipitations et la vitesse de vent maximale — et, sur les seules
-journées qui franchissent un seuil, un bandeau de chaleur humide. **Sous la
-bande, les mêmes journées dessinées** → [Le graphe sous la bande](#le-graphe-sous-la-bande).
+journées qui franchissent un seuil, un bandeau de chaleur humide. Les courbes
+montrent ces mêmes températures → [Les températures à comparer](#les-températures-à-comparer).
 
 **Deux choses sont mises en avant : l'allure du ciel et les deux
 températures** — le pictogramme d'abord, les degrés dessous, en corps supérieur
@@ -316,35 +310,18 @@ plancher de 4,5.
 
 Aucune moyenne de période, aucun comptage de journées de pluie, aucun extrême de
 la plage. Ce sont des agrégations, et une agrégation faite à l'affichage relève
-de la même validation que l'arrondi ci-dessus. **L'interface montre les journées,
-et rien au-dessus d'elles.**
+de la même validation que l'arrondi ci-dessus. Les compteurs autorisés ci-dessous
+sont calculés par le serveur, jamais par l'interface.
 
 La règle porte sur la bande comme sur le graphe. Une courbe est **une marque par
 journée** et n'agrège rien : ce qu'elle ajoute est la forme de la période, que
 l'œil compose et que l'interface ne calcule pas.
 
-**Le cumul des précipitations est la seule exception, arbitrée le 14 août 2026.**
-Trois traits l'y autorisent, dont aucun ne se transporte à une moyenne ni à un
-comptage. Il **parcourt** la période au lieu de la résumer, une valeur par
-journée à sa date. Il ne **s'écrit** jamais : seule sa graduation porte des
-nombres, et le total ne se lit que comme une hauteur. Et il se **dit calculé** —
-aucun point, là où chaque lecture en porte un, et une coupure sur une journée
-manquante plutôt qu'un trait par-dessus. Il occupe **un panneau à lui** → [Le
-graphe sous la bande](#le-graphe-sous-la-bande).
-
-Un test refuse par défaut tout texte du graphe qui ne soit ni un titre, ni une
-graduation, ni un repère de lecture, **ni le nom de l'année comparée** — celle-ci
-nomme une marque, comme l'étiquette de couture nomme un passage, et n'est ni un
-total, ni une moyenne, ni un comptage, ni un extrême. Élargir cette liste est un
-acte, et le test vérifie que rien d'autre n'est passé avec.
-
-Ce qu'une ligne de synthèse aurait dit — « tant de journées à 30 °C d'un côté et
-de l'autre » — reste écarté alors même que la comparaison au climat ancien est
-faite : le graphe rend inutile ce à quoi elle devait suppléer.
-
-**Le cadrage des trois axes est la seule autre chose que le graphe décide**, et
-les trois relèvent de la validation qu'exige la règle 4 → [Les trois
-axes](#les-trois-axes).
+Le module historique conserve le cumul des précipitations, autorisé le
+14 août 2026 : un cumul par journée, coupé aux données manquantes, tracé sans
+valeur totale écrite. Ce panneau n'est plus affiché dans le parcours principal.
+La fenêtre verticale des températures réutilise les mêmes graduations et
+la même fonction de cadrage que le graphe historique.
 
 **Tout écran affichant une journée simulée porte un avertissement explicite et
 visible** → [`projet.md`](projet.md). Une recherche qui ne dépasse pas la
@@ -355,62 +332,15 @@ prévision n'en porte pas : l'avertissement y serait faux. La bascule se lit sur
 
 ## L'accueil
 
-L'accueil porte un couchant, **écrit en dégradé CSS** à partir de onze couleurs
-échantillonnées dans la photographie de référence. La photographie n'ayant aucun
-détail — c'est un lavis —, le dégradé la reproduit pour zéro octet et reste net à
-n'importe quelle densité d'écran.
+Un fond clair et un formulaire sur une surface blanche remplacent le ciel
+animé. Le titre « Votre ville, au fil du climat. » reste fixe. La première étape
+est le choix explicite d'une ville dans les résultats du géocodage ; la seconde
+est une plage de dates ou une saison et son année. La météo actuelle comme
+porte d'entrée reste une piste → [`idees.md`](idees.md).
 
-**Il est ancré au document, non à la fenêtre**, et ce point n'est pas cosmétique :
-fixé à la fenêtre, la couleur sous un élément donné dépendrait de la hauteur
-d'écran du lecteur. **Aucun voile n'est posé dessus** — un assombrissement achète
-du contraste en salissant la photographie. La lisibilité se paie en encre :
-l'encre secondaire est éclaircie sur cette page, et l'avertissement passe en brun
-brûlé, seul texte à tomber sur la bande claire quelle que soit la fenêtre. Les
-étiquettes du formulaire prennent l'encre pleine, leur hiérarchie restant portée
-par leur forme — onze pixels, capitales, interlettrage.
-
-**Plancher de contraste : 4,6:1**, porté par les champs de date. Les tables
-complètes, la méthode et les tailles de fenêtre →
-[`scripts/ink_contrast.md`](../scripts/ink_contrast.md).
-
-La chaleur qui monte de la bande basse est **une bande translucide qui passe sur
-le lavis**, non un filtre de déplacement : sans détail à déformer, l'opération
-chère et la gratuite convergent, et la seconde tient 121 images par seconde. Le
-miroitement s'arrête entièrement sous `prefers-reduced-motion`, comme la rotation
-de la question.
-
-### Le formulaire sur le ciel
-
-Sur un dégradé le fond est une variable, et rien de ce formulaire n'est dans une
-boîte.
-
-**Le bouton d'envoi ne porte pas de fond opaque** : un brun brûlé à 45 %, que le
-ciel traverse, et un filet d'ivoire à 22 %. **Le filet est une ombre interne et
-non une bordure** — une bordure ajouterait deux pixels de hauteur, et sur cette
-page un bouton plus haut pousse l'avertissement sur une autre zone du dégradé. Le
-survol **fonce** le fond au lieu de l'éclaircir, de sorte que le rapport monte en
-approchant et ne descend jamais.
-
-**La liste des lieux flotte au-dessus de la page au lieu de la pousser** : une
-réponse passagère à ce qu'on est en train d'écrire ne doit coûter aucune hauteur,
-sans quoi les champs que le lecteur vient de regarder glissent sous ses yeux dès
-la deuxième lettre tapée. **Elle est opaque, et c'est la seule surface du site qui
-le soit** — lire un nom de commune au travers de « 12/08/2026 » est pire que de ne
-pas afficher la liste du tout. Elle prend `#27030a`, le dernier arrêt du dégradé,
-**servi et non recopié** dans une variable que les deux lisent, comme `--sky-head`
-est à la fois le fond du `body` et le premier arrêt.
-
-**Les champs de date rendent visible où l'on se trouve dans la date.** Le
-navigateur marque le segment que la frappe suivante changera, avec une couleur
-système que la page ne peut pas choisir : `::selection` est inerte, `accent-color`
-aussi. Ce qui s'atteint, c'est ce qui entoure la marque — `color-scheme: light`
-demande au système sa marque claire, et le champ prend un fond sombre **pendant
-l'édition seulement**. Au repos, une date reste une ligne de texte sur un filet.
-
-La contrepartie n'est pas réparable : la marque de segment et le calendrier natif
-viennent du même réglage et ne se séparent pas, donc le calendrier s'ouvre en
-clair. L'échange est assumé — le calendrier est un passage bref, le repérage dans
-la date un geste constant.
+Les styles du parcours sont limités à `body.explorer`. La page documentaire
+conserve sa présentation. Les mesures de contraste de l'ancien habillage ne
+constituent pas une validation de ce nouvel écran.
 
 ### Deux façons de poser la même question
 
@@ -443,11 +373,8 @@ gardent le leur : un seul est ouvert à la fois, donc leur ordre n'est jamais lu
 et celui qui s'affiche sans script doit rester celui que le balisage ne masque
 pas.
 
-**Les deux bandes sont dans la grammaire du bouton d'envoi, à un rang en
-dessous** : même fond brun, plus léger — 24 % contre 45 — parce qu'à leur hauteur
-il se compose sur du bleu et non sur le couchant, et plus basses que lui, 12 px
-de rembourrage contre 20. Elles choisissent la question, lui la pose. Choisir une
-bande l'approfondit jusqu'au fond du bouton et lui donne un filet d'encre pleine.
+Les deux modes utilisent des boutons clairs ; le mode actif porte un fond
+bleu et un contour renforcé. Le bouton d'envoi, bleu plein, reste distinct.
 
 **Le repli est écrit dans le script, pas dans le balisage.** La page est livrée
 les deux panneaux ouverts et le bouton visible ; c'est `home.js` qui les ferme au
@@ -474,107 +401,17 @@ que le visiteur vient de demander.
 
 ## La page de résultats
 
-La page porte **le sol de la saison sur laquelle porte la recherche**. L'été vient
-de `design/summer_result.svg` et la page a été dessinée sur lui ; les trois autres
-en dérivent.
+Le lieu et la période apparaissent en tête. La comparaison occupe la première
+section ; les cartes de la période initiale restent accessibles dessous. La
+page utilise le même fond clair que l'accueil, indépendant de la saison.
+Les palettes saisonnières et le repérage de saison restent dans le code,
+mais ne déterminent plus le fond de ce parcours.
 
-**La saison se compte, elle ne se lit pas à une extrémité.** Le navigateur
-parcourt la plage jour par jour et retient celle qui en tient le plus. Trois
-arbitrages complètent la règle :
-
-- **Bornes astronomiques**, 21 décembre au 20 mars et ainsi de suite — les dates
-  sur lesquelles le visiteur a été interrogé. Elles glissent d'un jour selon
-  l'année dans le ciel et pas ici : un sol qui changerait de teinte le 20 mars une
-  année et le 21 la suivante répondrait à une question que personne ne pose.
-- **Saisons inversées sous l'équateur.** La latitude voyage dans l'URL à côté des
-  dates, et janvier à Santiago est un été. Une latitude illisible retombe sur
-  l'hémisphère nord — le calendrier, plutôt qu'une erreur.
-- **À égalité parfaite, la saison où la plage se termine.** Une plage se lit vers
-  l'avant.
-
-**La saison demandée et la saison peinte se rejoignent, et ce n'est pas une
-coïncidence** : `rangeOf` et `seasonOf` lisent la même table en sens inverse, y
-compris sous l'équateur, où l'un traduit vers l'hémisphère nord et l'autre en
-revient. Un test le vérifie plutôt que de l'espérer → [Organisation du
-code](#organisation-du-code).
-
-**Ce comptage se fait dans le navigateur, et la règle 3 n'y voit rien à redire** :
-le serveur n'en détient aucune version, il n'y a donc pas de second exemplaire.
-C'est de la mise en forme dérivée de deux dates déjà présentes dans l'URL, au même
-titre que le repérage des mois dans la bande. La saison est posée sur le `body`
-avant le premier rendu, et **avant les quatre allers-retours** : une recherche
-refusée porte son sol comme une autre.
-
-### Les quatre sols
-
-**L'été est relevé, les trois autres sont dessinés.** Le dégradé de la maquette
-est une image matricielle encastrée dans le fichier Inkscape : il a été décodé
-puis échantillonné tous les dix pour cent, ce qui donne onze arrêts. Il n'existe
-pas de maquette pour les trois autres, et leur inventer onze arrêts serait une
-précision qui ne mesurerait rien — ils en portent **cinq**, choisis pour la teinte
-du milieu. Cet arrêt central est tout le travail : blanc à marron interpolé en
-sRVB passe par un beige sale, blanc à bleu par un gris mort.
-
-```
-été       0 % #fafdea   30 % #fe9e52   60 % #fd3a0c   90 % #810402
-         10 % #f9deb1   40 % #ff7b30   70 % #fd2101  100 % #070000
-         20 % #fbbe7f   50 % #fd5816   80 % #d60e01
-
-hiver     0 % #f7fbfe   20 % #dbeaf7   40 % #b3d0e8   60 % #6f9dc9   80 % #2c5b90   100 % #0a1b33
-printemps 0 % #f9fcef   20 % #eaf3c8   40 % #d8e894   60 % #c8d94a   80 % #5f8a22   100 % #0f2409
-automne   0 % #fdf7ec   20 % #fae2bd   40 % #f3bb72   60 % #e08a35   80 % #a4501a   100 % #1e0c03
-```
-
-**La forme est celle de l'été sur les quatre** : clair jusqu'au milieu,
-l'assombrissement concentré après 70 %. C'est ce qui porte la date nue au-dessus
-d'une carte et ce qui permet à la provenance de rester pâle au pied. Le printemps
-y perd sa lecture littérale — le vert-jaune occupe le milieu, le pied descend vers
-un vert de sous-bois —, l'alternative étant un pied clair qui obligerait la
-provenance à changer d'encre selon la saison.
-
-**Cette page s'inverse en descendant, et c'est toute sa difficulté.** Le premier
-écran est presque blanc et le dernier presque noir : aucune encre ne sert les deux
-extrémités. L'encre est donc sombre par défaut, et **le seul bloc qui bascule au
-clair est la provenance**, au pied de la page.
-
-Six variables changent avec la saison, et six seulement : le dégradé, sa tête, et
-les quatre encres qui se posent dessus.
-
-| | encre | encre secondaire | filet | filet fort |
-|---|---|---|---|---|
-| hiver | `#0b1c30` | `#12293f` | `#5b87b5` | `#2f5b87` |
-| printemps | `#17280c` | `#24380f` | `#7d9438` | `#4c6d1e` |
-| été | `#21100a` | `#3d1608` | `#c9793f` | `#8f3f16` |
-| automne | `#2a1206` | `#3d1c07` | `#bd7734` | `#8c4315` |
-
-**L'encre secondaire y est presque aussi noire que l'encre principale** : sur
-l'été, le ton qui *lit* comme secondaire tombe à 2,6:1 sur l'orange saturé du
-milieu, où se posent le marqueur de mois et la ligne du scénario. Ce qui sépare
-ces textes de ce qu'ils nomment, c'est leur forme — onze pixels, capitales,
-interlettrage —, comme sur l'accueil.
-
-**Rien d'autre ne bouge**, parce que rien d'autre ne touche au sol. Les cartes
-restent blanches sur les quatre, et le graphe est dessiné sur le même papier ;
-les deux températures se mesurent contre une carte, non contre un ciel. **La
-carte cesse par ailleurs d'être la boîte** : la date se pose nue sur le dégradé,
-et seul le corps en dessous est dessiné. Le rouge `#d40000` et le bleu `#0044aa`
-de la maquette servent de repli sur une carte — une journée sans température n'a
-pas de bande, donc pas de couleur d'échelle — et **de couleur propre aux deux
-courbes du graphe**.
-
-**La page tient au moins la fenêtre**, pour deux raisons superposées. Le calque du
-ciel est calé sur le `body` : sans hauteur minimale il s'arrêterait où s'arrête le
-contenu, laissant de la crème nue sous le dégradé. Et la provenance, qui s'écrit
-en clair, ne le peut que là où le dégradé a viré au noir : tenue au pied par une
-marge automatique, elle est **à 92-94 % du dégradé quelle que soit la fenêtre**.
-Elle ne tient plus *dans* la fenêtre, en revanche, et c'est un arbitrage rendu :
-le graphe est la seconde lecture de la recherche et non une note, donc la page
-défile plutôt que de le replier.
-
-**Plancher de contraste : 7,9:1**, porté par le dépliant de provenance au
-printemps — le dernier texte de la page, donc le plus bas sur le dégradé. Les
-quatre tables, les deux géométries et la méthode →
-[`scripts/ink_contrast.md`](../scripts/ink_contrast.md).
+La provenance détaillée, l'export CSV et les panneaux de pluie ne sont plus
+proposés dans le parcours principal. Leurs modules et les données serveur
+restent disponibles ; les cartes conservent les mesures météo quotidiennes.
+Les avertissements de simulation et les marques de chaleur humide restent
+visibles là où les données les demandent.
 
 ### L'échelle de couleur des températures
 
@@ -622,300 +459,72 @@ comme une **quantité** plutôt que comme un mot.
 
 ---
 
-## Le graphe sous la bande
+## Les températures à comparer
 
-**Une carte dit une journée, et jamais la forme de la période** — où la chaleur se
-tient, quelle quinzaine est humide. C'est ce que le graphe ajoute, et ce qui règle
-sa largeur : dessiné colonne par colonne sous les cartes, il serait aligné et
-inutile. Il prend la largeur de la page et porte la plage entière.
+### Les compteurs de chaleur
 
-**Trois panneaux partageant un axe de dates, jamais deux échelles verticales sur
-un même tracé** — un lecteur prend le croisement d'une courbe et d'une barre pour
-un fait météorologique. Les températures sont au-dessus, les précipitations
-ensuite, leur cumul en bas, chacun dans un panneau à lui avec sa propre ligne de
-base et son titre.
+Trois comptages sont validés par le porteur du projet : **maximale > 30 °C**,
+**maximale > 35 °C**, **minimale ≥ 25 °C**. Ils portent sur les valeurs complètes,
+avant tout arrondi d'affichage, et sur toutes les origines selon la même règle.
+Le dernier concerne la minimale quotidienne ; ce n'est pas un relevé horaire
+exclusivement nocturne. Les jours > 35 °C font aussi partie du compteur > 30 °C.
 
-**Le troisième panneau est ce qui garde la règle entière** : posé sur les barres
-avec un axe à droite, le cumul l'aurait levée. Il coûte de la hauteur de page et
-ne demande rien en échange — plus rien ne croise rien.
+`domain/heat_counts.py` tient les définitions et le calcul uniques. Le pipeline
+les applique après transformation, puis sert `heat_counts` : champ lu, seuil,
+comparateur, compte, nombre de valeurs disponibles et nombre de journées
+servies. Une valeur absente ou non finie est exclue ; aucune valeur disponible
+produit un compte nul (`null`), distinct de zéro dépassement mesuré.
 
-**Chaque journée porte sa marque, et les segments sont droits.** La donnée est
-l'agrégat journalier ; une courbe lissée inventerait un mardi après-midi dont la
-série n'a aucune lecture. Une journée manquante coupe la courbe au lieu d'être
-traversée, et une lecture isolée garde son point sans segment.
+Chaque année montre les trois résultats et le nombre de journées renseignées
+rapporté à la durée demandée. Aucune extrapolation ne complète une période
+incomplète. Ces comptes décrivent les périodes choisies et ne sont pas, à eux
+seuls, une mesure de tendance climatique. Une période simulée garde son
+avertissement visible.
 
-**Rien n'est rempli tant qu'il n'y a qu'une année**, de sorte qu'un aplat sur ce
-panneau dise une seule chose — *ceci est l'année ancienne*. L'amplitude entre les
-deux températures reste la place entre deux courbes toutes deux présentes, en
-couleur, portant leurs points.
+### Les calendriers
 
-### Les trois axes
+**Le calendrier est la première lecture.** Les années choisies sont placées
+côte à côte, une case par journée. Une commande commune choisit les maximales
+ou les minimales quotidiennes ; ces dernières servent de repère pour la nuit,
+sans prétendre être une mesure exclusivement nocturne. Les couleurs viennent
+directement de `temperature_max_band` ou `temperature_min_band`, jamais d’un
+reclassement côté navigateur. La légende lit les bornes de `/api/config`.
 
-Ce sont, avec le cumul lui-même, les seules décisions du graphe, et toutes
-relèvent de la validation.
-
-**En température, l'axe se cale sur les bornes de l'échelle de couleur** : bas au
-multiple de cinq sous la lecture la plus froide, haut au multiple au-dessus de la
-plus chaude, plus une demi-bande d'air à chaque bout. **À l'intérieur de
-l'échelle, chaque filet est une borne servie** — le même palier que les aplats des
-cartes, de sorte qu'une hauteur ici et une couleur là-haut soient la même lecture.
-**Au-delà de ses deux extrémités ouvertes, le réglage continue au même
-intervalle** : tout ce qui est sous 5 °C est une seule bande et n'a aucune borne à
-tracer, si bien qu'une période gelée recevrait sinon un panneau réglé une fois. La
-continuation pose la ligne sur zéro, et symétriquement sur 45.
-
-Un axe absolu fixe est écarté : il tiendrait la comparaison entre deux recherches,
-au prix d'écraser une plage d'été dans un tiers du panneau.
-
-**Une année comparée est cadrée avec celle qu'on regarde, dans une fenêtre
-unique** — deux courbes sur deux échelles ne disent rien l'une de l'autre. Le
-panneau des pluies, lui, ne voit pas l'année comparée : elle n'y est pas dessinée,
-donc son plafond ne bouge pas.
-
-**Le pied du panneau des températures est un cadre, pas un zéro.** La ligne de
-base des pluies *est* la donnée : les barres s'y appuient, c'est zéro millimètre.
-Celle des températures tombe sur le demi-palier où la fenêtre s'est calée —
-7,5 °C sur un été, −12,5 sur une période gelée. Elle est tracée parce qu'un
-panneau ouvert sur un côté se lit comme inachevé, et **elle ne porte aucun
-nombre** : le plus bas chiffre écrit sur l'axe reste la première borne servie à
-l'intérieur de la fenêtre, un filet au-dessus.
-
-**En précipitations, l'axe prend la journée la plus arrosée de la période, avec un
-plancher de 10 mm.** Le plancher n'est pas un confort : sans lui, une plage dont
-la journée la plus humide fait 0,3 mm cadrerait l'axe sur 0,3 mm, et cette bruine
-dessinerait la même barre qu'un orage de 40 mm ailleurs. Rien n'étant servi pour
-graduer ce panneau, l'intervalle se choisit sur la hauteur qu'il a : le plus petit
-pas rond laissant au plus quatre intervalles — 5 et 10 sur une période calme, 10
-et 20 sur une période humide.
-
-**En cumul, l'axe prend le total de la période**, sous le même plancher de 10 mm
-et gradué par la même règle — **une seule fonction, appelée une fois par panneau
-de millimètres**, filets, nombres et pied compris ; recopiée, elle aurait été
-cinq lignes évidentes tenues à deux endroits. Si l'échelle des pas va jusqu'à
-500, c'est que le total d'une saison est d'un ordre de grandeur au-dessus de sa
-journée la plus arrosée : la queue de la liste n'est atteinte que par le total,
-la tête que par les journées.
-
-**Un panneau garde sa graduation quand il n'a rien à tracer** — filets et aucune
-courbe, comme le panneau des pluies en reçoit sans barre. Un dessin dont la forme
-suivrait les trous de la série changerait pour une raison que le lecteur ne voit
-pas.
-
-**La marge de gauche vaut 68 unités**, mesurée sur le « 100,0 mm » du cumul, qui
-est désormais le plus large nombre du dessin.
-
-**Aucun nombre portant sur la période n'est écrit.** Les plafonds dépendent du
-maximum et du total, mais ni l'un ni l'autre n'est affiché → [Ce que l'interface
-ne calcule pas](#ce-que-linterface-ne-calcule-pas).
-
-### Où l'on est dans la période
-
-**Un nom de mois dit quel mois, et rien de l'endroit où l'on est dedans** — sur
-quatre-vingt-douze jours, un mois fait trois cents unités de large. Le 1ᵉʳ, le 10
-et le 20 portent donc un trait court et leur nombre. Trois par mois est le plus
-petit compte qui suffise : neuf jours au plus serré, ce qui laisse partout la
-place de deux chiffres.
-
-**Une marque se pose sur une journée que la série porte**, lue sur sa propre date.
-Aucune journée n'est inventée pour porter un nombre rond : une plage ouvrant le 21
-n'a ni 1ᵉʳ, ni 10, ni 20 dans ce mois-là et n'en reçoit aucun. Les deux rangées
-parcourent les journées pour cette raison, et non le calendrier.
-
-**Chaque panneau est daté à son propre pied**, par une seule fonction appelée une
-fois par panneau — le panneau des températures fait à lui seul 245 unités, et
-dater un point du panneau du bas obligerait à remonter l'œil par-dessus deux
-autres. Ce sont les mêmes journées aux mêmes abscisses, un axe lu trois fois et
-non trois axes, et un test vérifie que les colonnes coïncident.
-
-**Les mois ne sont nommés que sous le panneau du bas**, où les nombres les
-surmontent, dans l'ordre où une date française se dit. Le nombre est centré sur sa
-colonne, là où se trouve le point de la journée ; le nom de mois garde le bord
-gauche, parce qu'il nomme un basculement et non une journée.
-
-**Chaque écart entre deux panneaux tient la rangée du haut** : titre du bas à
-douze unités au-dessus de son panneau, rangée de dates à quatorze sous le sien.
-Il faut une ligne de texte entière entre les deux — un titre posé juste sous un
-axe appartient à l'axe —, ce que le test exige au lieu de la seule absence de
-chevauchement, **et dans les deux écarts** — le second casserait en silence.
-
-### Ce que le graphe emprunte
-
-**Il est dessiné sur le papier des cartes**, et ses marques prennent les couleurs
-déjà nommées par la feuille. Il n'ajoute donc **aucune variable saisonnière** :
-les six qui tournent restent six. C'est aussi ce qui impose le papier plutôt que
-le sol : posée sur le dégradé, une courbe rouge tomberait vers les deux tiers sur
-le rouge de l'été, où elle cesse d'exister.
-
-**Il porte la même couture que la bande, au même jour** — une verticale traversant
-les trois panneaux, sous la même étiquette. Où elle tombe est une règle partagée
-par un seul module, `series.js`, et non recopiée dans chacune des deux vues.
-
-**Son équivalent accessible est la bande elle-même**, qui porte déjà chaque valeur
-en toutes lettres. Le dessin est annoncé par un nom qui renvoie à elle, et ne
-réénonce aucun nombre : une infobulle serait un second exemplaire de la carte. La
-bande ne montrant qu'une année, l'équivalent des courbes grises est ailleurs →
-[Comparer à une autre année](#comparer-à-une-autre-année).
-
-**Le cumul n'en demande pas un autre** : il est calculé sur des millimètres que
-la bande écrit tous, et ce qu'il ajoute est une forme, comme les courbes en
-ajoutent une. Le nom du dessin gagne une phrase disant que le panneau existe ; le
-total n'est écrit nulle part, pour aucun lecteur.
-
-**Sous 58 rem, il défile latéralement au lieu de rétrécir.** Le dessin est un
-`viewBox` unique et se met à l'échelle en entier, sa typographie comprise : à la
-largeur d'un téléphone, les nombres de l'axe sortiraient à quatre pixels. Il n'y a
-pas de point de rupture à choisir — le minimum est l'endroit où onze unités valent
-onze pixels — et c'est la réponse que la bande donne déjà au même problème.
-
----
+Chaque mois conserve une grille de six semaines, avec des cases vides hors de
+la période demandée. Une valeur manquante reste hachurée. Une case sélectionnée
+énonce date, température et origine ; la couture vers la simulation est
+repérée au même jour que dans la bande.
 
 ## Comparer à une autre année
 
-**« 39 °C » ne dit quelque chose qu'à qui sait ce qu'était un 14 juillet
-auparavant** : la pédagogie est dans l'écart, pas dans la valeur. Un bouton sous le
-graphe pose une autre année sur les mêmes panneaux, où la superposition *est*
-la comparaison.
+Le visiteur ajoute explicitement les années à comparer à la période initiale.
+**Aucune année de référence n'est sélectionnée automatiquement.** Le menu
+propose les années dont la plage décalée tient dans les bornes de couverture
+servies par l'API, passé et futur compris. `shiftRange` conserve son traitement
+des années bissextiles et des périodes traversant le changement d'année.
 
-**Aucun code serveur.** Les mêmes dates dans une autre année repassent par
-`/api/plan` et `/api/days`, qui les découpent, les corrigent et les classent avec
-les mêmes fonctions — [`CLAUDE.md`](../CLAUDE.md) règle 2 obtenue en ne calculant
-rien de neuf.
+Chaque année passe par le même `search`, donc `/api/plan` et `/api/days` :
+aucune règle de traitement scientifique n'est ajoutée au navigateur. Une seule
+requête de comparaison est lancée à la fois ; les réponses sont gardées en
+mémoire pour la page. Un échec laisse les autres années visibles et permet de
+redemander l'année. Retirer une année ne supprime pas sa réponse en mémoire.
 
-**Deux requêtes, et pas de grille.** Une plage entièrement passée coûte les deux
-requêtes d'archive et n'appelle aucun coefficient →
-[`donnees.md`](donnees.md). La comparaison marche donc **partout dans le monde**,
-et elle y est même exacte là où la projection ne l'est pas : l'année comparée est
-observée, elle ne passe pas par la correction. **Une requête par année, au
-plus** : ce qui est revenu est gardé en mémoire. Un échec ne touche pas la page —
-il s'écrit dans le bloc, les journées demandées étant déjà à l'écran.
+Chaque panneau nomme les origines présentes dans sa réponse. Un avertissement
+commun au-dessus des années apparaît dès qu'une réponse porte `has_simulated` ;
+il n'est pas répété dans chaque panneau. Chaque courbe garde sa couture.
+Les calendriers permettent de lire les températures et leur origine pour chaque
+année comparée. La bande météo détaillée au bas de la page reste réservée à
+la période initialement choisie.
 
-### Le choix de l'année
-
-**Une année choisie d'intuition se trompe de l'ordre de grandeur du signal.**
-`scripts/model_selection/reference_year.py` note chaque année en écarts-types de
-sa période, sur cinq sites français : **1980 est à −2,00 σ en été** et montrerait
-environ deux fois le réchauffement qu'il y a, **2003 à +3,25 σ** montrerait un
-refroidissement, et une année prise dans les années 2000 dépense un degré du
-signal avant de commencer — les sites français se réchauffent de 0,92 °C entre
-1979-1988 et 1999-2008.
-
-**La plus ordinaire de la période la plus ancienne exploitable est 1991**
-(+0,49 σ en été, −0,46 en hiver, +0,03 sur l'année, sur 1979-1994) ; sur
-1979-2008 ce serait 2004. **Le menu s'ouvre sur 1991 et laisse choisir** de 1950 à
-la dernière année entièrement
-passée — arbitrage du porteur du projet. Le lecteur garde la main ; ce que le
-défaut achète, c'est que personne n'atterrisse sur 1980 sans le vouloir.
-
-**La dernière année offerte se déduit du `today` du serveur**, remonté par
-`/api/plan` jusqu'à la page : une comparaison atteignant la prévision ne serait
-pas une autre année de météo, mais la même trajectoire en gris. Une journée qui
-n'est pas `observed` est écartée en plus de cela.
-
-**Deux exigences d'honnêteté, faute de quoi la fonction induit en erreur.** Le
-libellé dit que l'année a été *choisie pour être ordinaire* — la période affichée,
-elle, n'a pas été sélectionnée et peut porter une canicule ; comparer un tirage
-libre à un tirage choisi pour sa sagesse laisserait croire que le passé n'avait
-pas d'extrêmes. Et la sélection portant sur la seule température, **la pluie de
-l'année retenue est quelconque**. Elle est dessinée malgré tout, par arbitrage
-du porteur du projet, sur les deux panneaux de pluie ; la note dit ce que la
-sélection n'a pas regardé, faute de quoi le gris se lirait comme une normale
-de pluie.
-
-### Ce que le dessin en fait
-
-**L'année comparée est une bande, pas deux courbes de plus.** Ses deux lectures
-sont tracées en gris fin, l'écart entre elles rempli, et **aucun point** : le
-point est la marque de l'année demandée. Elle cesse ainsi d'être deux tracés à
-suivre pour devenir le sol contre lequel les deux courbes saturées se lisent — la
-question étant si la journée tient dans ce qui était ordinaire ou en sort.
-
-**Sur les deux panneaux de pluie, le gris est posé par-dessus et non dessous.**
-Deux barres partent de la même ligne de base : la plus courte est *dans* la
-plus haute et non à côté, si bien qu'une barre grise placée dessous
-n'apparaîtrait que les jours où le passé était le plus humide, soit la moitié
-de la comparaison. Posée dessus et translucide, les deux hauteurs se lisent et
-le recouvrement fait une troisième teinte. Le cumul, lui, repasse dessous comme
-les températures : deux courbes fines se croisent sans se cacher. **Un seul
-plafond cadre les deux années** dans chacun des deux panneaux, pour la raison
-qui vaut déjà pour la fenêtre des températures : cadrées chacune sur son propre
-maximum, la plus forte barre d'une année sèche viendrait à la hauteur de la
-plus forte d'une année humide, et le panneau montrerait son cadrage plutôt que
-la météo.
-
-**Le gris est un jeton posé à côté des deux températures**, mesuré à 3,44:1 sur le
-papier du graphe — un trait suivi à l'œil en demande 3. La force du remplissage
-vit dans un second jeton, le témoin de la légende étant en HTML et un `span` ne
-pouvant pas emprunter un `fill` de SVG.
-
-**L'année est écrite sur le dessin**, dans la marge au-dessus de chacun des
-trois panneaux — la seule bande où aucune marque ne peut tomber —, et ses
-chiffres prennent l'encre douce de la graduation. Chaque libellé porte
-l'échantillon de sa propre marque : la bande sur les températures, une barre
-sur les précipitations, un trait sur le cumul. Ils sont dessinés avec les
-classes des marques elles-mêmes, un témoin tenu à jour à la main étant le
-double exemplaire que la règle 3 interdit. C'est la seule chose que le graphe
-écrive en plus des titres, graduations et repères → [Ce que l'interface ne
-calcule pas](#ce-que-linterface-ne-calcule-pas).
-
-**Le bloc de comparaison est sur le papier du graphe**, seul sol qui ne bouge pas :
-posé sur le dégradé il mesurerait 1,1:1, et le basculer en encre pâle comme la
-provenance ne marche pas — celle-ci est tenue au pied par une marge automatique
-quand ce bloc suit la fin du graphe. Les deux notes d'honnêteté en dépendent : un
-avertissement illisible équivaut à un avertissement absent. Il est en outre **hors
-du cadre défilant** — un contrôle à l'intérieur de `.chart-panel` quitterait
-l'écran avec le dessin sous 58 rem.
-
-**L'équivalent accessible des courbes grises est une page de résultats, à un lien
-de distance.** La bande n'écrit qu'une année, et c'est le seul vrai trou de la
-fonction. L'année comparée étant une recherche ordinaire de ce site, un lien
-« Voir 1991 en détail » ouvre sa propre page, avec sa bande, ses cartes et chaque
-nombre en toutes lettres. Il est posé avant même que les données arrivent : il
-reste vrai qu'elles arrivent ou non.
-
----
+Une note rappelle que l'écart entre deux années ne mesure pas, à lui seul, le
+réchauffement climatique. L'évolution montrée est celle des journées des
+années choisies, sans prétendre constituer une estimation statistique de
+l'évolution du climat.
 
 ## Emporter les journées
 
-**Un bouton discret sous le graphe écrit à l'écran ce que la page a déjà en
-mémoire**, en CSV : une ligne par journée, la série affichée, et l'année
-comparée avec elle lorsqu'elle est sur le panneau. Aucun code serveur, aucune
-requête de plus — le fichier est une seconde écriture de ce qui est déjà arrivé.
-
-**`origine` et `source` sont des colonnes, sur chaque ligne.** C'est la règle 1
-appliquée à un fichier plutôt qu'à un écran : un fichier survit à la page qui
-l'a produit, et une température sans origine à côté d'elle se lit des années
-plus tard comme une mesure. Sur la ligne et non en tête de fichier, la marque ne
-peut pas être séparée du nombre qu'elle qualifie, et elle survit à un tri, à un
-filtre et à un copier-coller vers une autre feuille. Les trois mots sont ceux du
-site : *observé*, *prévision*, *simulation*.
-
-**Le niveau de chaleur humide part avec le nombre, et pour la même raison.**
-« 31,2 » seul dans un tableur, des années plus tard, se lit comme une douceur :
-c'est exactement la fuite que la colonne d'origine ferme, et le même remède la
-ferme. Le mot voyage sur la ligne, contre le nombre qu'il qualifie. Vide là où il
-n'y a rien à signaler comme là où il n'y a rien eu à mesurer — un tableur n'a pas
-la place de distinguer les deux, et la colonne voisine le fait déjà en portant un
-chiffre ou un blanc.
-
-**Rien n'est calculé.** Chaque colonne est un champ servi par l'API. Le cumul
-des précipitations reste sur le graphe : c'est la seule agrégation admise ici,
-et l'emporter dans un fichier élargirait cette exception sans arbitrage → [Ce
-que l'interface ne calcule pas](#ce-que-linterface-ne-calcule-pas). Un tableur
-le refait d'une formule sur la colonne des précipitations.
-
-**Point-virgule, virgule décimale, marque d'ordre d'octets.** Un tableur
-français ouvre le fichier d'un double-clic ; `read_csv` demande alors `sep=";",
-decimal=",", encoding="utf-8-sig"`. La convention inverse déplacerait la gêne
-sur le visiteur, à qui le bouton s'adresse. Le nom du fichier porte le lieu et
-la plage — `meteo-brest-2046-07-01-2046-07-31.csv` — parce que deux exports d'un
-même après-midi sont deux recherches différentes, et que `donnees (1).csv` ne se
-distingue plus de rien une semaine après.
-
-**Le bouton est hors du bloc de comparaison** : il offre ce qui est dessiné que
-l'autre année le soit ou non, et plié dans ce bloc il se cacherait derrière un
-contrôle que le visiteur n'ouvre peut-être jamais. Il tombe dans le bas sombre
-du dégradé et bascule donc en encre pâle avec la provenance sous lui — mesuré à
-6,7:1 au pire → [`ink_contrast.md`](../scripts/ink_contrast.md).
+Le module `csv.js` et ses tests sont conservés, mais l'export n'est pas proposé
+dans cette première interface centrée sur l'exploration grand public.
 
 ---
 

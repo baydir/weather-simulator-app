@@ -16,6 +16,15 @@ scientifique → [`CLAUDE.md`](../CLAUDE.md).
 
 ## Points restés ouverts
 
+**Un accueil météo du jour.** Ouvrir sur la météo actuelle de la ville, puis
+inviter à explorer son climat : piste conservée pour une prochaine version.
+Pour l’instant, l’entrée reste le choix d’une ville et d’une période, suivi
+de la comparaison entre années.
+
+**Des vues hebdomadaires ou mensuelles.** À envisager après la comparaison
+journalière. Le choix des agrégations et leur calcul côté serveur restent
+à valider ; aucune moyenne de période n’est introduite dans le navigateur.
+
 **Trois classes de ciel sec sont peut-être une de trop.** La nébulosité moyenne
 journalière est une variable ambiguë — deux journées à 90 % peuvent recevoir de
 29 % à 79 % de la lumière d'un ciel clair. Deux classes, ensoleillé et nuageux,

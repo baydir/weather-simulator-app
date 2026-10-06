@@ -32,13 +32,16 @@ What is refused is that this happen *silently* — see :func:`correct`.
 from __future__ import annotations
 
 from dataclasses import replace
+from datetime import date
 
 from weather_simulator.api import errors
 from weather_simulator.api.contract import Day, Grid, Series
 from weather_simulator.calibration.table import Metadata
 from weather_simulator.domain.correction import CloudCorrection
+from weather_simulator.domain.heat_counts import summarize
 from weather_simulator.domain.records import DailyRecord, Origin
 from weather_simulator.domain.sky import classify_record
+from weather_simulator.domain.temperature_means import period_means
 from weather_simulator.transform import block
 
 
@@ -97,6 +100,8 @@ def run(
     longitude: float,
     correction: CloudCorrection | None = None,
     metadata: Metadata | None = None,
+    requested_start: date | None = None,
+    requested_end: date | None = None,
     outside_grid: bool = False,
 ) -> Series:
     """The whole chain, from the assembled series to what the browser receives.
@@ -138,5 +143,9 @@ def run(
         has_simulated=has_simulated,
         humid_heat_peak=humid_heat_peak,
         grid=Grid.from_metadata(metadata) if has_simulated and metadata else None,
+        heat_counts=summarize(transformed),
+        temperature_means=period_means(
+            transformed, requested_start or days[0].date, requested_end or days[-1].date,
+        ),
         days=days,
     )
